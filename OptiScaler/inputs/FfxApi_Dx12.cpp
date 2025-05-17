@@ -335,13 +335,14 @@ ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllocationC
     _nvParams.erase(*context);
     _initParams.erase(*context);
 
-    LOG_DEBUG("context: {:X}, SwapchainContext: {:X}, FGContext: {:X}",
-              (size_t)(*context), (size_t)State::Instance().currentFG->SwapchainContext(), (size_t)State::Instance().currentFG->FrameGenerationContext());
+    if (State::Instance().currentFG != nullptr)
+        LOG_DEBUG("context: {:X}, SwapchainContext: {:X}, FGContext: {:X}",
+                  (size_t)(*context), (size_t)State::Instance().currentFG->SwapchainContext(), (size_t)State::Instance().currentFG->FrameGenerationContext());
 
     if (!State::Instance().isShuttingDown && (!upscalerContext || Config::Instance()->EnableHotSwapping.value_or_default()) &&
         (State::Instance().activeFgType != OptiFG || State::Instance().currentFG == nullptr || State::Instance().currentFG->SwapchainContext() != (*context)))
     {
-        auto cdResult = FfxApiProxy::D3D12_DestroyContext()(context, memCb); 
+        auto cdResult = FfxApiProxy::D3D12_DestroyContext()(context, memCb);
         LOG_INFO("result: {:X}", (UINT)cdResult);
     }
 
