@@ -320,6 +320,7 @@ public:
     CustomOptional<bool> FGUseMutexForSwaphain{ true };
     CustomOptional<bool> FGMakeMVCopy{ true };
     CustomOptional<bool> FGMakeDepthCopy{ true };
+    CustomOptional<bool> FGResourceFlip{ false };
 
     // OptiFG - Hudfix
     CustomOptional<bool> FGHUDFix{ false };

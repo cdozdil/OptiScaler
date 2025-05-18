@@ -1022,7 +1022,7 @@ ULONG ResTrack_Dx12::hkRelease(ID3D12Resource* This)
     if (This->AddRef() == 2 && _trackedResources.contains(This))
     {
 
-        LOG_DEBUG("Resource: {:X}", (size_t)This);
+        LOG_DEBUG_ONLY("Resource: {:X}", (size_t)This);
 
         auto vector = &_trackedResources[This];
 

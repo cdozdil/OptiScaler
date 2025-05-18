@@ -1638,6 +1638,11 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->FGEnableDepthScale = depthScale;
                         ShowHelpMarker("Fix for DLSS-D wrong depth inputs");
 
+                        bool resourceFlip = Config::Instance()->FGResourceFlip.value_or_default();
+                        if (ImGui::Checkbox("FG Flip Resources (Unity)", &resourceFlip))
+                            Config::Instance()->FGResourceFlip = resourceFlip;
+                        ShowHelpMarker("Flip Velocity & Depth resources of Unity games");
+
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Advanced OptiFG Settings"))
                         {

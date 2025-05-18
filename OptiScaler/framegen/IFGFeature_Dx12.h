@@ -4,6 +4,8 @@
 
 #include <upscalers/IFeature.h>
 
+#include <shaders/resource_flip/RF_Dx12.h>
+
 #include <dxgi1_6.h>
 #include <d3d12.h>
 
@@ -12,11 +14,14 @@ class IFGFeature_Dx12 : public virtual IFGFeature
 private:
     bool _mvAndDepthReady = false;
     bool _hudlessReady = false;
+    std::unique_ptr<RF_Dx12> _mvFlip;
+    std::unique_ptr<RF_Dx12> _depthFlip;
+    ID3D12Device* _device = nullptr;
 
 protected:
     IDXGISwapChain* _swapChain = nullptr;
-    HWND _hwnd = NULL;
     ID3D12CommandQueue* _gameCommandQueue = nullptr;
+    HWND _hwnd = NULL;
 
     ID3D12Resource* _paramVelocity[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12Resource* _paramVelocityCopy[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
@@ -28,7 +33,7 @@ protected:
     ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
     ID3D12CommandAllocator* _commandAllocators[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
 
-    bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
+    bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource, bool UAV = false, bool depth = false);
     void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
     bool CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* source, ID3D12Resource** target, D3D12_RESOURCE_STATES sourceState);
 
