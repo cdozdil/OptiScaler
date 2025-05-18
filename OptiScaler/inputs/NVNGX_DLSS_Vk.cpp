@@ -1132,12 +1132,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Shutdown(void)
 {
     shutdown = true;
 
-    for (auto const& [key, val] : VkContexts) {
-        if (val.feature)
-            NVSDK_NGX_VULKAN_ReleaseFeature(val.feature->Handle());
-    }
+    //for (auto const& [key, val] : VkContexts) {
+    //    if (val.feature)
+    //        NVSDK_NGX_VULKAN_ReleaseFeature(val.feature->Handle());
+    //}
 
-    VkContexts.clear();
+    //VkContexts.clear();
 
     vkInstance = nullptr;
     vkPD = nullptr;

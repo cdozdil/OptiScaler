@@ -445,12 +445,17 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown(void)
     shutdown = true;
     State::Instance().NvngxDx12Inited = false;
 
-    for (auto const& [key, val] : Dx12Contexts) {
-        if (val.feature)
-            NVSDK_NGX_D3D12_ReleaseFeature(val.feature->Handle());
-    }
+    //if (Dx12Contexts.size() > 0)
+    //{
+    //    for (auto const& [key, val] : Dx12Contexts) {
+    //        if (val.feature)
+    //            NVSDK_NGX_D3D12_ReleaseFeature(val.feature->Handle());
+    //    }
 
-    Dx12Contexts.clear();
+    //}
+
+    //Dx12Contexts.clear();
+
     D3D12Device = nullptr;
 
     State::Instance().currentFeature = nullptr;
