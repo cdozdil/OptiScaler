@@ -7,147 +7,145 @@
 
 void Menu_Dx11::CreateRenderTarget(ID3D11Resource* out)
 {
-	ID3D11Texture2D* outTexture2D = nullptr;
+    ID3D11Texture2D* outTexture2D = nullptr;
 
-	if (out->QueryInterface(IID_PPV_ARGS(&outTexture2D)) != S_OK)
-		return;
+    if (out->QueryInterface(IID_PPV_ARGS(&outTexture2D)) != S_OK)
+        return;
 
-	LOG_FUNC();
+    LOG_FUNC();
 
-	D3D11_TEXTURE2D_DESC outDesc{};
-	outTexture2D->GetDesc(&outDesc);
+    D3D11_TEXTURE2D_DESC outDesc{};
+    outTexture2D->GetDesc(&outDesc);
 
-	if (_renderTargetTexture != nullptr)
-	{
-		D3D11_TEXTURE2D_DESC rtDesc;
-		_renderTargetTexture->GetDesc(&rtDesc);
+    if (_renderTargetTexture != nullptr)
+    {
+        D3D11_TEXTURE2D_DESC rtDesc;
+        _renderTargetTexture->GetDesc(&rtDesc);
 
-		if (outDesc.Width != rtDesc.Width || outDesc.Height != rtDesc.Height || outDesc.Format != rtDesc.Format)
-		{
-			_renderTargetTexture->Release();
-			_renderTargetTexture = nullptr;
-		}
-		else
-			return;
-	}
+        if (outDesc.Width != rtDesc.Width || outDesc.Height != rtDesc.Height || outDesc.Format != rtDesc.Format)
+        {
+            _renderTargetTexture->Release();
+            _renderTargetTexture = nullptr;
+        }
+        else
+            return;
+    }
 
-	if ((outDesc.BindFlags & D3D11_BIND_RENDER_TARGET) > 0)
-	{
-		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-		ZeroMemory(&rtvDesc, sizeof(rtvDesc));
-		rtvDesc.Format = TranslateTypelessFormats(outDesc.Format);
-		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-		rtvDesc.Texture2D.MipSlice = 0;
+    if ((outDesc.BindFlags & D3D11_BIND_RENDER_TARGET) > 0)
+    {
+        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
+        ZeroMemory(&rtvDesc, sizeof(rtvDesc));
+        rtvDesc.Format = TranslateTypelessFormats(outDesc.Format);
+        rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        rtvDesc.Texture2D.MipSlice = 0;
 
-		_device->CreateRenderTargetView(out, &rtvDesc, &_renderTargetView);
-	}
-	else
-	{
-		D3D11_TEXTURE2D_DESC textureDesc;
-		ZeroMemory(&textureDesc, sizeof(textureDesc));
-		textureDesc.Width = outDesc.Width;
-		textureDesc.Height = outDesc.Height;
-		textureDesc.MipLevels = 1;
-		textureDesc.ArraySize = 1;
-		textureDesc.Format = outDesc.Format;
-		textureDesc.SampleDesc.Count = 1;
-		textureDesc.SampleDesc.Quality = 0;
-		textureDesc.Usage = D3D11_USAGE_DEFAULT;
-		textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
-		textureDesc.CPUAccessFlags = 0;
-		textureDesc.MiscFlags = 0;
+        _device->CreateRenderTargetView(out, &rtvDesc, &_renderTargetView);
+    }
+    else
+    {
+        D3D11_TEXTURE2D_DESC textureDesc;
+        ZeroMemory(&textureDesc, sizeof(textureDesc));
+        textureDesc.Width = outDesc.Width;
+        textureDesc.Height = outDesc.Height;
+        textureDesc.MipLevels = 1;
+        textureDesc.ArraySize = 1;
+        textureDesc.Format = outDesc.Format;
+        textureDesc.SampleDesc.Count = 1;
+        textureDesc.SampleDesc.Quality = 0;
+        textureDesc.Usage = D3D11_USAGE_DEFAULT;
+        textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
+        textureDesc.CPUAccessFlags = 0;
+        textureDesc.MiscFlags = 0;
 
-		_device->CreateTexture2D(&textureDesc, nullptr, &_renderTargetTexture);
+        _device->CreateTexture2D(&textureDesc, nullptr, &_renderTargetTexture);
 
-		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-		ZeroMemory(&rtvDesc, sizeof(rtvDesc));
-		rtvDesc.Format = textureDesc.Format;
-		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-		rtvDesc.Texture2D.MipSlice = 0;
+        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
+        ZeroMemory(&rtvDesc, sizeof(rtvDesc));
+        rtvDesc.Format = textureDesc.Format;
+        rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        rtvDesc.Texture2D.MipSlice = 0;
 
-		_device->CreateRenderTargetView(_renderTargetTexture, &rtvDesc, &_renderTargetView);
-	}
+        _device->CreateRenderTargetView(_renderTargetTexture, &rtvDesc, &_renderTargetView);
+    }
 }
 
 bool Menu_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture)
 {
-	if (Config::Instance()->OverlayMenu.value_or_default())
-		return false;
+    if (Config::Instance()->OverlayMenu.value_or_default())
+        return false;
 
-	if (pCmdList == nullptr || outTexture == nullptr)
-		return false;
+    if (pCmdList == nullptr || outTexture == nullptr)
+        return false;
 
-	frameCounter++;
+    frameCounter++;
 
-	//if (!IsVisible())
-	//	return true;
+    // if (!IsVisible())
+    //	return true;
 
-	//LOG_FUNC();
+    // LOG_FUNC();
 
-	CreateRenderTarget(outTexture);
+    CreateRenderTarget(outTexture);
 
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
-	UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+    ImGuiIO& io = ImGui::GetIO();
+    (void) io;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
+    UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
-	if (!_dx11Init && io.BackendRendererUserData == nullptr)
-		_dx11Init = ImGui_ImplDX11_Init(_device, pCmdList);
+    if (!_dx11Init && io.BackendRendererUserData == nullptr)
+        _dx11Init = ImGui_ImplDX11_Init(_device, pCmdList);
 
-	if (!_dx11Init)
-		return false;
+    if (!_dx11Init)
+        return false;
 
-	ImGui_ImplDX11_NewFrame();
-	//ImGui_ImplWin32_NewFrame();
+    ImGui_ImplDX11_NewFrame();
+    // ImGui_ImplWin32_NewFrame();
 
-	if (MenuDxBase::RenderMenu())
-	{
-		// Create RTV for out
-		pCmdList->OMSetRenderTargets(1, &_renderTargetView, nullptr);
+    if (MenuDxBase::RenderMenu())
+    {
+        // Create RTV for out
+        pCmdList->OMSetRenderTargets(1, &_renderTargetView, nullptr);
 
-		if (_renderTargetTexture == nullptr)
-		{
-			// Render
-			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-			return true;
-		}
+        if (_renderTargetTexture == nullptr)
+        {
+            // Render
+            ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+            return true;
+        }
 
-		// Copy first
-		pCmdList->CopyResource(_renderTargetTexture, outTexture);
+        // Copy first
+        pCmdList->CopyResource(_renderTargetTexture, outTexture);
 
-		// Render
-		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+        // Render
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-		// Copy result
-		pCmdList->CopyResource(outTexture, _renderTargetTexture);
-	}
+        // Copy result
+        pCmdList->CopyResource(outTexture, _renderTargetTexture);
+    }
 
-	return true;
+    return true;
 }
 
-Menu_Dx11::Menu_Dx11(HWND handle, ID3D11Device* pDevice) : MenuDxBase(handle), _device(pDevice)
-{
-	Dx11Ready();
-}
+Menu_Dx11::Menu_Dx11(HWND handle, ID3D11Device* pDevice) : MenuDxBase(handle), _device(pDevice) { Dx11Ready(); }
 
 Menu_Dx11::~Menu_Dx11()
 {
-	if (!_dx11Init || State::Instance().isShuttingDown)
-		return;
+    if (!_dx11Init || State::Instance().isShuttingDown)
+        return;
 
-	MenuCommon::Shutdown();
+    MenuCommon::Shutdown();
 
-	// hackzor
-	std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    // hackzor
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
-	if (_renderTargetTexture)
-	{
-		_renderTargetTexture->Release();
-		_renderTargetTexture = nullptr;
-	}
+    if (_renderTargetTexture)
+    {
+        _renderTargetTexture->Release();
+        _renderTargetTexture = nullptr;
+    }
 
-	if (_renderTargetView)
-	{
-		_renderTargetView->Release();
-		_renderTargetView = nullptr;
-	}
+    if (_renderTargetView)
+    {
+        _renderTargetView->Release();
+        _renderTargetView = nullptr;
+    }
 }

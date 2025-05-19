@@ -21,26 +21,31 @@ static decltype(&sl1::slInit) o_slInit_sl1 = nullptr;
 static sl::PFun_LogMessageCallback* o_logCallback = nullptr;
 static sl1::pfunLogMessageCallback* o_logCallback_sl1 = nullptr;
 
-static char* trimStreamlineLog(const char* msg) {
+static char* trimStreamlineLog(const char* msg)
+{
     int bracket_count = 0;
 
-    char* result = (char*)malloc(strlen(msg) + 1);
-    if (!result) return NULL;
+    char* result = (char*) malloc(strlen(msg) + 1);
+    if (!result)
+        return NULL;
 
     strcpy(result, msg);
 
     size_t length = strlen(result);
-    if (length > 0 && result[length - 1] == '\n') {
+    if (length > 0 && result[length - 1] == '\n')
+    {
         result[length - 1] = '\0';
     }
 
     return result;
 }
 
-static void streamlineLogCallback(sl::LogType type, const char* msg) {
+static void streamlineLogCallback(sl::LogType type, const char* msg)
+{
     char* trimmed_msg = trimStreamlineLog(msg);
 
-    switch (type) {
+    switch (type)
+    {
     case sl::LogType::eWarn:
         LOG_WARN("{}", trimmed_msg);
         break;
@@ -61,7 +66,8 @@ static void streamlineLogCallback(sl::LogType type, const char* msg) {
         o_logCallback(type, msg);
 }
 
-static sl::Result hkslInit(sl::Preferences* pref, uint64_t sdkVersion) {
+static sl::Result hkslInit(sl::Preferences* pref, uint64_t sdkVersion)
+{
     LOG_FUNC();
     if (pref->logMessageCallback != &streamlineLogCallback)
         o_logCallback = pref->logMessageCallback;
@@ -70,9 +76,15 @@ static sl::Result hkslInit(sl::Preferences* pref, uint64_t sdkVersion) {
     return o_slInit(*pref, sdkVersion);
 }
 
-static sl::Result hkslSetTag(sl::ViewportHandle& viewport, sl::ResourceTag* tags, uint32_t numTags, sl::CommandBuffer* cmdBuffer) {
-    for (uint32_t i = 0; i < numTags; i++) {
-        if (State::Instance().gameQuirk == Cyberpunk && tags[i].type == 2 && tags[i].resource->state == (D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)) {
+static sl::Result hkslSetTag(sl::ViewportHandle& viewport, sl::ResourceTag* tags, uint32_t numTags,
+                             sl::CommandBuffer* cmdBuffer)
+{
+    for (uint32_t i = 0; i < numTags; i++)
+    {
+        if (State::Instance().gameQuirk == Cyberpunk && tags[i].type == 2 &&
+            tags[i].resource->state ==
+                (D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE))
+        {
             tags[i].resource->state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             LOG_TRACE("Changing hudless resource state");
         }
@@ -81,10 +93,12 @@ static sl::Result hkslSetTag(sl::ViewportHandle& viewport, sl::ResourceTag* tags
     return result;
 }
 
-static void streamlineLogCallback_sl1(sl1::LogType type, const char* msg) {
+static void streamlineLogCallback_sl1(sl1::LogType type, const char* msg)
+{
     char* trimmed_msg = trimStreamlineLog(msg);
 
-    switch (type) {
+    switch (type)
+    {
     case sl1::LogType::eLogTypeWarn:
         LOG_WARN("{}", trimmed_msg);
         break;
@@ -105,7 +119,8 @@ static void streamlineLogCallback_sl1(sl1::LogType type, const char* msg) {
         o_logCallback_sl1(type, msg);
 }
 
-static bool hkslInit_sl1(sl1::Preferences* pref, int applicationId) {
+static bool hkslInit_sl1(sl1::Preferences* pref, int applicationId)
+{
     LOG_FUNC();
     if (pref->logMessageCallback != &streamlineLogCallback_sl1)
         o_logCallback_sl1 = pref->logMessageCallback;
@@ -114,22 +129,26 @@ static bool hkslInit_sl1(sl1::Preferences* pref, int applicationId) {
     return o_slInit_sl1(*pref, applicationId);
 }
 
-static void unhookStreamline() {
+static void unhookStreamline()
+{
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
 
-    if (o_slSetTag) {
-        DetourDetach(&(PVOID&)o_slSetTag, hkslSetTag);
+    if (o_slSetTag)
+    {
+        DetourDetach(&(PVOID&) o_slSetTag, hkslSetTag);
         o_slSetTag = nullptr;
     }
 
-    if (o_slInit) {
-        DetourDetach(&(PVOID&)o_slInit, hkslInit);
+    if (o_slInit)
+    {
+        DetourDetach(&(PVOID&) o_slInit, hkslInit);
         o_slInit = nullptr;
     }
 
-    if (o_slInit_sl1) {
-        DetourDetach(&(PVOID&)o_slInit_sl1, hkslInit_sl1);
+    if (o_slInit_sl1)
+    {
+        DetourDetach(&(PVOID&) o_slInit_sl1, hkslInit_sl1);
         o_slInit_sl1 = nullptr;
     }
 
@@ -140,15 +159,17 @@ static void unhookStreamline() {
 }
 
 // Call it just after sl.interposer's load or if sl.interposer is already loaded
-static void hookStreamline(HMODULE slInterposer) {
+static void hookStreamline(HMODULE slInterposer)
+{
     LOG_FUNC();
 
-    if (!slInterposer) {
+    if (!slInterposer)
+    {
         LOG_WARN("Streamline module in NULL");
         return;
     }
 
-    // Looks like when reading DLL version load methods are called 
+    // Looks like when reading DLL version load methods are called
     // To prevent loops disabling checks for sl.interposer.dll
     State::DisableChecks(7, "sl.interposer");
 
@@ -166,33 +187,38 @@ static void hookStreamline(HMODULE slInterposer) {
         Util::GetDLLVersion(string_to_wstring(dllPath), &sl_version);
         LOG_INFO("Streamline version: {}.{}.{}", sl_version.major, sl_version.minor, sl_version.patch);
 
-        if (sl_version.major >= 2) {
-            o_slSetTag = reinterpret_cast<decltype(&slSetTag)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slSetTag"));
+        if (sl_version.major >= 2)
+        {
+            o_slSetTag =
+                reinterpret_cast<decltype(&slSetTag)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slSetTag"));
             o_slInit = reinterpret_cast<decltype(&slInit)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slInit"));
 
-            if (o_slSetTag != nullptr && o_slInit != nullptr) {
+            if (o_slSetTag != nullptr && o_slInit != nullptr)
+            {
                 LOG_TRACE("Hooking v2");
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
 
                 if (Config::Instance()->FGType.value_or_default() == FGType::Nukems)
-                    DetourAttach(&(PVOID&)o_slSetTag, hkslSetTag);
+                    DetourAttach(&(PVOID&) o_slSetTag, hkslSetTag);
 
-                DetourAttach(&(PVOID&)o_slInit, hkslInit);
+                DetourAttach(&(PVOID&) o_slInit, hkslInit);
 
                 DetourTransactionCommit();
             }
         }
-        else if (sl_version.major == 1) 
+        else if (sl_version.major == 1)
         {
-            o_slInit_sl1 = reinterpret_cast<decltype(&sl1::slInit)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slInit"));
+            o_slInit_sl1 =
+                reinterpret_cast<decltype(&sl1::slInit)>(KernelBaseProxy::GetProcAddress_()(slInterposer, "slInit"));
 
-            if (o_slInit_sl1) {
+            if (o_slInit_sl1)
+            {
                 LOG_TRACE("Hooking v1");
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
 
-                DetourAttach(&(PVOID&)o_slInit_sl1, hkslInit_sl1);
+                DetourAttach(&(PVOID&) o_slInit_sl1, hkslInit_sl1);
 
                 DetourTransactionCommit();
             }
@@ -201,4 +227,3 @@ static void hookStreamline(HMODULE slInterposer) {
 
     State::EnableChecks(7);
 }
-

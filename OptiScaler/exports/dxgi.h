@@ -62,10 +62,7 @@ HRESULT _CreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
     return DxgiProxy::CreateDxgiFactory2_Hooked()(Flags, riid, ppFactory);
 }
 
-HRESULT _DXGIDeclareAdapterRemovalSupport()
-{
-    return DxgiProxy::DeclareAdepterRemovalSupport_()();
-}
+HRESULT _DXGIDeclareAdapterRemovalSupport() { return DxgiProxy::DeclareAdepterRemovalSupport_()(); }
 
 HRESULT _DXGIGetDebugInterface1(UINT Flags, REFIID riid, void** pDebug)
 {

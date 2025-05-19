@@ -9,18 +9,18 @@
 
 class MenuOverlayBase : public MenuBase
 {
-public:
-	static HWND Handle();
+  public:
+    static HWND Handle();
 
-	static void Dx11Ready();
-	static void Dx12Ready();
-	static void VulkanReady();
+    static void Dx11Ready();
+    static void Dx12Ready();
+    static void VulkanReady();
 
-	static bool IsInited();
-	static bool IsVisible();
+    static bool IsInited();
+    static bool IsVisible();
 
-	static void Init(HWND InHandle, bool isUWP);
+    static void Init(HWND InHandle, bool isUWP);
     static bool RenderMenu();
-	static void Shutdown();
-	static void HideMenu();
+    static void Shutdown();
+    static void HideMenu();
 };

@@ -20,7 +20,7 @@ static VkDevice _vkDevice = nullptr;
 static VkPhysicalDevice _vkPhysicalDevice = nullptr;
 static PFN_vkGetDeviceProcAddr _vkDeviceProcAddress = nullptr;
 static bool _nvnxgInited = false;
-static float qualityRatios[] = { 1.0f, 1.5f, 1.7f, 2.0f, 3.0f };
+static float qualityRatios[] = {1.0f, 1.5f, 1.7f, 2.0f, 3.0f};
 static VkImageView depthImageView = nullptr;
 static VkImageView expImageView = nullptr;
 static VkImageView biasImageView = nullptr;
@@ -38,68 +38,68 @@ static VkFormat ffxApiGetVkFormat(uint32_t fmt)
 {
     switch (fmt)
     {
-        case FFX_API_SURFACE_FORMAT_R32G32B32A32_FLOAT:
-            return VK_FORMAT_R32G32B32A32_SFLOAT;
-        case FFX_API_SURFACE_FORMAT_R32G32B32A32_UINT:
-            return VK_FORMAT_R32G32B32A32_UINT;
-        case FFX_API_SURFACE_FORMAT_R16G16B16A16_FLOAT:
-            return VK_FORMAT_R16G16B16A16_SFLOAT;
-        case FFX_API_SURFACE_FORMAT_R32G32_FLOAT:
-            return VK_FORMAT_R32G32_SFLOAT;
-        case FFX_API_SURFACE_FORMAT_R32_UINT:
-            //case VK_FORMAT_D24_UNORM_S8_UINT:
-            //case VK_FORMAT_X8_D24_UNORM_PACK32:
-            return VK_FORMAT_R32_UINT;
-        case FFX_API_SURFACE_FORMAT_R8G8B8A8_UNORM:
-            return VK_FORMAT_R8G8B8A8_UNORM;
-        case FFX_API_SURFACE_FORMAT_R8G8B8A8_SNORM:
-            return VK_FORMAT_R8G8B8A8_SNORM;
-        case FFX_API_SURFACE_FORMAT_R8G8B8A8_SRGB:
-            return VK_FORMAT_R8G8B8A8_SRGB;
-        case FFX_API_SURFACE_FORMAT_B8G8R8A8_UNORM:
-            return VK_FORMAT_B8G8R8A8_UNORM;
-        case FFX_API_SURFACE_FORMAT_B8G8R8A8_SRGB:
-            return VK_FORMAT_B8G8R8A8_SRGB;
-        case FFX_API_SURFACE_FORMAT_R11G11B10_FLOAT:
-            return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
-        case FFX_API_SURFACE_FORMAT_R10G10B10A2_UNORM:
-            return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
-        case FFX_API_SURFACE_FORMAT_R16G16_FLOAT:
-            return VK_FORMAT_R16G16_SFLOAT;
-        case FFX_API_SURFACE_FORMAT_R16G16_UINT:
-            return VK_FORMAT_R16G16_UINT;
-        case FFX_API_SURFACE_FORMAT_R16G16_SINT:
-            return VK_FORMAT_R16G16_SINT;
-        case FFX_API_SURFACE_FORMAT_R16_FLOAT:
-            return VK_FORMAT_R16_SFLOAT;
-        case FFX_API_SURFACE_FORMAT_R16_UINT:
-            return VK_FORMAT_R16_UINT;
-        case FFX_API_SURFACE_FORMAT_R16_UNORM:
-            //case VK_FORMAT_D16_UNORM:
-            //case VK_FORMAT_D16_UNORM_S8_UINT:
-            return VK_FORMAT_R16_UNORM;
-        case FFX_API_SURFACE_FORMAT_R16_SNORM:
-            return VK_FORMAT_R16_SNORM;
-        case FFX_API_SURFACE_FORMAT_R8_UNORM:
-            return VK_FORMAT_R8_UNORM;
-        case FFX_API_SURFACE_FORMAT_R8_UINT:
-            //case VK_FORMAT_S8_UINT:
-            return VK_FORMAT_R8_UINT;
-        case FFX_API_SURFACE_FORMAT_R8G8_UNORM:
-            return VK_FORMAT_R8G8_UNORM;
-        case FFX_API_SURFACE_FORMAT_R8G8_UINT:
-            return VK_FORMAT_R8G8_UINT;
-        case FFX_API_SURFACE_FORMAT_R32_FLOAT:
-            //case VK_FORMAT_D32_SFLOAT:
-            //case VK_FORMAT_D32_SFLOAT_S8_UINT:
-            return VK_FORMAT_R32_SFLOAT;
-        case FFX_API_SURFACE_FORMAT_R9G9B9E5_SHAREDEXP:
-            return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
-        case FFX_API_SURFACE_FORMAT_UNKNOWN:
-            return VK_FORMAT_UNDEFINED;
+    case FFX_API_SURFACE_FORMAT_R32G32B32A32_FLOAT:
+        return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case FFX_API_SURFACE_FORMAT_R32G32B32A32_UINT:
+        return VK_FORMAT_R32G32B32A32_UINT;
+    case FFX_API_SURFACE_FORMAT_R16G16B16A16_FLOAT:
+        return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case FFX_API_SURFACE_FORMAT_R32G32_FLOAT:
+        return VK_FORMAT_R32G32_SFLOAT;
+    case FFX_API_SURFACE_FORMAT_R32_UINT:
+        // case VK_FORMAT_D24_UNORM_S8_UINT:
+        // case VK_FORMAT_X8_D24_UNORM_PACK32:
+        return VK_FORMAT_R32_UINT;
+    case FFX_API_SURFACE_FORMAT_R8G8B8A8_UNORM:
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    case FFX_API_SURFACE_FORMAT_R8G8B8A8_SNORM:
+        return VK_FORMAT_R8G8B8A8_SNORM;
+    case FFX_API_SURFACE_FORMAT_R8G8B8A8_SRGB:
+        return VK_FORMAT_R8G8B8A8_SRGB;
+    case FFX_API_SURFACE_FORMAT_B8G8R8A8_UNORM:
+        return VK_FORMAT_B8G8R8A8_UNORM;
+    case FFX_API_SURFACE_FORMAT_B8G8R8A8_SRGB:
+        return VK_FORMAT_B8G8R8A8_SRGB;
+    case FFX_API_SURFACE_FORMAT_R11G11B10_FLOAT:
+        return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+    case FFX_API_SURFACE_FORMAT_R10G10B10A2_UNORM:
+        return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+    case FFX_API_SURFACE_FORMAT_R16G16_FLOAT:
+        return VK_FORMAT_R16G16_SFLOAT;
+    case FFX_API_SURFACE_FORMAT_R16G16_UINT:
+        return VK_FORMAT_R16G16_UINT;
+    case FFX_API_SURFACE_FORMAT_R16G16_SINT:
+        return VK_FORMAT_R16G16_SINT;
+    case FFX_API_SURFACE_FORMAT_R16_FLOAT:
+        return VK_FORMAT_R16_SFLOAT;
+    case FFX_API_SURFACE_FORMAT_R16_UINT:
+        return VK_FORMAT_R16_UINT;
+    case FFX_API_SURFACE_FORMAT_R16_UNORM:
+        // case VK_FORMAT_D16_UNORM:
+        // case VK_FORMAT_D16_UNORM_S8_UINT:
+        return VK_FORMAT_R16_UNORM;
+    case FFX_API_SURFACE_FORMAT_R16_SNORM:
+        return VK_FORMAT_R16_SNORM;
+    case FFX_API_SURFACE_FORMAT_R8_UNORM:
+        return VK_FORMAT_R8_UNORM;
+    case FFX_API_SURFACE_FORMAT_R8_UINT:
+        // case VK_FORMAT_S8_UINT:
+        return VK_FORMAT_R8_UINT;
+    case FFX_API_SURFACE_FORMAT_R8G8_UNORM:
+        return VK_FORMAT_R8G8_UNORM;
+    case FFX_API_SURFACE_FORMAT_R8G8_UINT:
+        return VK_FORMAT_R8G8_UINT;
+    case FFX_API_SURFACE_FORMAT_R32_FLOAT:
+        // case VK_FORMAT_D32_SFLOAT:
+        // case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return VK_FORMAT_R32_SFLOAT;
+    case FFX_API_SURFACE_FORMAT_R9G9B9E5_SHAREDEXP:
+        return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
+    case FFX_API_SURFACE_FORMAT_UNKNOWN:
+        return VK_FORMAT_UNDEFINED;
 
-        default:
-            return VK_FORMAT_UNDEFINED;
+    default:
+        return VK_FORMAT_UNDEFINED;
     }
 }
 
@@ -107,7 +107,7 @@ static bool CreateIVandNVRes(FfxApiResource resource, VkImageView* imageView, NV
 {
     VkImageViewCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    createInfo.image = (VkImage)resource.resource;
+    createInfo.image = (VkImage) resource.resource;
     createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     createInfo.format = ffxApiGetVkFormat(resource.description.format);
     createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -132,7 +132,7 @@ static bool CreateIVandNVRes(FfxApiResource resource, VkImageView* imageView, NV
 
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("vkCreateImageView error!: {:X}", (int)result);
+        LOG_ERROR("vkCreateImageView error!: {:X}", (int) result);
         return false;
     }
 
@@ -150,7 +150,7 @@ static bool CreateIVandNVRes(FfxApiResource resource, VkImageView* imageView, NV
 
 static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* pExecParams)
 {
-    LOG_DEBUG("context: {:X}", (size_t)handle);
+    LOG_DEBUG("context: {:X}", (size_t) handle);
 
     if (!_nvParams.contains(handle))
         return false;
@@ -158,7 +158,7 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     NVSDK_NGX_Handle* nvHandle = nullptr;
     auto params = _nvParams[handle];
     auto initParams = &_initParams[handle];
-    auto commandList = (VkCommandBuffer)pExecParams->commandList;
+    auto commandList = (VkCommandBuffer) pExecParams->commandList;
 
     UINT initFlags = 0;
 
@@ -188,7 +188,7 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
 
     auto width = pExecParams->upscaleSize.width > 0 ? pExecParams->upscaleSize.width : initParams->maxUpscaleSize.width;
 
-    auto ratio = (float)width / (float)pExecParams->renderSize.width;
+    auto ratio = (float) width / (float) pExecParams->renderSize.width;
 
     LOG_INFO("renderWidth: {}, maxWidth: {}, ratio: {}", pExecParams->renderSize.width, width, ratio);
 
@@ -208,12 +208,12 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     auto nvngxResult = NVSDK_NGX_VULKAN_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle);
     if (nvngxResult != NVSDK_NGX_Result_Success)
     {
-        LOG_ERROR("NVSDK_NGX_VULKAN_CreateFeature error: {:X}", (UINT)nvngxResult);
+        LOG_ERROR("NVSDK_NGX_VULKAN_CreateFeature error: {:X}", (UINT) nvngxResult);
         return false;
     }
 
     _contexts[handle] = nvHandle;
-    LOG_INFO("context created: {:X}", (size_t)handle);
+    LOG_INFO("context created: {:X}", (size_t) handle);
 
     return true;
 }
@@ -229,7 +229,7 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
     {
         output = Config::Instance()->UpscaleRatioOverrideValue.value_or(1.3f);
 
-        return  output;
+        return output;
     }
 
     if (!Config::Instance()->QualityRatioOverrideEnabled.value_or(false))
@@ -237,39 +237,39 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
 
     switch (input)
     {
-        case FFX_UPSCALE_QUALITY_MODE_ULTRA_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f);
+    case FFX_UPSCALE_QUALITY_MODE_ULTRA_PERFORMANCE:
+        if (Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f) >= sliderLimit)
+            output = Config::Instance()->QualityRatio_UltraPerformance.value_or(3.0f);
 
-            break;
+        break;
 
-        case FFX_UPSCALE_QUALITY_MODE_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_Performance.value_or(2.0f) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Performance.value_or(2.0f);
+    case FFX_UPSCALE_QUALITY_MODE_PERFORMANCE:
+        if (Config::Instance()->QualityRatio_Performance.value_or(2.0f) >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Performance.value_or(2.0f);
 
-            break;
+        break;
 
-        case FFX_UPSCALE_QUALITY_MODE_BALANCED:
-            if (Config::Instance()->QualityRatio_Balanced.value_or(1.7f) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Balanced.value_or(1.7f);
+    case FFX_UPSCALE_QUALITY_MODE_BALANCED:
+        if (Config::Instance()->QualityRatio_Balanced.value_or(1.7f) >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Balanced.value_or(1.7f);
 
-            break;
+        break;
 
-        case FFX_UPSCALE_QUALITY_MODE_QUALITY:
-            if (Config::Instance()->QualityRatio_Quality.value_or(1.5f) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Quality.value_or(1.5f);
+    case FFX_UPSCALE_QUALITY_MODE_QUALITY:
+        if (Config::Instance()->QualityRatio_Quality.value_or(1.5f) >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Quality.value_or(1.5f);
 
-            break;
+        break;
 
-        case FFX_UPSCALE_QUALITY_MODE_NATIVEAA:
-            if (Config::Instance()->QualityRatio_DLAA.value_or(1.0f) >= sliderLimit)
-                output = Config::Instance()->QualityRatio_DLAA.value_or(1.0f);
+    case FFX_UPSCALE_QUALITY_MODE_NATIVEAA:
+        if (Config::Instance()->QualityRatio_DLAA.value_or(1.0f) >= sliderLimit)
+            output = Config::Instance()->QualityRatio_DLAA.value_or(1.0f);
 
-            break;
+        break;
 
-        default:
-            LOG_WARN("Unknown quality: {0}", (int)input);
-            break;
+    default:
+        LOG_WARN("Unknown quality: {0}", (int) input);
+        break;
     }
 
     if (output.has_value())
@@ -280,7 +280,8 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
     return output;
 }
 
-ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHeader* desc, const ffxAllocationCallbacks* memCb)
+ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHeader* desc,
+                                    const ffxAllocationCallbacks* memCb)
 {
     if (desc == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
@@ -291,7 +292,8 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
 
     if (ffxApiResult != FFX_API_RETURN_OK)
     {
-        LOG_ERROR("D3D12_CreateContext error: {:X} ({})", (UINT)ffxApiResult, FfxApiProxy::ReturnCodeToString(ffxApiResult));
+        LOG_ERROR("D3D12_CreateContext error: {:X} ({})", (UINT) ffxApiResult,
+                  FfxApiProxy::ReturnCodeToString(ffxApiResult));
         return ffxApiResult;
     }
 
@@ -304,11 +306,11 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
         if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE)
         {
             upscaleContext = true;
-            createDesc = (ffxCreateContextDescUpscale*)header;
+            createDesc = (ffxCreateContextDescUpscale*) header;
         }
         else if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_VK)
         {
-            auto backendDesc = (ffxCreateBackendVKDesc*)header;
+            auto backendDesc = (ffxCreateBackendVKDesc*) header;
             _vkDevice = backendDesc->vkDevice;
             _vkPhysicalDevice = backendDesc->vkPhysicalDevice;
             _vkDeviceProcAddress = backendDesc->vkDeviceProcAddr;
@@ -347,17 +349,19 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
             pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
 
         // Build pointer array
-        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        wchar_t const** paths = new const wchar_t*[pathStorage.size()];
         for (size_t i = 0; i < pathStorage.size(); ++i)
         {
             paths[i] = pathStorage[i].c_str();
         }
 
         fcInfo.PathListInfo.Path = paths;
-        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+        fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
-        auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(), State::Instance().VulkanInstance,
-                                                            _vkPhysicalDevice, _vkDevice, vkGetInstanceProcAddr, _vkDeviceProcAddress, State::Instance().NVNGX_Version, &fcInfo);
+        auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext(
+            "OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+            State::Instance().VulkanInstance, _vkPhysicalDevice, _vkDevice, vkGetInstanceProcAddr, _vkDeviceProcAddress,
+            State::Instance().NVNGX_Version, &fcInfo);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
@@ -378,7 +382,7 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
     ccd.maxUpscaleSize = createDesc->maxUpscaleSize;
     _initParams[*context] = ccd;
 
-    LOG_INFO("context created: {:X}", (size_t)*context);
+    LOG_INFO("context created: {:X}", (size_t) *context);
 
     return FFX_API_RETURN_OK;
 }
@@ -388,7 +392,7 @@ ffxReturnCode_t ffxDestroyContext_Vk(ffxContext* context, const ffxAllocationCal
     if (context == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
 
-    LOG_DEBUG("context: {:X}", (size_t)*context);
+    LOG_DEBUG("context: {:X}", (size_t) *context);
 
     if (_contexts.contains(*context))
         NVSDK_NGX_VULKAN_ReleaseFeature(_contexts[*context]);
@@ -398,7 +402,7 @@ ffxReturnCode_t ffxDestroyContext_Vk(ffxContext* context, const ffxAllocationCal
     _initParams.erase(*context);
 
     auto cdResult = FfxApiProxy::VULKAN_DestroyContext()(context, memCb);
-    LOG_INFO("result: {:X}", (UINT)cdResult);
+    LOG_INFO("result: {:X}", (UINT) cdResult);
 
     return FFX_API_RETURN_OK;
 }
@@ -422,17 +426,18 @@ ffxReturnCode_t ffxQuery_Vk(ffxContext* context, ffxQueryDescHeader* desc)
 
     if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETRENDERRESOLUTIONFROMQUALITYMODE)
     {
-        auto ratioDesc = (ffxQueryDescUpscaleGetRenderResolutionFromQualityMode*)desc;
+        auto ratioDesc = (ffxQueryDescUpscaleGetRenderResolutionFromQualityMode*) desc;
         auto ratio = GetQualityOverrideRatioFfx(ratioDesc->qualityMode).value_or(qualityRatios[ratioDesc->qualityMode]);
 
         if (ratioDesc->pOutRenderHeight != nullptr)
-            *ratioDesc->pOutRenderHeight = (uint32_t)(ratioDesc->displayHeight / ratio);
+            *ratioDesc->pOutRenderHeight = (uint32_t) (ratioDesc->displayHeight / ratio);
 
         if (ratioDesc->pOutRenderWidth != nullptr)
-            *ratioDesc->pOutRenderWidth = (uint32_t)(ratioDesc->displayWidth / ratio);
+            *ratioDesc->pOutRenderWidth = (uint32_t) (ratioDesc->displayWidth / ratio);
 
         if (ratioDesc->pOutRenderWidth != nullptr && ratioDesc->pOutRenderHeight != nullptr)
-            LOG_DEBUG("Quality mode: {}, Render resolution: {}x{}", ratioDesc->qualityMode, *ratioDesc->pOutRenderWidth, *ratioDesc->pOutRenderHeight);
+            LOG_DEBUG("Quality mode: {}, Render resolution: {}x{}", ratioDesc->qualityMode, *ratioDesc->pOutRenderWidth,
+                      *ratioDesc->pOutRenderHeight);
         else
             LOG_WARN("Quality mode: {}, pOutRenderWidth or pOutRenderHeight is null!", ratioDesc->qualityMode);
 
@@ -440,8 +445,9 @@ ffxReturnCode_t ffxQuery_Vk(ffxContext* context, ffxQueryDescHeader* desc)
     }
     else if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETUPSCALERATIOFROMQUALITYMODE)
     {
-        auto scaleDesc = (ffxQueryDescUpscaleGetUpscaleRatioFromQualityMode*)desc;
-        *scaleDesc->pOutUpscaleRatio = GetQualityOverrideRatioFfx((FfxApiUpscaleQualityMode)scaleDesc->qualityMode).value_or(qualityRatios[scaleDesc->qualityMode]);
+        auto scaleDesc = (ffxQueryDescUpscaleGetUpscaleRatioFromQualityMode*) desc;
+        *scaleDesc->pOutUpscaleRatio = GetQualityOverrideRatioFfx((FfxApiUpscaleQualityMode) scaleDesc->qualityMode)
+                                           .value_or(qualityRatios[scaleDesc->qualityMode]);
 
         LOG_DEBUG("Quality mode: {}, Upscale ratio: {}", scaleDesc->qualityMode, *scaleDesc->pOutUpscaleRatio);
 
@@ -460,7 +466,7 @@ ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
     if (desc == nullptr || context == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
 
-    LOG_DEBUG("context: {:X}, type: {:X}", (size_t)*context, desc->type);
+    LOG_DEBUG("context: {:X}, type: {:X}", (size_t) *context, desc->type);
 
     if (!_initParams.contains(*context))
     {
@@ -476,7 +482,7 @@ ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
     {
         if (header->type == FFX_API_DISPATCH_DESC_TYPE_UPSCALE)
         {
-            dispatchDesc = (ffxDispatchDescUpscale*)header;
+            dispatchDesc = (ffxDispatchDescUpscale*) header;
             break;
         }
 
@@ -497,10 +503,11 @@ ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
     }
 
     // If not in contexts list create and add context
-    auto contextId = (size_t)*context;
+    auto contextId = (size_t) *context;
     if (!_contexts.contains(*context) && _initParams.contains(*context) && !CreateDLSSContext(*context, dispatchDesc))
     {
-        LOG_DEBUG("!_contexts.contains(*context) && _initParams.contains(*context) && !CreateDLSSContext(*context, dispatchDesc)");
+        LOG_DEBUG("!_contexts.contains(*context) && _initParams.contains(*context) && !CreateDLSSContext(*context, "
+                  "dispatchDesc)");
         return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
     }
 
@@ -550,12 +557,14 @@ ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
         params->Set(NVSDK_NGX_Parameter_Depth, &depthNVRes);
     }
 
-    if (dispatchDesc->exposure.resource != nullptr && CreateIVandNVRes(dispatchDesc->exposure, &expImageView, &expNVRes))
+    if (dispatchDesc->exposure.resource != nullptr &&
+        CreateIVandNVRes(dispatchDesc->exposure, &expImageView, &expNVRes))
     {
         params->Set(NVSDK_NGX_Parameter_ExposureTexture, &expNVRes);
     }
 
-    if (dispatchDesc->reactive.resource != nullptr && CreateIVandNVRes(dispatchDesc->reactive, &biasImageView, &biasNVRes))
+    if (dispatchDesc->reactive.resource != nullptr &&
+        CreateIVandNVRes(dispatchDesc->reactive, &biasImageView, &biasNVRes))
     {
         params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &biasNVRes);
     }
@@ -570,7 +579,8 @@ ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
         params->Set(NVSDK_NGX_Parameter_Color, &colorNVRes);
     }
 
-    if (dispatchDesc->motionVectors.resource == nullptr || !CreateIVandNVRes(dispatchDesc->motionVectors, &mvImageView, &mvNVRes))
+    if (dispatchDesc->motionVectors.resource == nullptr ||
+        !CreateIVandNVRes(dispatchDesc->motionVectors, &mvImageView, &mvNVRes))
     {
         LOG_ERROR("Motion Vectors error!");
         return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
@@ -580,7 +590,8 @@ ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
         params->Set(NVSDK_NGX_Parameter_MotionVectors, &mvNVRes);
     }
 
-    if (dispatchDesc->output.resource == nullptr || !CreateIVandNVRes(dispatchDesc->output, &outputImageView, &outputNVRes))
+    if (dispatchDesc->output.resource == nullptr ||
+        !CreateIVandNVRes(dispatchDesc->output, &outputImageView, &outputNVRes))
     {
         LOG_ERROR("Output error!");
         return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
@@ -599,15 +610,17 @@ ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
     params->Set("FSR.reactive", dispatchDesc->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDesc->sharpness);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width, dispatchDesc->renderSize.height);
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width,
+              dispatchDesc->renderSize.height);
 
     State::Instance().setInputApiName = "FFX-VK";
 
-    auto evalResult = NVSDK_NGX_VULKAN_EvaluateFeature((VkCommandBuffer)dispatchDesc->commandList, handle, params, nullptr);
+    auto evalResult =
+        NVSDK_NGX_VULKAN_EvaluateFeature((VkCommandBuffer) dispatchDesc->commandList, handle, params, nullptr);
 
     if (evalResult == NVSDK_NGX_Result_Success)
         return FFX_API_RETURN_OK;
 
-    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
+    LOG_ERROR("evalResult: {:X}", (UINT) evalResult);
     return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 }

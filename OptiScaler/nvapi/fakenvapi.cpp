@@ -1,8 +1,10 @@
 #include "fakenvapi.h"
 #include "proxies/FfxApi_Proxy.h"
 
-void fakenvapi::Init(PFN_NvApi_QueryInterface& queryInterface) {
-    if (_inited) return;
+void fakenvapi::Init(PFN_NvApi_QueryInterface& queryInterface)
+{
+    if (_inited)
+        return;
 
     LOG_INFO("Trying to get fakenvapi-specific functions");
 
@@ -21,23 +23,28 @@ void fakenvapi::Init(PFN_NvApi_QueryInterface& queryInterface) {
 }
 
 // Inform AntiLag 2 when present of interpolated frames starts
-void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool frame_interpolated) {
-    if (!Fake_InformFGState || !Fake_InformPresentFG) return;
+void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool frame_interpolated)
+{
+    if (!Fake_InformFGState || !Fake_InformPresentFG)
+        return;
 
     // Lets fakenvapi log and reset correctly
     Fake_InformFGState(fg_state);
 
-    if (fg_state) {
+    if (fg_state)
+    {
         // Starting with FSR 3.1.1 we can provide an AntiLag 2 context to FSR FG
         // and it will call SetFrameGenFrameType for us
         auto static ffxApiVersion = FfxApiProxy::VersionDx12();
-        constexpr feature_version requiredVersion = { 3, 1, 1 };
-        if (isVersionOrBetter(ffxApiVersion, requiredVersion) && Fake_GetAntiLagCtx != nullptr) {
+        constexpr feature_version requiredVersion = {3, 1, 1};
+        if (isVersionOrBetter(ffxApiVersion, requiredVersion) && Fake_GetAntiLagCtx != nullptr)
+        {
             void* antilag2Context = nullptr;
             Fake_GetAntiLagCtx(&antilag2Context);
             LOG_TRACE("Fake_GetAntiLagCtx: {}", antilag2Context != nullptr);
 
-            if (antilag2Context != nullptr) {
+            if (antilag2Context != nullptr)
+            {
                 antilag2_data.context = antilag2Context;
                 antilag2_data.enabled = true;
 
@@ -52,13 +59,12 @@ void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool 
             Fake_InformPresentFG(frame_interpolated, 0);
         }
     }
-    else {
+    else
+    {
         // Remove it or other FG mods won't work with AL2
         pSwapChain->SetPrivateData(IID_IFfxAntiLag2Data, 0, nullptr);
     }
 }
 
 // won't work with older fakenvapi builds
-bool fakenvapi::isUsingFakenvapi() {
-    return Fake_InformFGState || Fake_InformPresentFG || Fake_GetAntiLagCtx;
-}
+bool fakenvapi::isUsingFakenvapi() { return Fake_InformFGState || Fake_InformPresentFG || Fake_GetAntiLagCtx; }

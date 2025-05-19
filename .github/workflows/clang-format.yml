@@ -1,0 +1,25 @@
+name: Check C++ Formatting
+
+on:
+  pull_request:
+    paths:
+      - '**/*.cpp'
+      - '**/*.h'
+      - '**/*.hpp'
+      - '**/*.cxx'
+      - '**/*.cc'
+
+jobs:
+  clang-format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: |
+          find . \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' -o -name '*.cxx' -o -name '*.cc' \) \
+            -exec clang-format --dry-run --Werror {} +

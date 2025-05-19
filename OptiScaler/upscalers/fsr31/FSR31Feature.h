@@ -12,13 +12,13 @@ inline static void FfxLogCallback(uint32_t type, const wchar_t* message)
 
 class FSR31Feature : public virtual IFeature
 {
-private:
+  private:
     double _lastFrameTime;
     unsigned int _lastWidth = 0;
     unsigned int _lastHeight = 0;
-    static inline feature_version _version{ 3, 1, 2 };
+    static inline feature_version _version{3, 1, 2};
 
-protected:
+  protected:
     std::string _name = "FSR";
 
     ffxContext _context = nullptr;
@@ -29,7 +29,7 @@ protected:
     double MillisecondsNow();
     double GetDeltaTime();
 
-    static inline void parse_version(const char* version_str) 
+    static inline void parse_version(const char* version_str)
     {
         if (sscanf_s(version_str, "%u.%u.%u", &_version.major, &_version.minor, &_version.patch) != 3)
             LOG_WARN("can't parse {0}", version_str);
@@ -41,7 +41,7 @@ protected:
     float _accAddPerFrame = 0.333f;
     float _minDisOccAcc = -0.333f;
 
-public:
+  public:
     feature_version Version() final { return _version; }
     std::string Name() const { return _name.c_str(); }
 

@@ -20,7 +20,8 @@ static NVSDK_NGX_Resource_VK colorNVRes[3]{};
 static NVSDK_NGX_Resource_VK outputNVRes[3]{};
 static NVSDK_NGX_Resource_VK mvNVRes[3]{};
 
-static bool CreateDLSSContext(xess_context_handle_t handle, VkCommandBuffer commandList, const xess_vk_execute_params_t* pExecParams)
+static bool CreateDLSSContext(xess_context_handle_t handle, VkCommandBuffer commandList,
+                              const xess_vk_execute_params_t* pExecParams)
 {
     LOG_DEBUG("");
 
@@ -57,37 +58,38 @@ static bool CreateDLSSContext(xess_context_handle_t handle, VkCommandBuffer comm
 
     switch (initParams->qualitySetting)
     {
-        case XESS_QUALITY_SETTING_ULTRA_PERFORMANCE:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
-            break;
+    case XESS_QUALITY_SETTING_ULTRA_PERFORMANCE:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
+        break;
 
-        case XESS_QUALITY_SETTING_PERFORMANCE:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
-            break;
+    case XESS_QUALITY_SETTING_PERFORMANCE:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
+        break;
 
-        case XESS_QUALITY_SETTING_BALANCED:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
-            break;
+    case XESS_QUALITY_SETTING_BALANCED:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
+        break;
 
-        case XESS_QUALITY_SETTING_QUALITY:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
-            break;
+    case XESS_QUALITY_SETTING_QUALITY:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
+        break;
 
-        case XESS_QUALITY_SETTING_ULTRA_QUALITY:
-        case XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraQuality);
-            break;
+    case XESS_QUALITY_SETTING_ULTRA_QUALITY:
+    case XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraQuality);
+        break;
 
-        case XESS_QUALITY_SETTING_AA:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
-            break;
+    case XESS_QUALITY_SETTING_AA:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
+        break;
 
-        default:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
-            break;
+    default:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
+        break;
     }
 
-    if (NVSDK_NGX_VULKAN_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_VULKAN_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) !=
+        NVSDK_NGX_Result_Success)
         return false;
 
     _contexts[handle] = nvHandle;
@@ -95,7 +97,8 @@ static bool CreateDLSSContext(xess_context_handle_t handle, VkCommandBuffer comm
     return true;
 }
 
-static void CreateNVRes(const xess_vk_image_view_info* resource, NVSDK_NGX_Resource_VK* nvResource, bool readWrite = false)
+static void CreateNVRes(const xess_vk_image_view_info* resource, NVSDK_NGX_Resource_VK* nvResource,
+                        bool readWrite = false)
 {
     (*nvResource).Type = NVSDK_NGX_RESOURCE_VK_TYPE_VK_IMAGEVIEW;
     (*nvResource).Resource.ImageViewInfo.ImageView = resource->imageView;
@@ -107,7 +110,8 @@ static void CreateNVRes(const xess_vk_image_view_info* resource, NVSDK_NGX_Resou
     (*nvResource).ReadWrite = readWrite;
 }
 
-xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, xess_context_handle_t* phContext)
+xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device,
+                                     xess_context_handle_t* phContext)
 {
     LOG_DEBUG("");
 
@@ -144,23 +148,25 @@ xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physi
             pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
 
         // Build pointer array
-        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        wchar_t const** paths = new const wchar_t*[pathStorage.size()];
         for (size_t i = 0; i < pathStorage.size(); ++i)
         {
             paths[i] = pathStorage[i].c_str();
         }
 
         fcInfo.PathListInfo.Path = paths;
-        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+        fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
-        auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            _instance, _physicalDevice, _device, vkGetInstanceProcAddr, vkGetDeviceProcAddr, State::Instance().NVNGX_Version, &fcInfo);
+        auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext(
+            "OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(), _instance,
+            _physicalDevice, _device, vkGetInstanceProcAddr, vkGetDeviceProcAddr, State::Instance().NVNGX_Version,
+            &fcInfo);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return XESS_RESULT_ERROR_UNINITIALIZED;
     }
 
-    *phContext = (xess_context_handle_t)++_handleCounter;
+    *phContext = (xess_context_handle_t) ++_handleCounter;
 
     NVSDK_NGX_Parameter* params = nullptr;
 
@@ -168,14 +174,15 @@ xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physi
         return XESS_RESULT_ERROR_INVALID_ARGUMENT;
 
     _nvParams[*phContext] = params;
-    _motionScales[*phContext] = { 1.0f, 1.0f };
+    _motionScales[*phContext] = {1.0f, 1.0f};
 
-    LOG_DEBUG("Created context: {}", (size_t)*phContext);
+    LOG_DEBUG("Created context: {}", (size_t) *phContext);
 
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessVKBuildPipelines(xess_context_handle_t hContext, VkPipelineCache pipelineCache, bool blocking, uint32_t initFlags)
+xess_result_t hk_xessVKBuildPipelines(xess_context_handle_t hContext, VkPipelineCache pipelineCache, bool blocking,
+                                      uint32_t initFlags)
 {
     LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
@@ -208,7 +215,8 @@ xess_result_t hk_xessVKInit(xess_context_handle_t hContext, const xess_vk_init_p
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer commandBuffer, const xess_vk_execute_params_t* pExecParams)
+xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer commandBuffer,
+                               const xess_vk_execute_params_t* pExecParams)
 {
     LOG_DEBUG("");
 
@@ -280,7 +288,8 @@ xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer c
     {
         CreateNVRes(&pExecParams->responsivePixelMaskTexture, &biasNVRes[index]);
 
-        if (!isVersionOrBetter({ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch }, { 2, 0, 1 }))
+        if (!isVersionOrBetter({XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch},
+                               {2, 0, 1}))
             params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &biasNVRes[index]);
         else
             params->Set("FSR.reactive", &biasNVRes[index]);
@@ -327,8 +336,10 @@ xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer c
     params->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, pExecParams->inputMotionVectorBase.y);
     params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, pExecParams->outputColorBase.x);
     params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, pExecParams->outputColorBase.y);
-    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, pExecParams->inputResponsiveMaskBase.x);
-    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, pExecParams->inputResponsiveMaskBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X,
+                pExecParams->inputResponsiveMaskBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y,
+                pExecParams->inputResponsiveMaskBase.y);
 
     State::Instance().setInputApiName = "XeSS";
 
@@ -361,7 +372,8 @@ xess_result_t hk_xessVKGetInitParams(xess_context_handle_t hContext, xess_vk_ini
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessVKGetResourcesToDump(xess_context_handle_t hContext, xess_vk_resources_to_dump_t** pResourcesToDump)
+xess_result_t hk_xessVKGetResourcesToDump(xess_context_handle_t hContext,
+                                          xess_vk_resources_to_dump_t** pResourcesToDump)
 {
     LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;

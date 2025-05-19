@@ -11,17 +11,17 @@
 
 class Kernel32Proxy
 {
-public:
-    typedef BOOL(*PFN_FreeLibrary)(HMODULE lpLibrary);
-    typedef HMODULE(*PFN_LoadLibraryA)(LPCSTR lpLibFileName);
-    typedef HMODULE(*PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
-    typedef HMODULE(*PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-    typedef HMODULE(*PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-    typedef FARPROC(*PFN_GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
-    typedef HMODULE(*PFN_GetModuleHandleA)(LPCSTR lpModuleName);
-    typedef HMODULE(*PFN_GetModuleHandleW)(LPCWSTR lpModuleName);
-    typedef BOOL(*PFN_GetModuleHandleExA)(DWORD dwFlags, LPCSTR lpModuleName, HMODULE* phModule);
-    typedef BOOL(*PFN_GetModuleHandleExW)(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* phModule);
+  public:
+    typedef BOOL (*PFN_FreeLibrary)(HMODULE lpLibrary);
+    typedef HMODULE (*PFN_LoadLibraryA)(LPCSTR lpLibFileName);
+    typedef HMODULE (*PFN_LoadLibraryW)(LPCWSTR lpLibFileName);
+    typedef HMODULE (*PFN_LoadLibraryExA)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+    typedef HMODULE (*PFN_LoadLibraryExW)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
+    typedef FARPROC (*PFN_GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
+    typedef HMODULE (*PFN_GetModuleHandleA)(LPCSTR lpModuleName);
+    typedef HMODULE (*PFN_GetModuleHandleW)(LPCWSTR lpModuleName);
+    typedef BOOL (*PFN_GetModuleHandleExA)(DWORD dwFlags, LPCSTR lpModuleName, HMODULE* phModule);
+    typedef BOOL (*PFN_GetModuleHandleExW)(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* phModule);
 
     static void Init()
     {
@@ -36,16 +36,16 @@ public:
         if (_dll == nullptr)
             return;
 
-        _FreeLibrary = (PFN_FreeLibrary)KernelBaseProxy::GetProcAddress_()(_dll, "FreeLibrary");
-        _LoadLibraryA = (PFN_LoadLibraryA)KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryA");
-        _LoadLibraryW = (PFN_LoadLibraryW)KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryW");
-        _LoadLibraryExA = (PFN_LoadLibraryExA)KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryExA");
-        _LoadLibraryExW = (PFN_LoadLibraryExW)KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryExW");
-        _GetModuleHandleA = (PFN_GetModuleHandleA)KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleA");
-        _GetModuleHandleW = (PFN_GetModuleHandleW)KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleW");
-        _GetModuleHandleExA = (PFN_GetModuleHandleExA)KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExA");
-        _GetModuleHandleExW = (PFN_GetModuleHandleExW)KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExW");
-        _GetProcAddress = (PFN_GetProcAddress)KernelBaseProxy::GetProcAddress_()(_dll, "GetProcAddress");
+        _FreeLibrary = (PFN_FreeLibrary) KernelBaseProxy::GetProcAddress_()(_dll, "FreeLibrary");
+        _LoadLibraryA = (PFN_LoadLibraryA) KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryA");
+        _LoadLibraryW = (PFN_LoadLibraryW) KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryW");
+        _LoadLibraryExA = (PFN_LoadLibraryExA) KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryExA");
+        _LoadLibraryExW = (PFN_LoadLibraryExW) KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryExW");
+        _GetModuleHandleA = (PFN_GetModuleHandleA) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleA");
+        _GetModuleHandleW = (PFN_GetModuleHandleW) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleW");
+        _GetModuleHandleExA = (PFN_GetModuleHandleExA) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExA");
+        _GetModuleHandleExW = (PFN_GetModuleHandleExW) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExW");
+        _GetProcAddress = (PFN_GetProcAddress) KernelBaseProxy::GetProcAddress_()(_dll, "GetProcAddress");
     }
 
     static HMODULE Module() { return _dll; }
@@ -61,16 +61,46 @@ public:
     static PFN_GetModuleHandleExA GetModuleHandleExA_() { return _GetModuleHandleExA; }
     static PFN_GetModuleHandleExW GetModuleHandleExW_() { return _GetModuleHandleExW; }
 
-    static PFN_FreeLibrary FreeLibrary_Hooked() { return (PFN_FreeLibrary)KernelBaseProxy::GetProcAddress_()(_dll, "FreeLibrary"); }
-    static PFN_LoadLibraryA LoadLibraryA_Hooked() { return (PFN_LoadLibraryA)KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryA"); }
-    static PFN_LoadLibraryW LoadLibraryW_Hooked() { return (PFN_LoadLibraryW)KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryW"); }
-    static PFN_LoadLibraryExA LoadLibraryExA_Hooked() { return (PFN_LoadLibraryExA)KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryExA"); }
-    static PFN_LoadLibraryExW LoadLibraryExW_Hooked() { return (PFN_LoadLibraryExW)KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryExW"); }
-    static PFN_GetProcAddress GetProcAddress_Hooked() { return (PFN_GetProcAddress)KernelBaseProxy::GetProcAddress_()(_dll, "GetProcAddress"); }
-    static PFN_GetModuleHandleA GetModuleHandleA_Hooked() { return (PFN_GetModuleHandleA)KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleA"); }
-    static PFN_GetModuleHandleW GetModuleHandleW_Hooked() { return (PFN_GetModuleHandleW)KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleW"); }
-    static PFN_GetModuleHandleExA GetModuleHandleExA_Hooked() { return (PFN_GetModuleHandleExA)KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExA"); }
-    static PFN_GetModuleHandleExW GetModuleHandleExW_Hooked() { return (PFN_GetModuleHandleExW)KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExW"); }
+    static PFN_FreeLibrary FreeLibrary_Hooked()
+    {
+        return (PFN_FreeLibrary) KernelBaseProxy::GetProcAddress_()(_dll, "FreeLibrary");
+    }
+    static PFN_LoadLibraryA LoadLibraryA_Hooked()
+    {
+        return (PFN_LoadLibraryA) KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryA");
+    }
+    static PFN_LoadLibraryW LoadLibraryW_Hooked()
+    {
+        return (PFN_LoadLibraryW) KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryW");
+    }
+    static PFN_LoadLibraryExA LoadLibraryExA_Hooked()
+    {
+        return (PFN_LoadLibraryExA) KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryExA");
+    }
+    static PFN_LoadLibraryExW LoadLibraryExW_Hooked()
+    {
+        return (PFN_LoadLibraryExW) KernelBaseProxy::GetProcAddress_()(_dll, "LoadLibraryExW");
+    }
+    static PFN_GetProcAddress GetProcAddress_Hooked()
+    {
+        return (PFN_GetProcAddress) KernelBaseProxy::GetProcAddress_()(_dll, "GetProcAddress");
+    }
+    static PFN_GetModuleHandleA GetModuleHandleA_Hooked()
+    {
+        return (PFN_GetModuleHandleA) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleA");
+    }
+    static PFN_GetModuleHandleW GetModuleHandleW_Hooked()
+    {
+        return (PFN_GetModuleHandleW) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleW");
+    }
+    static PFN_GetModuleHandleExA GetModuleHandleExA_Hooked()
+    {
+        return (PFN_GetModuleHandleExA) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExA");
+    }
+    static PFN_GetModuleHandleExW GetModuleHandleExW_Hooked()
+    {
+        return (PFN_GetModuleHandleExW) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExW");
+    }
 
     static PFN_FreeLibrary Hook_FreeLibrary(PVOID method)
     {
@@ -78,7 +108,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _FreeLibrary = addr;
@@ -91,7 +121,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _LoadLibraryA = addr;
@@ -104,7 +134,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _LoadLibraryW = addr;
@@ -117,7 +147,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _GetModuleHandleA = addr;
@@ -130,7 +160,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _GetModuleHandleW = addr;
@@ -143,26 +173,25 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _GetModuleHandleExA = addr;
         return addr;
     }
 
-    static PFN_GetModuleHandleExW Hook_GetModuleHandleExW(PVOID method) 
+    static PFN_GetModuleHandleExW Hook_GetModuleHandleExW(PVOID method)
     {
         auto addr = GetModuleHandleExW_Hooked();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _GetModuleHandleExW = addr;
         return addr;
     }
-
 
     static PFN_LoadLibraryExA Hook_LoadLibraryExA(PVOID method)
     {
@@ -170,7 +199,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _LoadLibraryExA = addr;
@@ -183,7 +212,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _LoadLibraryExW = addr;
@@ -192,18 +221,18 @@ public:
 
     static PFN_GetProcAddress Hook_GetProcAddress(PVOID method)
     {
-        auto addr = GetProcAddress_Hooked(); 
+        auto addr = GetProcAddress_Hooked();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         _GetProcAddress = addr;
         return addr;
     }
 
-private:
+  private:
     inline static HMODULE _dll = nullptr;
 
     inline static PFN_FreeLibrary _FreeLibrary = nullptr;

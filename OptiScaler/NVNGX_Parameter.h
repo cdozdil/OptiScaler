@@ -7,18 +7,16 @@
 
 // Use real NVNGX params encapsulated in custom one
 // Which is not working correctly
-//#define ENABLE_ENCAPSULATED_PARAMS
+// #define ENABLE_ENCAPSULATED_PARAMS
 
 // Log NVParam Set/Get operations
-//#define LOG_PARAMS_VALUES
+// #define LOG_PARAMS_VALUES
 
 #ifdef LOG_PARAMS_VALUES
-#define LOG_PARAM(msg, ...) \
-    spdlog::trace(__FUNCTION__ " " msg, ##__VA_ARGS__) 
+#define LOG_PARAM(msg, ...) spdlog::trace(__FUNCTION__ " " msg, ##__VA_ARGS__)
 #else
-#define LOG_PARAM(msg, ...) 
+#define LOG_PARAM(msg, ...)
 #endif
-
 
 inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value input)
 {
@@ -31,7 +29,7 @@ inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQ
     {
         output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
 
-        return  output;
+        return output;
     }
 
     if (!Config::Instance()->QualityRatioOverrideEnabled.value_or_default())
@@ -39,45 +37,45 @@ inline static std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQ
 
     switch (input)
     {
-        case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-            if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
+    case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+        if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-            if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Performance.value_or_default();
+    case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+        if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Performance.value_or_default();
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_Balanced:
-            if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Balanced.value_or_default();
+    case NVSDK_NGX_PerfQuality_Value_Balanced:
+        if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Balanced.value_or_default();
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-            if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Quality.value_or_default();
+    case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+        if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Quality.value_or_default();
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-            if (Config::Instance()->QualityRatio_UltraQuality.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraQuality.value_or_default();
+    case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+        if (Config::Instance()->QualityRatio_UltraQuality.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_UltraQuality.value_or_default();
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_DLAA:
-            if (Config::Instance()->QualityRatio_DLAA.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_DLAA.value_or_default();
+    case NVSDK_NGX_PerfQuality_Value_DLAA:
+        if (Config::Instance()->QualityRatio_DLAA.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_DLAA.value_or_default();
 
-            break;
+        break;
 
-        default:
-            LOG_WARN("Unknown quality: {0}", (int)input);
-            break;
+    default:
+        LOG_WARN("Unknown quality: {0}", (int) input);
+        break;
     }
 
     return output;
@@ -97,7 +95,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
         InParams->Get(NVSDK_NGX_Parameter_PerfQualityValue, &PerfQualityValue) != NVSDK_NGX_Result_Success)
         return NVSDK_NGX_Result_Fail;
 
-    auto enumPQValue = (NVSDK_NGX_PerfQuality_Value)PerfQualityValue;
+    auto enumPQValue = (NVSDK_NGX_PerfQuality_Value) PerfQualityValue;
 
     LOG_DEBUG("Display Resolution: {0}x{1}", Width, Height);
 
@@ -105,8 +103,8 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
 
     if (QualityRatio.has_value())
     {
-        OutHeight = (unsigned int)((float)Height / QualityRatio.value());
-        OutWidth = (unsigned int)((float)Width / QualityRatio.value());
+        OutHeight = (unsigned int) ((float) Height / QualityRatio.value());
+        OutWidth = (unsigned int) ((float) Width / QualityRatio.value());
         scalingRatio = 1.0f / QualityRatio.value();
     }
     else
@@ -115,48 +113,47 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
 
         switch (enumPQValue)
         {
-            case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-                OutHeight = (unsigned int)((float)Height / 3.0);
-                OutWidth = (unsigned int)((float)Width / 3.0);
-                scalingRatio = 0.33333333f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+            OutHeight = (unsigned int) ((float) Height / 3.0);
+            OutWidth = (unsigned int) ((float) Width / 3.0);
+            scalingRatio = 0.33333333f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-                OutHeight = (unsigned int)((float)Height / 2.0);
-                OutWidth = (unsigned int)((float)Width / 2.0);
-                scalingRatio = 0.5f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+            OutHeight = (unsigned int) ((float) Height / 2.0);
+            OutWidth = (unsigned int) ((float) Width / 2.0);
+            scalingRatio = 0.5f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_Balanced:
-                OutHeight = (unsigned int)((float)Height / 1.7);
-                OutWidth = (unsigned int)((float)Width / 1.7);
-                scalingRatio = 1.0f / 1.7f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_Balanced:
+            OutHeight = (unsigned int) ((float) Height / 1.7);
+            OutWidth = (unsigned int) ((float) Width / 1.7);
+            scalingRatio = 1.0f / 1.7f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-                OutHeight = (unsigned int)((float)Height / 1.5);
-                OutWidth = (unsigned int)((float)Width / 1.5);
-                scalingRatio = 1.0f / 1.5f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+            OutHeight = (unsigned int) ((float) Height / 1.5);
+            OutWidth = (unsigned int) ((float) Width / 1.5);
+            scalingRatio = 1.0f / 1.5f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-                OutHeight = (unsigned int)((float)Height / 1.3);
-                OutWidth = (unsigned int)((float)Width / 1.3);
-                scalingRatio = 1.0f / 1.3f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+            OutHeight = (unsigned int) ((float) Height / 1.3);
+            OutWidth = (unsigned int) ((float) Width / 1.3);
+            scalingRatio = 1.0f / 1.3f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_DLAA:
-                OutHeight = Height;
-                OutWidth = Width;
-                scalingRatio = 1.0f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_DLAA:
+            OutHeight = Height;
+            OutWidth = Width;
+            scalingRatio = 1.0f;
+            break;
 
-            default:
-                OutHeight = (unsigned int)((float)Height / 1.7);
-                OutWidth = (unsigned int)((float)Width / 1.7);
-                scalingRatio = 1.0f / 1.7f;
-                break;
-
+        default:
+            OutHeight = (unsigned int) ((float) Height / 1.7);
+            OutWidth = (unsigned int) ((float) Width / 1.7);
+            scalingRatio = 1.0f / 1.7f;
+            break;
         }
     }
 
@@ -164,7 +161,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
     {
         OutHeight -= OutHeight % Config::Instance()->RoundInternalResolution.value();
         OutWidth -= OutWidth % Config::Instance()->RoundInternalResolution.value();
-        scalingRatio = (float)OutWidth / (float)Width;
+        scalingRatio = (float) OutWidth / (float) Width;
     }
 
     InParams->Set(NVSDK_NGX_Parameter_Scale, scalingRatio);
@@ -188,8 +185,8 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
         else
         {
             // DLSS normally only supports DRS in range of 0.5 and 1.0
-            auto drsMinWidth = (unsigned int)((float)Width * 0.5f);
-            auto drsMinHeight = (unsigned int)((float)Height * 0.5f);
+            auto drsMinWidth = (unsigned int) ((float) Width * 0.5f);
+            auto drsMinHeight = (unsigned int) ((float) Height * 0.5f);
 
             if (OutWidth < drsMinWidth || OutHeight < drsMinHeight)
             {
@@ -234,7 +231,8 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetOptimalSettingsCallb
     InParams->Set(NVSDK_NGX_EParameter_SizeInBytes, Width * Height * 31);
     InParams->Set(NVSDK_NGX_EParameter_DLSSMode, NVSDK_NGX_DLSS_Mode_DLSS_DLISP);
 
-    LOG_DEBUG("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Display Resolution: {0}x{1} Render Resolution: {2}x{3}", Width, Height, OutWidth, OutHeight);
+    LOG_DEBUG("NVSDK_NGX_DLSS_GetOptimalSettingsCallback: Display Resolution: {0}x{1} Render Resolution: {2}x{3}",
+              Width, Height, OutWidth, OutHeight);
     return NVSDK_NGX_Result_Success;
 }
 
@@ -252,7 +250,7 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSSD_GetOptimalSettingsCall
         InParams->Get(NVSDK_NGX_Parameter_PerfQualityValue, &PerfQualityValue) != NVSDK_NGX_Result_Success)
         return NVSDK_NGX_Result_Fail;
 
-    auto enumPQValue = (NVSDK_NGX_PerfQuality_Value)PerfQualityValue;
+    auto enumPQValue = (NVSDK_NGX_PerfQuality_Value) PerfQualityValue;
 
     LOG_DEBUG("Display Resolution: {0}x{1}", Width, Height);
 
@@ -260,8 +258,8 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSSD_GetOptimalSettingsCall
 
     if (QualityRatio.has_value())
     {
-        OutHeight = (unsigned int)((float)Height / QualityRatio.value());
-        OutWidth = (unsigned int)((float)Width / QualityRatio.value());
+        OutHeight = (unsigned int) ((float) Height / QualityRatio.value());
+        OutWidth = (unsigned int) ((float) Width / QualityRatio.value());
         scalingRatio = 1.0f / QualityRatio.value();
     }
     else
@@ -270,48 +268,47 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSSD_GetOptimalSettingsCall
 
         switch (enumPQValue)
         {
-            case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-                OutHeight = (unsigned int)((float)Height / 3.0);
-                OutWidth = (unsigned int)((float)Width / 3.0);
-                scalingRatio = 0.33333333f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+            OutHeight = (unsigned int) ((float) Height / 3.0);
+            OutWidth = (unsigned int) ((float) Width / 3.0);
+            scalingRatio = 0.33333333f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-                OutHeight = (unsigned int)((float)Height / 2.0);
-                OutWidth = (unsigned int)((float)Width / 2.0);
-                scalingRatio = 0.5f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+            OutHeight = (unsigned int) ((float) Height / 2.0);
+            OutWidth = (unsigned int) ((float) Width / 2.0);
+            scalingRatio = 0.5f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_Balanced:
-                OutHeight = (unsigned int)((float)Height / 1.7);
-                OutWidth = (unsigned int)((float)Width / 1.7);
-                scalingRatio = 1.0f / 1.7f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_Balanced:
+            OutHeight = (unsigned int) ((float) Height / 1.7);
+            OutWidth = (unsigned int) ((float) Width / 1.7);
+            scalingRatio = 1.0f / 1.7f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-                OutHeight = (unsigned int)((float)Height / 1.5);
-                OutWidth = (unsigned int)((float)Width / 1.5);
-                scalingRatio = 1.0f / 1.5f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+            OutHeight = (unsigned int) ((float) Height / 1.5);
+            OutWidth = (unsigned int) ((float) Width / 1.5);
+            scalingRatio = 1.0f / 1.5f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-                OutHeight = (unsigned int)((float)Height / 1.3);
-                OutWidth = (unsigned int)((float)Width / 1.3);
-                scalingRatio = 1.0f / 1.3f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+            OutHeight = (unsigned int) ((float) Height / 1.3);
+            OutWidth = (unsigned int) ((float) Width / 1.3);
+            scalingRatio = 1.0f / 1.3f;
+            break;
 
-            case NVSDK_NGX_PerfQuality_Value_DLAA:
-                OutHeight = Height;
-                OutWidth = Width;
-                scalingRatio = 1.0f;
-                break;
+        case NVSDK_NGX_PerfQuality_Value_DLAA:
+            OutHeight = Height;
+            OutWidth = Width;
+            scalingRatio = 1.0f;
+            break;
 
-            default:
-                OutHeight = (unsigned int)((float)Height / 1.7);
-                OutWidth = (unsigned int)((float)Width / 1.7);
-                scalingRatio = 1.0f / 1.7f;
-                break;
-
+        default:
+            OutHeight = (unsigned int) ((float) Height / 1.7);
+            OutWidth = (unsigned int) ((float) Width / 1.7);
+            scalingRatio = 1.0f / 1.7f;
+            break;
         }
     }
 
@@ -340,8 +337,8 @@ inline static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSSD_GetOptimalSettingsCall
     else
     {
         // DLSS normally only supports DRS in range of 0.5 and 1.0
-        auto drsMinWidth = (unsigned int)((float)Width * 0.5f);
-        auto drsMinHeight = (unsigned int)((float)Height * 0.5f);
+        auto drsMinWidth = (unsigned int) ((float) Width * 0.5f);
+        auto drsMinHeight = (unsigned int) ((float) Height * 0.5f);
 
         if (OutWidth < drsMinWidth || OutHeight < drsMinHeight)
         {
@@ -439,19 +436,31 @@ inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
     InParams->Set(NVSDK_NGX_EParameter_MV_Offset_X, 0.0f);
     InParams->Set(NVSDK_NGX_EParameter_MV_Offset_Y, 0.0f);
 
-    InParams->Set("RayReconstruction.Hint.Render.Preset.DLAA", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set("RayReconstruction.Hint.Render.Preset.UltraQuality", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set("RayReconstruction.Hint.Render.Preset.Quality", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set("RayReconstruction.Hint.Render.Preset.Balanced", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set("RayReconstruction.Hint.Render.Preset.Performance", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance", (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set("RayReconstruction.Hint.Render.Preset.DLAA",
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set("RayReconstruction.Hint.Render.Preset.UltraQuality",
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set("RayReconstruction.Hint.Render.Preset.Quality",
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set("RayReconstruction.Hint.Render.Preset.Balanced",
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set("RayReconstruction.Hint.Render.Preset.Performance",
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set("RayReconstruction.Hint.Render.Preset.UltraPerformance",
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 
-    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
-    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, (unsigned int)NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA,
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality,
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality,
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced,
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance,
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
+    InParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance,
+                  (unsigned int) NVSDK_NGX_DLSS_Hint_Render_Preset_Default);
 
     InParams->Set(NVSDK_NGX_Parameter_CreationNodeMask, 1);
     InParams->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, 1);
@@ -459,7 +468,8 @@ inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
     InParams->Set(NVSDK_NGX_Parameter_RTXValue, 0);
 
     // not ideal as it doesn't take different APIs into account
-    if (DLSSGMod::isLoaded()) {
+    if (DLSSGMod::isLoaded())
+    {
         InParams->Set("FrameGeneration.Available", 1);
         InParams->Set("FrameInterpolation.Available", 1);
         InParams->Set(NVSDK_NGX_Parameter_FrameInterpolation_NeedsUpdatedDriver, 0);
@@ -470,78 +480,115 @@ inline static void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
 
 struct Parameter
 {
-    template<typename T>
-    void operator=(T value)
+    template <typename T> void operator=(T value)
     {
         key = typeid(T).hash_code();
-        if constexpr (std::is_same<T, float>::value) values.f = value;
-        else if constexpr (std::is_same<T, int>::value) values.i = value;
-        else if constexpr (std::is_same<T, unsigned int>::value) values.ui = value;
-        else if constexpr (std::is_same<T, double>::value) values.d = value;
-        else if constexpr (std::is_same<T, unsigned long long>::value) values.ull = value;
-        else if constexpr (std::is_same<T, void*>::value) values.vp = value;
-        else if constexpr (std::is_same<T, ID3D11Resource*>::value) values.d11r = value;
-        else if constexpr (std::is_same<T, ID3D12Resource*>::value) values.d12r = value;
+        if constexpr (std::is_same<T, float>::value)
+            values.f = value;
+        else if constexpr (std::is_same<T, int>::value)
+            values.i = value;
+        else if constexpr (std::is_same<T, unsigned int>::value)
+            values.ui = value;
+        else if constexpr (std::is_same<T, double>::value)
+            values.d = value;
+        else if constexpr (std::is_same<T, unsigned long long>::value)
+            values.ull = value;
+        else if constexpr (std::is_same<T, void*>::value)
+            values.vp = value;
+        else if constexpr (std::is_same<T, ID3D11Resource*>::value)
+            values.d11r = value;
+        else if constexpr (std::is_same<T, ID3D12Resource*>::value)
+            values.d12r = value;
     }
 
-    template<typename T>
-    operator T() const
+    template <typename T> operator T() const
     {
         T v = {};
         if constexpr (std::is_same<T, float>::value)
         {
-            if (key == typeid(unsigned long long).hash_code()) v = (T)values.ull;
-            else if (key == typeid(float).hash_code()) v = (T)values.f;
-            else if (key == typeid(double).hash_code()) v = (T)values.d;
-            else if (key == typeid(unsigned int).hash_code()) v = (T)values.ui;
-            else if (key == typeid(int).hash_code()) v = (T)values.i;
+            if (key == typeid(unsigned long long).hash_code())
+                v = (T) values.ull;
+            else if (key == typeid(float).hash_code())
+                v = (T) values.f;
+            else if (key == typeid(double).hash_code())
+                v = (T) values.d;
+            else if (key == typeid(unsigned int).hash_code())
+                v = (T) values.ui;
+            else if (key == typeid(int).hash_code())
+                v = (T) values.i;
         }
         else if constexpr (std::is_same<T, int>::value)
         {
-            if (key == typeid(unsigned long long).hash_code()) v = (T)values.ull;
-            else if (key == typeid(float).hash_code()) v = (T)values.f;
-            else if (key == typeid(double).hash_code()) v = (T)values.d;
-            else if (key == typeid(int).hash_code()) v = (T)values.i;
-            else if (key == typeid(unsigned int).hash_code()) v = (T)values.ui;
+            if (key == typeid(unsigned long long).hash_code())
+                v = (T) values.ull;
+            else if (key == typeid(float).hash_code())
+                v = (T) values.f;
+            else if (key == typeid(double).hash_code())
+                v = (T) values.d;
+            else if (key == typeid(int).hash_code())
+                v = (T) values.i;
+            else if (key == typeid(unsigned int).hash_code())
+                v = (T) values.ui;
         }
         else if constexpr (std::is_same<T, unsigned int>::value)
         {
-            if (key == typeid(unsigned long long).hash_code()) v = (T)values.ull;
-            else if (key == typeid(float).hash_code()) v = (T)values.f;
-            else if (key == typeid(double).hash_code()) v = (T)values.d;
-            else if (key == typeid(int).hash_code()) v = (T)values.i;
-            else if (key == typeid(unsigned int).hash_code()) v = (T)values.ui;
+            if (key == typeid(unsigned long long).hash_code())
+                v = (T) values.ull;
+            else if (key == typeid(float).hash_code())
+                v = (T) values.f;
+            else if (key == typeid(double).hash_code())
+                v = (T) values.d;
+            else if (key == typeid(int).hash_code())
+                v = (T) values.i;
+            else if (key == typeid(unsigned int).hash_code())
+                v = (T) values.ui;
         }
         else if constexpr (std::is_same<T, double>::value)
         {
-            if (key == typeid(unsigned long long).hash_code()) v = (T)values.ull;
-            else if (key == typeid(float).hash_code()) v = (T)values.f;
-            else if (key == typeid(double).hash_code()) v = (T)values.d;
-            else if (key == typeid(int).hash_code()) v = (T)values.i;
-            else if (key == typeid(unsigned int).hash_code()) v = (T)values.ui;
+            if (key == typeid(unsigned long long).hash_code())
+                v = (T) values.ull;
+            else if (key == typeid(float).hash_code())
+                v = (T) values.f;
+            else if (key == typeid(double).hash_code())
+                v = (T) values.d;
+            else if (key == typeid(int).hash_code())
+                v = (T) values.i;
+            else if (key == typeid(unsigned int).hash_code())
+                v = (T) values.ui;
         }
         else if constexpr (std::is_same<T, unsigned long long>::value)
         {
-            if (key == typeid(unsigned long long).hash_code()) v = (T)values.ull;
-            else if (key == typeid(float).hash_code()) v = (T)values.f;
-            else if (key == typeid(double).hash_code()) v = (T)values.d;
-            else if (key == typeid(int).hash_code()) v = (T)values.i;
-            else if (key == typeid(unsigned int).hash_code()) v = (T)values.ui;
-            else if (key == typeid(void*).hash_code()) v = (T)values.vp;
+            if (key == typeid(unsigned long long).hash_code())
+                v = (T) values.ull;
+            else if (key == typeid(float).hash_code())
+                v = (T) values.f;
+            else if (key == typeid(double).hash_code())
+                v = (T) values.d;
+            else if (key == typeid(int).hash_code())
+                v = (T) values.i;
+            else if (key == typeid(unsigned int).hash_code())
+                v = (T) values.ui;
+            else if (key == typeid(void*).hash_code())
+                v = (T) values.vp;
         }
         else if constexpr (std::is_same<T, void*>::value)
         {
-            if (key == typeid(void*).hash_code()) v = values.vp;
+            if (key == typeid(void*).hash_code())
+                v = values.vp;
         }
         else if constexpr (std::is_same<T, ID3D11Resource*>::value)
         {
-            if (key == typeid(ID3D11Resource*).hash_code()) v = values.d11r;
-            else if (key == typeid(void*).hash_code()) v = (T)values.vp;
+            if (key == typeid(ID3D11Resource*).hash_code())
+                v = values.d11r;
+            else if (key == typeid(void*).hash_code())
+                v = (T) values.vp;
         }
         else if constexpr (std::is_same<T, ID3D12Resource*>::value)
         {
-            if (key == typeid(ID3D12Resource*).hash_code()) v = values.d12r;
-            else if (key == typeid(void*).hash_code()) v = (T)values.vp;
+            if (key == typeid(ID3D12Resource*).hash_code())
+                v = values.d12r;
+            else if (key == typeid(void*).hash_code())
+                v = (T) values.vp;
         }
 
         return v;
@@ -570,14 +617,46 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
     NVSDK_NGX_Parameter* OriginalParam = nullptr;
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
-    void Set(const char* key, unsigned long long value) override { LOG_PARAM("ulong('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, float value) override { LOG_PARAM("float('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, double value) override { LOG_PARAM("double('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, unsigned int value) override { LOG_PARAM("uint('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, int value) override { LOG_PARAM("int('{0}', {1})", key, value); setT(key, value); }
-    void Set(const char* key, void* value) override { LOG_PARAM("void('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
-    void Set(const char* key, ID3D11Resource* value) override { LOG_PARAM("d3d11('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
-    void Set(const char* key, ID3D12Resource* value) override { LOG_PARAM("d3d12('{0}', '{1}null')", key, value == nullptr ? "" : "not "); setT(key, value); }
+    void Set(const char* key, unsigned long long value) override
+    {
+        LOG_PARAM("ulong('{0}', {1})", key, value);
+        setT(key, value);
+    }
+    void Set(const char* key, float value) override
+    {
+        LOG_PARAM("float('{0}', {1})", key, value);
+        setT(key, value);
+    }
+    void Set(const char* key, double value) override
+    {
+        LOG_PARAM("double('{0}', {1})", key, value);
+        setT(key, value);
+    }
+    void Set(const char* key, unsigned int value) override
+    {
+        LOG_PARAM("uint('{0}', {1})", key, value);
+        setT(key, value);
+    }
+    void Set(const char* key, int value) override
+    {
+        LOG_PARAM("int('{0}', {1})", key, value);
+        setT(key, value);
+    }
+    void Set(const char* key, void* value) override
+    {
+        LOG_PARAM("void('{0}', '{1}null')", key, value == nullptr ? "" : "not ");
+        setT(key, value);
+    }
+    void Set(const char* key, ID3D11Resource* value) override
+    {
+        LOG_PARAM("d3d11('{0}', '{1}null')", key, value == nullptr ? "" : "not ");
+        setT(key, value);
+    }
+    void Set(const char* key, ID3D12Resource* value) override
+    {
+        LOG_PARAM("d3d12('{0}', '{1}null')", key, value == nullptr ? "" : "not ");
+        setT(key, value);
+    }
 
     NVSDK_NGX_Result Get(const char* key, unsigned long long* value) const override
     {
@@ -593,18 +672,18 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         {
             LOG_PARAM("calling original ulong('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_PARAM("calling original ulong('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original ulong('{0}') result: {1:X}", key, (UINT) result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
                 LOG_PARAM("from original ulong('{0}', {1})", key, *value);
                 return result;
             }
-    }
+        }
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
         return NVSDK_NGX_Result_Fail;
-}
+    }
 
     NVSDK_NGX_Result Get(const char* key, float* value) const override
     {
@@ -620,14 +699,14 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         {
             LOG_PARAM("calling original float('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_PARAM("calling original float('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original float('{0}') result: {1:X}", key, (UINT) result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
                 LOG_PARAM("from original float('{0}', {1})", key, *value);
                 return result;
             }
-    }
+        }
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
         return NVSDK_NGX_Result_Fail;
@@ -647,14 +726,14 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         {
             LOG_PARAM("calling original double('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_PARAM("calling original double('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original double('{0}') result: {1:X}", key, (UINT) result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
                 LOG_PARAM("from original double('{0}', {1})", key, *value);
                 return result;
             }
-    }
+        }
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
         return NVSDK_NGX_Result_Fail;
@@ -674,14 +753,14 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         {
             LOG_PARAM("calling original uint('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_PARAM("calling original uint('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original uint('{0}') result: {1:X}", key, (UINT) result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
                 LOG_PARAM("from original uint('{0}', {1})", key, *value);
                 return result;
             }
-    }
+        }
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
         return NVSDK_NGX_Result_Fail;
@@ -689,7 +768,8 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 
     NVSDK_NGX_Result Get(const char* key, int* value) const override
     {
-        auto result = getT(key, value); if (result == NVSDK_NGX_Result_Success)
+        auto result = getT(key, value);
+        if (result == NVSDK_NGX_Result_Success)
         {
             LOG_PARAM("int('{0}', {1})", key, *value);
             return NVSDK_NGX_Result_Success;
@@ -700,14 +780,14 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         {
             LOG_PARAM("calling original int('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_PARAM("calling original int('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original int('{0}') result: {1:X}", key, (UINT) result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
                 LOG_PARAM("from original int('{0}', {1})", key, *value);
                 return result;
             }
-    }
+        }
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
         return NVSDK_NGX_Result_Fail;
@@ -727,14 +807,14 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         {
             LOG_PARAM("calling original void('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_PARAM("calling original void('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original void('{0}') result: {1:X}", key, (UINT) result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
                 LOG_PARAM("from original void('{0}')", key);
                 return result;
             }
-    }
+        }
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
         return NVSDK_NGX_Result_Fail;
@@ -754,14 +834,14 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         {
             LOG_PARAM("calling original d3d11('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_PARAM("calling original d3d11('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original d3d11('{0}') result: {1:X}", key, (UINT) result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
                 LOG_PARAM("from original d3d11('{0}')", key);
                 return result;
             }
-    }
+        }
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
         return NVSDK_NGX_Result_Fail;
@@ -781,14 +861,14 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         {
             LOG_PARAM("calling original d3d12('{0}')", key);
             result = OriginalParam->Get(key, value);
-            LOG_PARAM("calling original d3d12('{0}') result: {1:X}", key, (UINT)result);
+            LOG_PARAM("calling original d3d12('{0}') result: {1:X}", key, (UINT) result);
 
             if (result == NVSDK_NGX_Result_Success)
             {
                 LOG_PARAM("from original d3d12('{0}')", key);
                 return result;
             }
-    }
+        }
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
         return NVSDK_NGX_Result_Fail;
@@ -816,20 +896,17 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         return keys;
     }
 
-
-private:
+  private:
     ankerl::unordered_dense::map<std::string, Parameter> m_values;
     mutable std::mutex m_mutex;
 
-    template<typename T>
-    void setT(const char* key, T& value)
+    template <typename T> void setT(const char* key, T& value)
     {
         const std::lock_guard<std::mutex> lock(m_mutex);
         m_values[key] = value;
     }
 
-    template<typename T>
-    NVSDK_NGX_Result getT(const char* key, T* value) const
+    template <typename T> NVSDK_NGX_Result getT(const char* key, T* value) const
     {
         const std::lock_guard<std::mutex> lock(m_mutex);
         auto k = m_values.find(key);

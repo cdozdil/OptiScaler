@@ -6,26 +6,26 @@
 
 class DLSSDFeature : public virtual IFeature
 {
-private:
-	feature_version _version = { 0, 0, 0 };
-		
-protected:
-	NVSDK_NGX_Handle _dlssdHandle = {};
-	NVSDK_NGX_Handle* _p_dlssdHandle = nullptr;
-	inline static bool _dlssdInited = false;
+  private:
+    feature_version _version = {0, 0, 0};
 
-	void ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters);
-	void ProcessInitParams(NVSDK_NGX_Parameter* InParameters);
+  protected:
+    NVSDK_NGX_Handle _dlssdHandle = {};
+    NVSDK_NGX_Handle* _p_dlssdHandle = nullptr;
+    inline static bool _dlssdInited = false;
 
-	static void Shutdown();
-	float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
+    void ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters);
+    void ProcessInitParams(NVSDK_NGX_Parameter* InParameters);
 
-public:
-	feature_version Version() final { return feature_version{ _version.major, _version.minor, _version.patch }; }
-	std::string Name() const { return "DLSSD"; }
-	void ReadVersion();
+    static void Shutdown();
+    float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 
-	DLSSDFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters);
+  public:
+    feature_version Version() final { return feature_version{_version.major, _version.minor, _version.patch}; }
+    std::string Name() const { return "DLSSD"; }
+    void ReadVersion();
 
-	~DLSSDFeature();
+    DLSSDFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters);
+
+    ~DLSSDFeature();
 };

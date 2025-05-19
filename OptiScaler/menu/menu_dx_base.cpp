@@ -37,15 +37,9 @@ bool MenuDxBase::IsHandleDifferent()
     return true;
 }
 
-void MenuDxBase::Dx11Ready()
-{
-    MenuCommon::Dx11Inited();
-}
+void MenuDxBase::Dx11Ready() { MenuCommon::Dx11Inited(); }
 
-void MenuDxBase::Dx12Ready()
-{
-    MenuCommon::Dx12Inited();
-}
+void MenuDxBase::Dx12Ready() { MenuCommon::Dx12Inited(); }
 
 MenuDxBase::MenuDxBase(HWND handle) : _handle(handle)
 {
@@ -65,7 +59,4 @@ MenuDxBase::~MenuDxBase()
     MenuCommon::Shutdown();
 }
 
-bool MenuDxBase::IsVisible()
-{
-    return MenuCommon::IsVisible();
-}
+bool MenuDxBase::IsVisible() { return MenuCommon::IsVisible(); }

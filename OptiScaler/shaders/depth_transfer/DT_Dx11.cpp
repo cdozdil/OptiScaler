@@ -52,7 +52,7 @@ bool DepthTransfer_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Text
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = 1;
 
-        auto  hr = _device->CreateShaderResourceView(InResource, &srvDesc, &_srvInput);
+        auto hr = _device->CreateShaderResourceView(InResource, &srvDesc, &_srvInput);
         if (FAILED(hr))
         {
             LOG_ERROR("[{0}] _srvInput CreateShaderResourceView error {1:x}", _name, hr);
@@ -87,7 +87,8 @@ bool DepthTransfer_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Text
     return true;
 }
 
-bool DepthTransfer_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource)
+bool DepthTransfer_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource,
+                                  ID3D11Texture2D* OutResource)
 {
     if (!_init || InDevice == nullptr || InContext == nullptr || InResource == nullptr || OutResource == nullptr)
         return false;
@@ -134,10 +135,12 @@ DepthTransfer_Dx11::DepthTransfer_Dx11(std::string InName, ID3D11Device* InDevic
 
     LOG_DEBUG("{0} start!", _name);
 
-    if (Config::Instance()->UsePrecompiledShaders.value_or_default() || Config::Instance()->OutputScalingUseFsr.value_or_default())
+    if (Config::Instance()->UsePrecompiledShaders.value_or_default() ||
+        Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         HRESULT hr;
-        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(dt_cso), sizeof(dt_cso), nullptr, &_computeShader);
+        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(dt_cso), sizeof(dt_cso), nullptr,
+                                          &_computeShader);
 
         if (FAILED(hr))
         {
@@ -156,7 +159,8 @@ DepthTransfer_Dx11::DepthTransfer_Dx11(std::string InName, ID3D11Device* InDevic
         }
 
         // create pso objects
-        auto hr = _device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, &_computeShader);
+        auto hr = _device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr,
+                                               &_computeShader);
 
         if (shaderBlob != nullptr)
         {

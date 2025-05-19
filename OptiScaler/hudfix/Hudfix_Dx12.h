@@ -43,7 +43,7 @@ typedef struct HudlessInfo
 
 class Hudfix_Dx12
 {
-private:
+  private:
     // Last upscaled frame
     inline static UINT64 _upscaleCounter = 0;
 
@@ -57,10 +57,10 @@ private:
     inline static double _frameTime = 0.0;
 
     // Buffer for Format Transfer
-    inline static ID3D12Resource* _captureBuffer[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    inline static ID3D12Resource* _captureBuffer[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
 
     // used hudless list
-    inline static ankerl::unordered_dense::map <ID3D12Resource*, HudlessInfo> _hudlessList;
+    inline static ankerl::unordered_dense::map<ID3D12Resource*, HudlessInfo> _hudlessList;
 
     // Capture List
     inline static std::set<ID3D12Resource*> _captureList;
@@ -68,22 +68,24 @@ private:
     inline static std::mutex _checkMutex;
     inline static std::mutex _captureMutex;
     inline static std::mutex _counterMutex;
-    inline static INT64 _captureCounter[BUFFER_COUNT] = { 0, 0, 0, 0 };
+    inline static INT64 _captureCounter[BUFFER_COUNT] = {0, 0, 0, 0};
     inline static FT_Dx12* _formatTransfer = nullptr;
 
     inline static ID3D12CommandQueue* _commandQueue = nullptr;
-    inline static ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
-    inline static ID3D12CommandAllocator* _commandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
-    inline static ID3D12Fence* _fence[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
-    
+    inline static ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
+    inline static ID3D12CommandAllocator* _commandAllocator[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
+    inline static ID3D12Fence* _fence[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
+
     inline static bool _skipHudlessChecks = false;
 
-    static bool CreateObjects();    
-    static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource);
-    static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
-    
+    static bool CreateObjects();
+    static bool CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState,
+                                     ID3D12Resource** OutResource);
+    static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
+
     // Check _captureCounter for current frame
-    static bool CheckCapture();    
+    static bool CheckCapture();
 
     static void HudlessFound();
 
@@ -92,14 +94,13 @@ private:
     inline static IID streamlineRiid{};
     static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject);
 
-
-public:
+  public:
     // Trig for upscaling start
     static void UpscaleStart();
 
     // Trig for upscaling end
     static void UpscaleEnd(UINT64 frameId, float lastFrameTime);
-    
+
     // Trig for present start
     static void PresentStart();
 
@@ -111,15 +112,15 @@ public:
 
     // Is Hudfix active
     static bool IsResourceCheckActive();
-    
+
     // For resource tracking in hooks
     static bool SkipHudlessChecks();
 
     // Check resource for hudless
-    static bool CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state);
+    static bool CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource,
+                                D3D12_RESOURCE_STATES state);
     static bool CheckResource(ResourceInfo* resource);
 
     // Reset frame counters
     static void ResetCounters();
-
 };

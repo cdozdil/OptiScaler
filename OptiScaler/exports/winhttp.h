@@ -94,7 +94,7 @@ struct winhttp_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
-        
+
         Private1 = KernelBaseProxy::GetProcAddress_()(dll, "Private1");
         SvchostPushServiceGlobals = KernelBaseProxy::GetProcAddress_()(dll, "SvchostPushServiceGlobals");
         WinHttpAddRequestHeaders = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpAddRequestHeaders");
@@ -103,7 +103,8 @@ struct winhttp_dll
         WinHttpCheckPlatform = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpCheckPlatform");
         WinHttpCloseHandle = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpCloseHandle");
         WinHttpConnect = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnect");
-        WinHttpConnectionDeletePolicyEntries = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionDeletePolicyEntries");
+        WinHttpConnectionDeletePolicyEntries =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionDeletePolicyEntries");
         WinHttpConnectionDeleteProxyInfo = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionDeleteProxyInfo");
         WinHttpConnectionFreeNameList = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionFreeNameList");
         WinHttpConnectionFreeProxyInfo = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionFreeProxyInfo");
@@ -114,9 +115,11 @@ struct winhttp_dll
         WinHttpConnectionOnlyConvert = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionOnlyConvert");
         WinHttpConnectionOnlyReceive = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionOnlyReceive");
         WinHttpConnectionOnlySend = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionOnlySend");
-        WinHttpConnectionSetPolicyEntries = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionSetPolicyEntries");
+        WinHttpConnectionSetPolicyEntries =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionSetPolicyEntries");
         WinHttpConnectionSetProxyInfo = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionSetProxyInfo");
-        WinHttpConnectionUpdateIfIndexTable = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionUpdateIfIndexTable");
+        WinHttpConnectionUpdateIfIndexTable =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpConnectionUpdateIfIndexTable");
         WinHttpCrackUrl = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpCrackUrl");
         WinHttpCreateProxyResolver = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpCreateProxyResolver");
         WinHttpCreateUrl = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpCreateUrl");
@@ -125,9 +128,12 @@ struct winhttp_dll
         WinHttpFreeProxyResultEx = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpFreeProxyResultEx");
         WinHttpFreeProxySettings = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpFreeProxySettings");
         WinHttpFreeProxySettingsEx = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpFreeProxySettingsEx");
-        WinHttpFreeQueryConnectionGroupResult = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpFreeQueryConnectionGroupResult");
-        WinHttpGetDefaultProxyConfiguration = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpGetDefaultProxyConfiguration");
-        WinHttpGetIEProxyConfigForCurrentUser = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpGetIEProxyConfigForCurrentUser");
+        WinHttpFreeQueryConnectionGroupResult =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpFreeQueryConnectionGroupResult");
+        WinHttpGetDefaultProxyConfiguration =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpGetDefaultProxyConfiguration");
+        WinHttpGetIEProxyConfigForCurrentUser =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpGetIEProxyConfigForCurrentUser");
         WinHttpGetProxyForUrl = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpGetProxyForUrl");
         WinHttpGetProxyForUrlEx = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpGetProxyForUrlEx");
         WinHttpGetProxyForUrlEx2 = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpGetProxyForUrlEx2");
@@ -153,20 +159,24 @@ struct winhttp_dll
         WinHttpReadProxySettings = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpReadProxySettings");
         WinHttpReadProxySettingsHvsi = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpReadProxySettingsHvsi");
         WinHttpReceiveResponse = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpReceiveResponse");
-        WinHttpRegisterProxyChangeNotification = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpRegisterProxyChangeNotification");
+        WinHttpRegisterProxyChangeNotification =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpRegisterProxyChangeNotification");
         WinHttpResetAutoProxy = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpResetAutoProxy");
         WinHttpSaveProxyCredentials = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSaveProxyCredentials");
         WinHttpSendRequest = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSendRequest");
         WinHttpSetCredentials = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetCredentials");
-        WinHttpSetDefaultProxyConfiguration = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetDefaultProxyConfiguration");
+        WinHttpSetDefaultProxyConfiguration =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetDefaultProxyConfiguration");
         WinHttpSetOption = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetOption");
         WinHttpSetProxySettingsPerUser = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetProxySettingsPerUser");
-        WinHttpSetSecureLegacyServersAppCompat = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetSecureLegacyServersAppCompat");
+        WinHttpSetSecureLegacyServersAppCompat =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetSecureLegacyServersAppCompat");
         WinHttpSetStatusCallback = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetStatusCallback");
         WinHttpSetTimeouts = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpSetTimeouts");
         WinHttpTimeFromSystemTime = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpTimeFromSystemTime");
         WinHttpTimeToSystemTime = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpTimeToSystemTime");
-        WinHttpUnregisterProxyChangeNotification = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpUnregisterProxyChangeNotification");
+        WinHttpUnregisterProxyChangeNotification =
+            KernelBaseProxy::GetProcAddress_()(dll, "WinHttpUnregisterProxyChangeNotification");
         WinHttpWebSocketClose = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpWebSocketClose");
         WinHttpWebSocketCompleteUpgrade = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpWebSocketCompleteUpgrade");
         WinHttpWebSocketQueryCloseStatus = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpWebSocketQueryCloseStatus");
@@ -177,7 +187,6 @@ struct winhttp_dll
         WinHttpWriteProxySettings = KernelBaseProxy::GetProcAddress_()(dll, "WinHttpWriteProxySettings");
     }
 } winhttp;
-
 
 void _Private1() { winhttp.Private1(); }
 void _SvchostPushServiceGlobals() { winhttp.SvchostPushServiceGlobals(); }

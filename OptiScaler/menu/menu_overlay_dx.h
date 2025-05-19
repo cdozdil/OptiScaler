@@ -7,7 +7,8 @@
 
 namespace MenuOverlayDx
 {
-    ID3D12GraphicsCommandList* MenuCommandList();
-    void CleanupRenderTarget(bool clearQueue, HWND hWnd);
-    void Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd, bool isUWP);
-}
+ID3D12GraphicsCommandList* MenuCommandList();
+void CleanupRenderTarget(bool clearQueue, HWND hWnd);
+void Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags,
+             const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd, bool isUWP);
+} // namespace MenuOverlayDx

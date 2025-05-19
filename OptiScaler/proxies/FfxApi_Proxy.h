@@ -15,9 +15,9 @@
 
 class FfxApiProxy
 {
-private:
+  private:
     inline static HMODULE _dllDx12 = nullptr;
-    inline static feature_version _versionDx12{ 0, 0, 0 };
+    inline static feature_version _versionDx12{0, 0, 0};
     inline static PfnFfxCreateContext _D3D12_CreateContext = nullptr;
     inline static PfnFfxDestroyContext _D3D12_DestroyContext = nullptr;
     inline static PfnFfxConfigure _D3D12_Configure = nullptr;
@@ -25,7 +25,7 @@ private:
     inline static PfnFfxDispatch _D3D12_Dispatch = nullptr;
 
     inline static HMODULE _dllVk = nullptr;
-    inline static feature_version _versionVk{ 0, 0, 0 };
+    inline static feature_version _versionVk{0, 0, 0};
     inline static PfnFfxCreateContext _VULKAN_CreateContext = nullptr;
     inline static PfnFfxDestroyContext _VULKAN_DestroyContext = nullptr;
     inline static PfnFfxConfigure _VULKAN_Configure = nullptr;
@@ -38,11 +38,8 @@ private:
             LOG_WARN("can't parse {0}", version_str);
     }
 
-public:
-    static HMODULE Dx12Module()
-    {
-        return _dllDx12;
-    }
+  public:
+    static HMODULE Dx12Module() { return _dllDx12; }
 
     static bool InitFfxDx12(HMODULE module = nullptr)
     {
@@ -68,7 +65,8 @@ public:
 
             if (_dllDx12 != nullptr)
             {
-                LOG_INFO("amd_fidelityfx_dx12.dll loaded from {0}", wstring_to_string(Config::Instance()->FfxDx12Path.value()));
+                LOG_INFO("amd_fidelityfx_dx12.dll loaded from {0}",
+                         wstring_to_string(Config::Instance()->FfxDx12Path.value()));
             }
         }
 
@@ -82,11 +80,13 @@ public:
 
         if (_dllDx12 != nullptr && _D3D12_Configure == nullptr)
         {
-            _D3D12_Configure = (PfnFfxConfigure)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxConfigure");
-            _D3D12_CreateContext = (PfnFfxCreateContext)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxCreateContext");
-            _D3D12_DestroyContext = (PfnFfxDestroyContext)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDestroyContext");
-            _D3D12_Dispatch = (PfnFfxDispatch)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDispatch");
-            _D3D12_Query = (PfnFfxQuery)KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxQuery");
+            _D3D12_Configure = (PfnFfxConfigure) KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxConfigure");
+            _D3D12_CreateContext =
+                (PfnFfxCreateContext) KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxCreateContext");
+            _D3D12_DestroyContext =
+                (PfnFfxDestroyContext) KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDestroyContext");
+            _D3D12_Dispatch = (PfnFfxDispatch) KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDispatch");
+            _D3D12_Query = (PfnFfxQuery) KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxQuery");
 
             if (_D3D12_CreateContext != nullptr)
             {
@@ -94,19 +94,19 @@ public:
                 DetourUpdateThread(GetCurrentThread());
 
                 if (_D3D12_Configure != nullptr)
-                    DetourAttach(&(PVOID&)_D3D12_Configure, ffxConfigure_Dx12);
+                    DetourAttach(&(PVOID&) _D3D12_Configure, ffxConfigure_Dx12);
 
                 if (_D3D12_CreateContext != nullptr)
-                    DetourAttach(&(PVOID&)_D3D12_CreateContext, ffxCreateContext_Dx12);
+                    DetourAttach(&(PVOID&) _D3D12_CreateContext, ffxCreateContext_Dx12);
 
                 if (_D3D12_DestroyContext != nullptr)
-                    DetourAttach(&(PVOID&)_D3D12_DestroyContext, ffxDestroyContext_Dx12);
+                    DetourAttach(&(PVOID&) _D3D12_DestroyContext, ffxDestroyContext_Dx12);
 
                 if (_D3D12_Dispatch != nullptr)
-                    DetourAttach(&(PVOID&)_D3D12_Dispatch, ffxDispatch_Dx12);
+                    DetourAttach(&(PVOID&) _D3D12_Dispatch, ffxDispatch_Dx12);
 
                 if (_D3D12_Query != nullptr)
-                    DetourAttach(&(PVOID&)_D3D12_Query, ffxQuery_Dx12);
+                    DetourAttach(&(PVOID&) _D3D12_Query, ffxQuery_Dx12);
 
                 State::Instance().fsrHooks = true;
 
@@ -128,7 +128,7 @@ public:
 
     static feature_version VersionDx12()
     {
-        if (_versionDx12.major == 0 && _D3D12_Query != nullptr/* && device != nullptr*/)
+        if (_versionDx12.major == 0 && _D3D12_Query != nullptr /* && device != nullptr*/)
         {
             ffxQueryDescGetVersions versionQuery{};
             versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
@@ -155,16 +155,17 @@ public:
                 if (queryResult == FFX_API_RETURN_OK)
                 {
                     parse_version(versionNames[0], &_versionDx12);
-                    LOG_INFO("FfxApi Dx12 version: {}.{}.{}", _versionDx12.major, _versionDx12.minor, _versionDx12.patch);
+                    LOG_INFO("FfxApi Dx12 version: {}.{}.{}", _versionDx12.major, _versionDx12.minor,
+                             _versionDx12.patch);
                 }
                 else
                 {
-                    LOG_WARN("_D3D12_Query 2 result: {}", (UINT)queryResult);
+                    LOG_WARN("_D3D12_Query 2 result: {}", (UINT) queryResult);
                 }
             }
             else
             {
-                LOG_WARN("_D3D12_Query result: {}", (UINT)queryResult);
+                LOG_WARN("_D3D12_Query result: {}", (UINT) queryResult);
             }
         }
 
@@ -177,10 +178,7 @@ public:
     static PfnFfxQuery D3D12_Query() { return _D3D12_Query; }
     static PfnFfxDispatch D3D12_Dispatch() { return _D3D12_Dispatch; }
 
-    static HMODULE VkModule()
-    {
-        return _dllVk;
-    }
+    static HMODULE VkModule() { return _dllVk; }
 
     static bool InitFfxVk(HMODULE module = nullptr)
     {
@@ -206,7 +204,8 @@ public:
 
             if (_dllVk != nullptr)
             {
-                LOG_INFO("amd_fidelityfx_vk.dll loaded from {0}", wstring_to_string(Config::Instance()->FfxVkPath.value()));
+                LOG_INFO("amd_fidelityfx_vk.dll loaded from {0}",
+                         wstring_to_string(Config::Instance()->FfxVkPath.value()));
             }
         }
 
@@ -220,11 +219,13 @@ public:
 
         if (_dllVk != nullptr && _VULKAN_CreateContext == nullptr)
         {
-            _VULKAN_Configure = (PfnFfxConfigure)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxConfigure");
-            _VULKAN_CreateContext = (PfnFfxCreateContext)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxCreateContext");
-            _VULKAN_DestroyContext = (PfnFfxDestroyContext)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDestroyContext");
-            _VULKAN_Dispatch = (PfnFfxDispatch)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDispatch");
-            _VULKAN_Query = (PfnFfxQuery)KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxQuery");
+            _VULKAN_Configure = (PfnFfxConfigure) KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxConfigure");
+            _VULKAN_CreateContext =
+                (PfnFfxCreateContext) KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxCreateContext");
+            _VULKAN_DestroyContext =
+                (PfnFfxDestroyContext) KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDestroyContext");
+            _VULKAN_Dispatch = (PfnFfxDispatch) KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDispatch");
+            _VULKAN_Query = (PfnFfxQuery) KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxQuery");
 
             if (_VULKAN_CreateContext != nullptr)
             {
@@ -232,19 +233,19 @@ public:
                 DetourUpdateThread(GetCurrentThread());
 
                 if (_VULKAN_Configure != nullptr)
-                    DetourAttach(&(PVOID&)_VULKAN_Configure, ffxConfigure_Vk);
+                    DetourAttach(&(PVOID&) _VULKAN_Configure, ffxConfigure_Vk);
 
                 if (_VULKAN_CreateContext != nullptr)
-                    DetourAttach(&(PVOID&)_VULKAN_CreateContext, ffxCreateContext_Vk);
+                    DetourAttach(&(PVOID&) _VULKAN_CreateContext, ffxCreateContext_Vk);
 
                 if (_VULKAN_DestroyContext != nullptr)
-                    DetourAttach(&(PVOID&)_VULKAN_DestroyContext, ffxDestroyContext_Vk);
+                    DetourAttach(&(PVOID&) _VULKAN_DestroyContext, ffxDestroyContext_Vk);
 
                 if (_VULKAN_Dispatch != nullptr)
-                    DetourAttach(&(PVOID&)_VULKAN_Dispatch, ffxDispatch_Vk);
+                    DetourAttach(&(PVOID&) _VULKAN_Dispatch, ffxDispatch_Vk);
 
                 if (_VULKAN_Query != nullptr)
-                    DetourAttach(&(PVOID&)_VULKAN_Query, ffxQuery_Vk);
+                    DetourAttach(&(PVOID&) _VULKAN_Query, ffxQuery_Vk);
 
                 State::Instance().fsrHooks = true;
 
@@ -296,12 +297,12 @@ public:
                 }
                 else
                 {
-                    LOG_WARN("_VULKAN_Query 2 result: {}", (UINT)queryResult);
+                    LOG_WARN("_VULKAN_Query 2 result: {}", (UINT) queryResult);
                 }
             }
             else
             {
-                LOG_WARN("_VULKAN_Query result: {}", (UINT)queryResult);
+                LOG_WARN("_VULKAN_Query result: {}", (UINT) queryResult);
             }
         }
 
@@ -318,16 +319,23 @@ public:
     {
         switch (result)
         {
-            case FFX_API_RETURN_OK: return "The oparation was successful.";
-            case FFX_API_RETURN_ERROR: return "An error occurred that is not further specified.";
-            case FFX_API_RETURN_ERROR_UNKNOWN_DESCTYPE: return "The structure type given was not recognized for the function or context with which it was used. This is likely a programming error.";
-            case FFX_API_RETURN_ERROR_RUNTIME_ERROR: return "The underlying runtime (e.g. D3D12, Vulkan) or effect returned an error code.";
-            case FFX_API_RETURN_NO_PROVIDER: return "No provider was found for the given structure type. This is likely a programming error.";
-            case FFX_API_RETURN_ERROR_MEMORY: return "A memory allocation failed.";
-            case FFX_API_RETURN_ERROR_PARAMETER: return "A parameter was invalid, e.g. a null pointer, empty resource or out-of-bounds enum value.";
-            default: return "Unknown";
+        case FFX_API_RETURN_OK:
+            return "The oparation was successful.";
+        case FFX_API_RETURN_ERROR:
+            return "An error occurred that is not further specified.";
+        case FFX_API_RETURN_ERROR_UNKNOWN_DESCTYPE:
+            return "The structure type given was not recognized for the function or context with which it was used. "
+                   "This is likely a programming error.";
+        case FFX_API_RETURN_ERROR_RUNTIME_ERROR:
+            return "The underlying runtime (e.g. D3D12, Vulkan) or effect returned an error code.";
+        case FFX_API_RETURN_NO_PROVIDER:
+            return "No provider was found for the given structure type. This is likely a programming error.";
+        case FFX_API_RETURN_ERROR_MEMORY:
+            return "A memory allocation failed.";
+        case FFX_API_RETURN_ERROR_PARAMETER:
+            return "A parameter was invalid, e.g. a null pointer, empty resource or out-of-bounds enum value.";
+        default:
+            return "Unknown";
         }
     }
-
-
 };

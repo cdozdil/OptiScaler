@@ -16,30 +16,27 @@
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-class ScopedIndent {
-public:
-    explicit ScopedIndent(float indent = 16.0f) : m_indent(indent) {
-        ImGui::Indent(m_indent);
-    }
+class ScopedIndent
+{
+  public:
+    explicit ScopedIndent(float indent = 16.0f) : m_indent(indent) { ImGui::Indent(m_indent); }
 
-    ~ScopedIndent() {
-        ImGui::Unindent(m_indent);
-    }
+    ~ScopedIndent() { ImGui::Unindent(m_indent); }
 
-private:
+  private:
     float m_indent;
 };
 
 class MenuCommon
 {
-private:
+  private:
     // internal values
     inline static HWND _handle = nullptr;
     inline static WNDPROC _oWndProc = nullptr;
     inline static bool _isVisible = false;
     inline static bool _isInited = false;
     inline static bool _isUWP = false;
-    //inline static bool _isResetRequested = false;
+    // inline static bool _isResetRequested = false;
 
     // mipmap calculations
     inline static bool _showMipmapCalcWindow = false;
@@ -87,12 +84,12 @@ private:
 #pragma region "Hooks & WndProc"
 
     // for hooking
-    typedef BOOL(*PFN_SetCursorPos)(int x, int y);
-    typedef BOOL(*PFN_ClipCursor)(const RECT* lpRect);
-    typedef UINT(*PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
-    typedef void(*PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
-    typedef BOOL(*PFN_GetCursorPos)(LPPOINT lpPoint);
-    typedef LRESULT(*PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+    typedef BOOL (*PFN_SetCursorPos)(int x, int y);
+    typedef BOOL (*PFN_ClipCursor)(const RECT* lpRect);
+    typedef UINT (*PFN_SendInput)(UINT cInputs, LPINPUT pInputs, int cbSize);
+    typedef void (*PFN_mouse_event)(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData, ULONG_PTR dwExtraInfo);
+    typedef BOOL (*PFN_GetCursorPos)(LPPOINT lpPoint);
+    typedef LRESULT (*PFN_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
     inline static PFN_SetCursorPos pfn_SetPhysicalCursorPos = nullptr;
     inline static PFN_SetCursorPos pfn_SetCursorPos = nullptr;
@@ -126,7 +123,7 @@ private:
 
     inline static ImGuiKey ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam);
 
-    //Win32 message handler
+    // Win32 message handler
     static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #pragma endregion
@@ -137,16 +134,15 @@ private:
     static void AddDx11Backends(std::string* code, std::string* name);
     static void AddDx12Backends(std::string* code, std::string* name);
     static void AddVulkanBackends(std::string* code, std::string* name);
+    template <HasDefaultValue B> static void AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value);
+    template <HasDefaultValue B> static void AddDLSSRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
+    template <HasDefaultValue B> static void AddDLSSDRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
     template <HasDefaultValue B>
-    static void AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value);
-    template <HasDefaultValue B>
-    static void AddDLSSRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
-    template<HasDefaultValue B>
-    static void AddDLSSDRenderPreset(std::string name, CustomOptional<uint32_t, B>* value);
-    template <HasDefaultValue B>
-    static void PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[], const std::string desc[], int length, const uint8_t disabledMask[] = nullptr, bool firstAsDefault = true);
+    static void PopulateCombo(std::string name, CustomOptional<uint32_t, B>* value, const char* names[],
+                              const std::string desc[], int length, const uint8_t disabledMask[] = nullptr,
+                              bool firstAsDefault = true);
 
-public:
+  public:
     static void Dx11Inited() { _dx11Ready = true; }
     static void Dx12Inited() { _dx12Ready = true; }
     static void VulkanInited() { _vulkanReady = true; }

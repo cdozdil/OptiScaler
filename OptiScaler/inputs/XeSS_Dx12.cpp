@@ -1,4 +1,4 @@
-#include "XeSS_Dx12.h"  
+#include "XeSS_Dx12.h"
 
 #include "NVNGX_Parameter.h"
 
@@ -10,7 +10,8 @@ static UINT64 _frameCounter = 0;
 static xess_context_handle_t _currentContext = nullptr;
 static ID3D12Device* _d3d12Device = nullptr;
 
-static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsCommandList* commandList, const xess_d3d12_execute_params_t* pExecParams)
+static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsCommandList* commandList,
+                              const xess_d3d12_execute_params_t* pExecParams)
 {
     LOG_DEBUG("");
 
@@ -47,37 +48,38 @@ static bool CreateDLSSContext(xess_context_handle_t handle, ID3D12GraphicsComman
 
     switch (initParams->qualitySetting)
     {
-        case XESS_QUALITY_SETTING_ULTRA_PERFORMANCE:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
-            break;
+    case XESS_QUALITY_SETTING_ULTRA_PERFORMANCE:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
+        break;
 
-        case XESS_QUALITY_SETTING_PERFORMANCE:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
-            break;
+    case XESS_QUALITY_SETTING_PERFORMANCE:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
+        break;
 
-        case XESS_QUALITY_SETTING_BALANCED:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
-            break;
+    case XESS_QUALITY_SETTING_BALANCED:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
+        break;
 
-        case XESS_QUALITY_SETTING_QUALITY:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
-            break;
+    case XESS_QUALITY_SETTING_QUALITY:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_MaxQuality);
+        break;
 
-        case XESS_QUALITY_SETTING_ULTRA_QUALITY:
-        case XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraQuality);
-            break;
+    case XESS_QUALITY_SETTING_ULTRA_QUALITY:
+    case XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraQuality);
+        break;
 
-        case XESS_QUALITY_SETTING_AA:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
-            break;
+    case XESS_QUALITY_SETTING_AA:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
+        break;
 
-        default:
-            params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
-            break;
+    default:
+        params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_Balanced);
+        break;
     }
 
-    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) !=
+        NVSDK_NGX_Result_Success)
         return false;
 
     _contexts[handle] = nvHandle;
@@ -118,24 +120,25 @@ xess_result_t hk_xessD3D12CreateContext(ID3D12Device* pDevice, xess_context_hand
             pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
 
         // Build pointer array
-        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        wchar_t const** paths = new const wchar_t*[pathStorage.size()];
         for (size_t i = 0; i < pathStorage.size(); ++i)
         {
             paths[i] = pathStorage[i].c_str();
         }
 
         fcInfo.PathListInfo.Path = paths;
-        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+        fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
-        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            pDevice, &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
+            "OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(), pDevice, &fcInfo,
+            State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return XESS_RESULT_ERROR_UNINITIALIZED;
     }
 
     _d3d12Device = pDevice;
-    *phContext = (xess_context_handle_t)++_handleCounter;
+    *phContext = (xess_context_handle_t) ++_handleCounter;
 
     NVSDK_NGX_Parameter* params = nullptr;
 
@@ -143,12 +146,13 @@ xess_result_t hk_xessD3D12CreateContext(ID3D12Device* pDevice, xess_context_hand
         return XESS_RESULT_ERROR_INVALID_ARGUMENT;
 
     _nvParams[*phContext] = params;
-    _motionScales[*phContext] = { 1.0, 1.0 };
+    _motionScales[*phContext] = {1.0, 1.0};
 
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessD3D12BuildPipelines(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary, bool blocking, uint32_t initFlags)
+xess_result_t hk_xessD3D12BuildPipelines(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary,
+                                         bool blocking, uint32_t initFlags)
 {
     LOG_WARN("");
     return XESS_RESULT_SUCCESS;
@@ -181,7 +185,8 @@ xess_result_t hk_xessD3D12Init(xess_context_handle_t hContext, const xess_d3d12_
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessD3D12Execute(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList, const xess_d3d12_execute_params_t* pExecParams)
+xess_result_t hk_xessD3D12Execute(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList,
+                                  const xess_d3d12_execute_params_t* pExecParams)
 {
     LOG_DEBUG("");
 
@@ -230,7 +235,8 @@ xess_result_t hk_xessD3D12Execute(xess_context_handle_t hContext, ID3D12Graphics
     params->Set(NVSDK_NGX_Parameter_Depth, pExecParams->pDepthTexture);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, pExecParams->pExposureScaleTexture);
 
-    if (!isVersionOrBetter({ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch }, { 2, 0, 1 }))
+    if (!isVersionOrBetter({XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch},
+                           {2, 0, 1}))
         params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, pExecParams->pResponsivePixelMaskTexture);
     else
         params->Set("FSR.reactive", pExecParams->pResponsivePixelMaskTexture);
@@ -247,8 +253,10 @@ xess_result_t hk_xessD3D12Execute(xess_context_handle_t hContext, ID3D12Graphics
     params->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, pExecParams->inputMotionVectorBase.y);
     params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, pExecParams->outputColorBase.x);
     params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, pExecParams->outputColorBase.y);
-    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, pExecParams->inputResponsiveMaskBase.x);
-    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, pExecParams->inputResponsiveMaskBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X,
+                pExecParams->inputResponsiveMaskBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y,
+                pExecParams->inputResponsiveMaskBase.y);
 
     State::Instance().setInputApiName = "XeSS";
 
@@ -281,7 +289,8 @@ xess_result_t hk_xessD3D12GetInitParams(xess_context_handle_t hContext, xess_d3d
     return XESS_RESULT_SUCCESS;
 }
 
-xess_result_t hk_xessD3D12GetResourcesToDump(xess_context_handle_t hContext, xess_resources_to_dump_t** pResourcesToDump)
+xess_result_t hk_xessD3D12GetResourcesToDump(xess_context_handle_t hContext,
+                                             xess_resources_to_dump_t** pResourcesToDump)
 {
     LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
@@ -292,4 +301,3 @@ xess_result_t hk_xessD3D12GetProfilingData(xess_context_handle_t hContext, xess_
     LOG_DEBUG("");
     return XESS_RESULT_SUCCESS;
 }
-

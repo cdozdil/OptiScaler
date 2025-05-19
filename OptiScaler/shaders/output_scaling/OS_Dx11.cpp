@@ -17,29 +17,31 @@
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {
-    switch (format) {
-        case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-            return DXGI_FORMAT_R32G32B32A32_FLOAT;
-        case DXGI_FORMAT_R32G32B32_TYPELESS:
-            return DXGI_FORMAT_R32G32B32_FLOAT;
-        case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-            return DXGI_FORMAT_R16G16B16A16_FLOAT;
-        case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-            return DXGI_FORMAT_R10G10B10A2_UINT;
-        case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-            return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-            return DXGI_FORMAT_B8G8R8A8_UNORM;
-        case DXGI_FORMAT_R16G16_TYPELESS:
-            return DXGI_FORMAT_R16G16_FLOAT;
-        case DXGI_FORMAT_R32G32_TYPELESS:
-            return DXGI_FORMAT_R32G32_FLOAT;
-        default:
-            return format;
+    switch (format)
+    {
+    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+        return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case DXGI_FORMAT_R32G32B32_TYPELESS:
+        return DXGI_FORMAT_R32G32B32_FLOAT;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+        return DXGI_FORMAT_R16G16B16A16_FLOAT;
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+        return DXGI_FORMAT_R10G10B10A2_UINT;
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+        return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case DXGI_FORMAT_R16G16_TYPELESS:
+        return DXGI_FORMAT_R16G16_FLOAT;
+    case DXGI_FORMAT_R32G32_TYPELESS:
+        return DXGI_FORMAT_R32G32_FLOAT;
+    default:
+        return format;
     }
 }
 
-bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InResource, uint32_t InWidth, uint32_t InHeight)
+bool OS_Dx11::CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InResource, uint32_t InWidth,
+                                   uint32_t InHeight)
 {
     if (InDevice == nullptr || InResource == nullptr)
         return false;
@@ -104,7 +106,7 @@ bool OS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* OutR
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = desc.MipLevels;
 
-        auto  hr = _device->CreateShaderResourceView(InResource, &srvDesc, &_srvInput);
+        auto hr = _device->CreateShaderResourceView(InResource, &srvDesc, &_srvInput);
         if (FAILED(hr))
         {
             LOG_ERROR("[{0}] _srvInput CreateShaderResourceView error {1:x}", _name, hr);
@@ -133,14 +135,14 @@ bool OS_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* OutR
             return false;
         }
 
-
         _currentOutResource = OutResource;
     }
 
     return true;
 }
 
-bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource)
+bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource,
+                       ID3D11Texture2D* OutResource)
 {
     if (!_init || InDevice == nullptr || InContext == nullptr || InResource == nullptr || OutResource == nullptr)
         return false;
@@ -162,8 +164,8 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
 
         FsrEasuCon(constants.const0, constants.const1, constants.const2, constants.const3,
                    State::Instance().currentFeature->TargetWidth(), State::Instance().currentFeature->TargetHeight(),
-                   inDesc.Width, inDesc.Height,
-                   State::Instance().currentFeature->DisplayWidth(), State::Instance().currentFeature->DisplayHeight());
+                   inDesc.Width, inDesc.Height, State::Instance().currentFeature->DisplayWidth(),
+                   State::Instance().currentFeature->DisplayHeight());
 
         // Copy the updated constant buffer data to the constant buffer resource
         D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -197,7 +199,6 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
         InContext->Unmap(_constantBuffer, 0);
     }
 
-
     // Set the compute shader and resources
     InContext->CSSetShader(_computeShader, nullptr, 0);
     InContext->CSSetConstantBuffers(0, 1, &_constantBuffer);
@@ -207,15 +208,17 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    //if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or_default())
+    // if (_upsample || Config::Instance()->OutputScalingUseFsr.value_or_default())
     //{
-        dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
-        dispatchHeight = (State::Instance().currentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
+    dispatchWidth =
+        static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
+    dispatchHeight = (State::Instance().currentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
     //}
-    //else
+    // else
     //{
-    //    dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->TargetWidth() + InNumThreadsX - 1) / InNumThreadsX);
-    //    dispatchHeight = (State::Instance().currentFeature->TargetHeight() + InNumThreadsY - 1) / InNumThreadsY;
+    //    dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->TargetWidth() + InNumThreadsX - 1) /
+    //    InNumThreadsX); dispatchHeight = (State::Instance().currentFeature->TargetHeight() + InNumThreadsY - 1) /
+    //    InNumThreadsY;
     //}
 
     InContext->Dispatch(dispatchWidth, dispatchHeight, 1);
@@ -223,13 +226,14 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     // Unbind resources
     ID3D11UnorderedAccessView* nullUAV = nullptr;
     InContext->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
-    ID3D11ShaderResourceView* nullSRV[2] = { nullptr, nullptr };
+    ID3D11ShaderResourceView* nullSRV[2] = {nullptr, nullptr};
     InContext->CSSetShaderResources(0, 2, nullSRV);
 
     return true;
 }
 
-OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : _name(InName), _device(InDevice), _upsample(InUpsample)
+OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample)
+    : _name(InName), _device(InDevice), _upsample(InUpsample)
 {
     if (InDevice == nullptr)
     {
@@ -239,46 +243,53 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
 
     LOG_DEBUG("{0} start!", _name);
 
-    if (Config::Instance()->UsePrecompiledShaders.value_or_default() || Config::Instance()->OutputScalingUseFsr.value_or_default())
+    if (Config::Instance()->UsePrecompiledShaders.value_or_default() ||
+        Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
         HRESULT hr;
 
         // fsr upscaling
         if (Config::Instance()->OutputScalingUseFsr.value_or_default())
         {
-            hr = _device->CreateComputeShader(reinterpret_cast<const void*>(fsr_easu_cso), sizeof(fsr_easu_cso), nullptr, &_computeShader);
+            hr = _device->CreateComputeShader(reinterpret_cast<const void*>(fsr_easu_cso), sizeof(fsr_easu_cso),
+                                              nullptr, &_computeShader);
         }
         else
         {
 
             if (_upsample)
             {
-                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(BCUS_cso), sizeof(BCUS_cso), nullptr, &_computeShader);
+                hr = _device->CreateComputeShader(reinterpret_cast<const void*>(BCUS_cso), sizeof(BCUS_cso), nullptr,
+                                                  &_computeShader);
             }
             else
             {
                 switch (Config::Instance()->OutputScalingDownscaler.value_or_default())
                 {
-                    case 0:
-                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso), nullptr, &_computeShader);
-                        break;
+                case 0:
+                    hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_bicubic_cso),
+                                                      sizeof(bcds_bicubic_cso), nullptr, &_computeShader);
+                    break;
 
-                    case 1:
-                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_lanczos_cso), sizeof(bcds_lanczos_cso), nullptr, &_computeShader);
-                        break;
+                case 1:
+                    hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_lanczos_cso),
+                                                      sizeof(bcds_lanczos_cso), nullptr, &_computeShader);
+                    break;
 
-                    case 2:
-                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_catmull_cso), sizeof(bcds_catmull_cso), nullptr, &_computeShader);
-                        break;
+                case 2:
+                    hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_catmull_cso),
+                                                      sizeof(bcds_catmull_cso), nullptr, &_computeShader);
+                    break;
 
-                    case 3:
-                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_magc_cso), sizeof(bcds_magc_cso), nullptr, &_computeShader);
-                        break;
+                case 3:
+                    hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_magc_cso),
+                                                      sizeof(bcds_magc_cso), nullptr, &_computeShader);
+                    break;
 
-                    default:
-                        hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_bicubic_cso), sizeof(bcds_bicubic_cso), nullptr, &_computeShader);
-                        break;
-
+                default:
+                    hr = _device->CreateComputeShader(reinterpret_cast<const void*>(bcds_bicubic_cso),
+                                                      sizeof(bcds_bicubic_cso), nullptr, &_computeShader);
+                    break;
                 }
             }
         }
@@ -296,32 +307,31 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
         // Compile shader blobs
         if (_upsample)
         {
-            shaderBlob = OS_CompileShader( upsampleCode.c_str(), "CSMain", "cs_5_0");
+            shaderBlob = OS_CompileShader(upsampleCode.c_str(), "CSMain", "cs_5_0");
         }
         else
         {
             switch (Config::Instance()->OutputScalingDownscaler.value_or_default())
             {
-                case 0:
-                    shaderBlob = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
-                    break;
+            case 0:
+                shaderBlob = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
+                break;
 
-                case 1:
-                    shaderBlob = OS_CompileShader(downsampleCodeLanczos.c_str(), "CSMain", "cs_5_0");
-                    break;
+            case 1:
+                shaderBlob = OS_CompileShader(downsampleCodeLanczos.c_str(), "CSMain", "cs_5_0");
+                break;
 
-                case 2:
-                    shaderBlob = OS_CompileShader(downsampleCodeCatmull.c_str(), "CSMain", "cs_5_0");
-                    break;
+            case 2:
+                shaderBlob = OS_CompileShader(downsampleCodeCatmull.c_str(), "CSMain", "cs_5_0");
+                break;
 
-                case 3:
-                    shaderBlob = OS_CompileShader(downsampleCodeMAGIC.c_str(), "CSMain", "cs_5_0");
-                    break;
+            case 3:
+                shaderBlob = OS_CompileShader(downsampleCodeMAGIC.c_str(), "CSMain", "cs_5_0");
+                break;
 
-                default:
-                    shaderBlob = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
-                    break;
-
+            default:
+                shaderBlob = OS_CompileShader(downsampleCodeBC.c_str(), "CSMain", "cs_5_0");
+                break;
             }
         }
 
@@ -332,7 +342,8 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
         }
 
         // create pso objects
-        auto hr = _device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, &_computeShader);
+        auto hr = _device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr,
+                                               &_computeShader);
 
         if (shaderBlob != nullptr)
         {
@@ -356,7 +367,7 @@ OS_Dx11::OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample) : 
     auto result = InDevice->CreateBuffer(&cbDesc, nullptr, &_constantBuffer);
     if (result != S_OK)
     {
-        LOG_ERROR("CreateBuffer error: {0:X}", (UINT)result);
+        LOG_ERROR("CreateBuffer error: {0:X}", (UINT) result);
         return;
     }
 
