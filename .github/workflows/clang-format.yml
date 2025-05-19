@@ -3,7 +3,6 @@ name: Auto-format with clang-format
 
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize]
     paths:
       - "OptiScaler/**"
 
