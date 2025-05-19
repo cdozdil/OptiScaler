@@ -860,7 +860,7 @@ static void CheckQuirks()
         LOG_INFO("Enabling a quirk for No Man's Sky (Enable KernelBase hooks)");
     }
     else if (exePathFilename == "pathofexile.exe" || exePathFilename == "pathofexile_x64.exe" ||
-             exePathFilename == "pathofexile_x64steam.exe" || exePathFilename == "pathofexilesteam.exe")
+        exePathFilename == "pathofexile_x64steam.exe" || exePathFilename == "pathofexilesteam.exe")
     {
         State::Instance().gameQuirk = PoE2;
         LOG_INFO("Enabling a quirk for PoE2 (Load d3d12.dll)");
