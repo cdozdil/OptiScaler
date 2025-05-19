@@ -401,12 +401,20 @@ extern "C"
 
 #define DETOUR_SECTION_HEADER_DECLARE(cbSectionSize)                                                                   \
     {                                                                                                                  \
-        sizeof(DETOUR_SECTION_HEADER), DETOUR_SECTION_HEADER_SIGNATURE, sizeof(DETOUR_SECTION_HEADER),                 \
-            (cbSectionSize),                                                                                           \
+        sizeof(DETOUR_SECTION_HEADER),                                                                                 \
+        DETOUR_SECTION_HEADER_SIGNATURE,                                                                               \
+        sizeof(DETOUR_SECTION_HEADER),                                                                                 \
+        (cbSectionSize),                                                                                               \
                                                                                                                        \
-            0, 0, 0, 0,                                                                                                \
+        0,                                                                                                             \
+        0,                                                                                                             \
+        0,                                                                                                             \
+        0,                                                                                                             \
                                                                                                                        \
-            0, 0, 0, 0,                                                                                                \
+        0,                                                                                                             \
+        0,                                                                                                             \
+        0,                                                                                                             \
+        0,                                                                                                             \
     }
 
 /////////////////////////////////////////////////////////////// Helper Macros.

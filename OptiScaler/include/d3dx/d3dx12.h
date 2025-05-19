@@ -2583,7 +2583,7 @@ class CD3DX12_STATE_OBJECT_DESC
     {
       public:
         SUBOBJECT_HELPER_BASE() { Init(); };
-        virtual ~SUBOBJECT_HELPER_BASE(){};
+        virtual ~SUBOBJECT_HELPER_BASE() {};
         virtual D3D12_STATE_SUBOBJECT_TYPE Type() const = 0;
         void AddToStateObject(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
         {

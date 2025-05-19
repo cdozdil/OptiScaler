@@ -151,10 +151,10 @@ extern "C"
             (1 << 9), ///, A bit indicating that the context will only be used for upscaling
         FFX_FSR3_ENABLE_HDR_UPSCALE_SDR_FINALOUTPUT =
             (1 << 10), ///, A bit indicating if the input color data provided to UPSCALE is using a high-dynamic range,
-                       ///final output SDR.
+                       /// final output SDR.
         FFX_FSR3_ENABLE_SDR_UPSCALE_HDR_FINALOUTPUT =
             (1 << 11), ///, A bit indicating if the input color data provided to UPSCALE is using SDR, final output is
-                       ///high-dynamic range.
+                       /// high-dynamic range.
         FFX_FSR3_ENABLE_ASYNC_WORKLOAD_SUPPORT = (1 << 12),
         FFX_FSR3_ENABLE_INTERPOLATION_ONLY = (1 << 13),
     } FfxFsr3InitializationFlagBits;

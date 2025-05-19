@@ -239,54 +239,18 @@ A_STATIC AU1 AU1_AF1(AF1 a)
 #define varAU3(x) AU1 x[3]
 #define varAU4(x) AU1 x[4]
 //------------------------------------------------------------------------------------------------------------------------------
-#define initAD2(x, y)                                                                                                  \
-    {                                                                                                                  \
-        x, y                                                                                                           \
-    }
-#define initAD3(x, y, z)                                                                                               \
-    {                                                                                                                  \
-        x, y, z                                                                                                        \
-    }
-#define initAD4(x, y, z, w)                                                                                            \
-    {                                                                                                                  \
-        x, y, z, w                                                                                                     \
-    }
-#define initAF2(x, y)                                                                                                  \
-    {                                                                                                                  \
-        x, y                                                                                                           \
-    }
-#define initAF3(x, y, z)                                                                                               \
-    {                                                                                                                  \
-        x, y, z                                                                                                        \
-    }
-#define initAF4(x, y, z, w)                                                                                            \
-    {                                                                                                                  \
-        x, y, z, w                                                                                                     \
-    }
-#define initAL2(x, y)                                                                                                  \
-    {                                                                                                                  \
-        x, y                                                                                                           \
-    }
-#define initAL3(x, y, z)                                                                                               \
-    {                                                                                                                  \
-        x, y, z                                                                                                        \
-    }
-#define initAL4(x, y, z, w)                                                                                            \
-    {                                                                                                                  \
-        x, y, z, w                                                                                                     \
-    }
-#define initAU2(x, y)                                                                                                  \
-    {                                                                                                                  \
-        x, y                                                                                                           \
-    }
-#define initAU3(x, y, z)                                                                                               \
-    {                                                                                                                  \
-        x, y, z                                                                                                        \
-    }
-#define initAU4(x, y, z, w)                                                                                            \
-    {                                                                                                                  \
-        x, y, z, w                                                                                                     \
-    }
+#define initAD2(x, y) {x, y}
+#define initAD3(x, y, z) {x, y, z}
+#define initAD4(x, y, z, w) {x, y, z, w}
+#define initAF2(x, y) {x, y}
+#define initAF3(x, y, z) {x, y, z}
+#define initAF4(x, y, z, w) {x, y, z, w}
+#define initAL2(x, y) {x, y}
+#define initAL3(x, y, z) {x, y, z}
+#define initAL4(x, y, z, w) {x, y, z, w}
+#define initAU2(x, y) {x, y}
+#define initAU3(x, y, z) {x, y, z}
+#define initAU4(x, y, z, w) {x, y, z, w}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //_____________________________________________________________/\_______________________________________________________________

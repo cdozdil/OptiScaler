@@ -7845,8 +7845,8 @@ static void ShowDemoWindowTables()
             if (show_headers)
                 ImGui::TableHeadersRow();
 
-                // Show data
-                // FIXME-TABLE FIXME-NAV: How we can get decent up/down even though we have the buttons here?
+            // Show data
+            // FIXME-TABLE FIXME-NAV: How we can get decent up/down even though we have the buttons here?
 #if 1
             // Demonstrate using clipper for large vertical lists
             ImGuiListClipper clipper;

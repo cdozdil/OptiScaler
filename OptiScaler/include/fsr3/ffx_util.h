@@ -111,7 +111,7 @@ const float FFX_EPSILON = 1e-06f;
 /// Helper macro to work out the number of elements in an array.
 ///
 /// @ingroup Utils
-#define FFX_ARRAY_ELEMENTS(x) (int32_t)((sizeof(x) / sizeof(0 [x])) / ((size_t) (!(sizeof(x) % sizeof(0 [x])))))
+#define FFX_ARRAY_ELEMENTS(x) (int32_t) ((sizeof(x) / sizeof(0 [x])) / ((size_t) (!(sizeof(x) % sizeof(0 [x])))))
 
 /// The maximum length of a path that can be specified to the FidelityFX API.
 ///
