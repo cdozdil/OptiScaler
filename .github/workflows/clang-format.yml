@@ -1,13 +1,44 @@
-name: clang-format Check
-on: [push, pull_request]
+# .github/workflows/clang-format.yml
+name: Auto-format with clang-format
+
+on:
+  pull_request:
+    # only trigger when files under OptiScaler/ change
+    paths:
+      - "OptiScaler/**"
+
 jobs:
-  formatting-check:
-    name: Formatting Check
+  format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Run clang-format style check for C/C++/Protobuf programs.
-      uses: jidicula/clang-format-action@v4.15.0
-      with:
-        clang-format-version: '20'
-        check-path: 'OptiScaler'
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Run clang-format in OptiScaler and commit fixes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # only format files under OptiScaler/
+          find OptiScaler -type f \
+            \( -name '*.c' -o -name '*.cpp' -o -name '*.cc' \
+             -o -name '*.cxx' -o -name '*.h' -o -name '*.hpp' -o -name '*.hxx' \) \
+            -exec clang-format -i {} +
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add OptiScaler
+            git commit -m "chore: apply clang-format in OptiScaler"
+            git push
+          else
+            echo "✔ no formatting changes detected in OptiScaler"
+          fi
