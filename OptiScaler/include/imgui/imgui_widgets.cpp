@@ -5838,8 +5838,8 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
     if (apply_new_text != NULL)
     {
         //// We cannot test for 'backup_current_text_length != apply_new_text_length' here because we have no guarantee
-        ///that the size / of our owned buffer matches the size of the string object held by the user, and by design we
-        ///allow InputText() to be used / without any storage on user's side.
+        /// that the size / of our owned buffer matches the size of the string object held by the user, and by design we
+        /// allow InputText() to be used / without any storage on user's side.
         IM_ASSERT(apply_new_text_length >= 0);
         if (is_resizable)
         {
@@ -11538,8 +11538,8 @@ void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, 
     if (bb.GetWidth() <= 1.0f)
         return;
 
-    // In Style V2 we'll have full override of all colors per state (e.g. focused, selected)
-    // But right now if you want to alter text color of tabs this is what you need to do.
+        // In Style V2 we'll have full override of all colors per state (e.g. focused, selected)
+        // But right now if you want to alter text color of tabs this is what you need to do.
 #if 0
     const float backup_alpha = g.Style.Alpha;
     if (!is_contents_visible)

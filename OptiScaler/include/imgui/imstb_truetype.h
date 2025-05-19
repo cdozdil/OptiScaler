@@ -2112,7 +2112,10 @@ typedef struct
     int num_vertices;
 } stbtt__csctx;
 
-#define STBTT__CSCTX_INIT(bounds) {bounds, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0}
+#define STBTT__CSCTX_INIT(bounds)                                                                                      \
+    {                                                                                                                  \
+        bounds, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0                                                                     \
+    }
 
 static void stbtt__track_vertex(stbtt__csctx* c, stbtt_int32 x, stbtt_int32 y)
 {

@@ -7,7 +7,7 @@
 // #include "backends/dlss/nvapi.h"
 //
 //// Implementation of
-///https://github.com/Nukem9/dlssg-to-fsr3/blob/89ddc8c1cce4593fb420e633a06605c3c4b9c3cf/source/maindll/NGX/NvNGXExports.cpp
+/// https://github.com/Nukem9/dlssg-to-fsr3/blob/89ddc8c1cce4593fb420e633a06605c3c4b9c3cf/source/maindll/NGX/NvNGXExports.cpp
 //
 // NVSDK_NGX_API uint32_t NVSDK_NGX_GetAPIVersion()
 //{

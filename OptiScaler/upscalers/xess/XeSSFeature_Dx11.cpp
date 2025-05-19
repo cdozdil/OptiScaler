@@ -40,7 +40,7 @@ static std::string ResultToString(xess_result_t result)
 
 static void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
-    spdlog::log((spdlog::level::level_enum) ((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
+    spdlog::log((spdlog::level::level_enum)((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
 bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)

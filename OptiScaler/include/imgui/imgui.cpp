@@ -8504,7 +8504,7 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
             DebugLocateItemResolveWithLastItem();
 #endif
 
-        // [Test Engine] Register title bar / tab with MoveId.
+            // [Test Engine] Register title bar / tab with MoveId.
 #ifdef IMGUI_ENABLE_TEST_ENGINE
         if (!(window->Flags & ImGuiWindowFlags_NoTitleBar))
             IMGUI_TEST_ENGINE_ITEM_ADD(g.LastItemData.ID, g.LastItemData.Rect, &g.LastItemData);
@@ -10734,7 +10734,7 @@ static void ImGui::UpdateKeyboardInputs()
     if (io.ConfigFlags & ImGuiConfigFlags_NoKeyboard)
         io.ClearInputKeys();
 
-    // Import legacy keys or verify they are not used
+        // Import legacy keys or verify they are not used
 #ifndef IMGUI_DISABLE_OBSOLETE_KEYIO
     if (io.BackendUsingLegacyKeyArrays == 0)
     {
@@ -11005,7 +11005,7 @@ static ImGuiWindow* FindBestWheelingWindow(const ImVec2& wheel)
                 // - a child window doesn't allow any scrolling.
                 // - a child window has the ImGuiWindowFlags_NoScrollWithMouse flag.
                 //// - a child window doesn't need scrolling because it is already at the edge for the direction we are
-                ///going in (FIXME-WIP)
+                /// going in (FIXME-WIP)
                 const bool has_scrolling = (window->ScrollMax[axis] != 0.0f);
                 const bool inputs_disabled = (window->Flags & ImGuiWindowFlags_NoScrollWithMouse) &&
                                              !(window->Flags & ImGuiWindowFlags_NoMouseInputs);
@@ -11286,7 +11286,7 @@ void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
             if (trickle_interleaved_nonchar_keys_and_text && !key_is_potentially_for_char_input)
                 key_changed_nonchar = true;
 
-            // Allow legacy code using io.KeysDown[GetKeyIndex()] with new backends
+                // Allow legacy code using io.KeysDown[GetKeyIndex()] with new backends
 #ifndef IMGUI_DISABLE_OBSOLETE_KEYIO
             io.KeysDown[key_data_index] = key_data->Down;
             if (io.KeyMap[key_data_index] != -1)
@@ -11327,7 +11327,7 @@ void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
     for (int n = 0; n < event_n; n++)
         g.InputEventsTrail.push_back(g.InputEventsQueue[n]);
 
-    // [DEBUG]
+        // [DEBUG]
 #ifndef IMGUI_DISABLE_DEBUG_TOOLS
     if (event_n != 0 && (g.DebugLogFlags & ImGuiDebugLogFlags_EventIO))
         for (int n = 0; n < g.InputEventsQueue.Size; n++)
@@ -11685,9 +11685,9 @@ static void ImGui::ErrorCheckNewFrameSanityChecks()
     else
         IM_ASSERT(0);
 
-    // Emscripten backends are often imprecise in their submission of DeltaTime. (#6114, #3644)
-    // Ideally the Emscripten app/backend should aim to fix or smooth this value and avoid feeding zero, but we tolerate
-    // it.
+        // Emscripten backends are often imprecise in their submission of DeltaTime. (#6114, #3644)
+        // Ideally the Emscripten app/backend should aim to fix or smooth this value and avoid feeding zero, but we
+        // tolerate it.
 #ifdef __EMSCRIPTEN__
     if (g.IO.DeltaTime <= 0.0f && g.FrameCount > 0)
         g.IO.DeltaTime = 0.00001f;
@@ -11724,7 +11724,7 @@ static void ImGui::ErrorCheckNewFrameSanityChecks()
                   "ImGuiKey_Space is not mapped, required for keyboard navigation.");
 #endif
 
-    // Remap legacy clipboard handlers (OBSOLETED in 1.91.1, August 2024)
+        // Remap legacy clipboard handlers (OBSOLETED in 1.91.1, August 2024)
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     if (g.IO.GetClipboardTextFn != NULL &&
         (g.PlatformIO.Platform_GetClipboardTextFn == NULL ||
@@ -12036,7 +12036,7 @@ bool ImGui::ItemAdd(const ImRect& bb, ImGuiID id, const ImRect* nav_bb_arg, ImGu
             if (!g.ItemUnclipByLog)
                 return false;
 
-    // [DEBUG]
+                // [DEBUG]
 #ifndef IMGUI_DISABLE_DEBUG_TOOLS
     if (id != 0)
     {

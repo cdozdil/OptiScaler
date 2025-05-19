@@ -35,7 +35,7 @@
 // #define IMGUI_API __attribute__((visibility("default")))  // GCC/Clang: override visibility when set is hidden
 
 //---- Don't define obsolete functions/enums/behaviors. Consider enabling from time to time after updating to clean your
-//code of obsolete function/names. #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS #define IMGUI_DISABLE_OBSOLETE_KEYIO
+// code of obsolete function/names. #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS #define IMGUI_DISABLE_OBSOLETE_KEYIO
 // // 1.87+ disable legacy io.KeyMap[]+io.KeysDown[] in favor io.AddKeyEvent(). This is automatically done by
 // IMGUI_DISABLE_OBSOLETE_FUNCTIONS.
 
@@ -84,7 +84,7 @@
 // #define IMGUI_USE_BGRA_PACKED_COLOR
 
 //---- Use 32-bit for ImWchar (default is 16-bit) to support Unicode planes 1-16. (e.g. point beyond 0xFFFF like
-//emoticons, dingbats, symbols, shapes, ancient languages, etc...) #define IMGUI_USE_WCHAR32
+// emoticons, dingbats, symbols, shapes, ancient languages, etc...) #define IMGUI_USE_WCHAR32
 
 //---- Avoid multiple STB libraries implementations, or redefine path/filenames to prioritize another version
 // By default the embedded implementations are declared static and not available outside of Dear ImGui sources files.
@@ -97,13 +97,13 @@
 // defined.
 
 //---- Use stb_sprintf.h for a faster implementation of vsnprintf instead of the one from libc (unless
-//IMGUI_DISABLE_DEFAULT_FORMAT_FUNCTIONS is defined)
+// IMGUI_DISABLE_DEFAULT_FORMAT_FUNCTIONS is defined)
 // Compatibility checks of arguments and formats done by clang and GCC will be disabled in order to support the extra
 // formats provided by stb_sprintf.h.
 // #define IMGUI_USE_STB_SPRINTF
 
 //---- Use FreeType to build and rasterize the font atlas (instead of stb_truetype which is embedded by default in Dear
-//ImGui)
+// ImGui)
 // Requires FreeType headers to be available in the include path. Requires program to be compiled with
 // 'misc/freetype/imgui_freetype.cpp' (in this repository) + the FreeType library (not provided). On Windows you may use
 // vcpkg with 'vcpkg install freetype --triplet=x64-windows' + 'vcpkg integrate install'.

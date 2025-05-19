@@ -217,11 +217,11 @@ struct ImGuiPlatformImeData;       // Platform IME data for io.PlatformSetImeDat
 struct ImGuiSelectionBasicStorage; // Optional helper to store multi-selection state + apply multi-selection requests.
 struct ImGuiSelectionExternalStorage; // Optional helper to apply multi-selection requests to existing randomly
                                       // accessible storage.
-struct ImGuiSelectionRequest;     // A selection request (stored in ImGuiMultiSelectIO)
-struct ImGuiSizeCallbackData;     // Callback data when using SetNextWindowSizeConstraints() (rare/advanced use)
-struct ImGuiStorage;              // Helper for key->value storage (container sorted by key)
-struct ImGuiStoragePair;          // Helper for key->value storage (pair)
-struct ImGuiStyle;                // Runtime data for styling/colors
+struct ImGuiSelectionRequest;         // A selection request (stored in ImGuiMultiSelectIO)
+struct ImGuiSizeCallbackData;         // Callback data when using SetNextWindowSizeConstraints() (rare/advanced use)
+struct ImGuiStorage;                  // Helper for key->value storage (container sorted by key)
+struct ImGuiStoragePair;              // Helper for key->value storage (pair)
+struct ImGuiStyle;                    // Runtime data for styling/colors
 struct ImGuiTableSortSpecs;       // Sorting specifications for a table (often handling sort specs for a single column,
                                   // occasionally more)
 struct ImGuiTableColumnSortSpecs; // Sorting specification for one column of a table
@@ -2886,10 +2886,10 @@ enum ImGuiTableFlags_
         1 << 24, // Enable horizontal scrolling. Require 'outer_size' parameter of BeginTable() to specify the container
                  // size. Changes default sizing policy. Because this creates a child window, ScrollY is currently
                  // generally recommended when using ScrollX.
-    ImGuiTableFlags_ScrollY = 1 << 25, // Enable vertical scrolling. Require 'outer_size' parameter of BeginTable() to
-                                       // specify the container size. Sorting
-    ImGuiTableFlags_SortMulti = 1 << 26,    // Hold shift when clicking headers to sort on multiple column.
-                                            // TableGetSortSpecs() may return specs where (SpecsCount > 1).
+    ImGuiTableFlags_ScrollY = 1 << 25,   // Enable vertical scrolling. Require 'outer_size' parameter of BeginTable() to
+                                         // specify the container size. Sorting
+    ImGuiTableFlags_SortMulti = 1 << 26, // Hold shift when clicking headers to sort on multiple column.
+                                         // TableGetSortSpecs() may return specs where (SpecsCount > 1).
     ImGuiTableFlags_SortTristate = 1 << 27, // Allow no sorting, disable default sorting. TableGetSortSpecs() may return
                                             // specs where (SpecsCount == 0). Miscellaneous
     ImGuiTableFlags_HighlightHoveredColumn =
@@ -5049,8 +5049,8 @@ struct ImFontConfig
                               // remove in the future.
     float RasterizerDensity;  // 1.0f     // DPI scale for rasterization, not altering other font metrics: make it easy
                               // to swap between e.g. a 100% and a 400% fonts for a zooming display. IMPORTANT: If you
-                             // increase this it is expected that you increase font scale accordingly, otherwise quality
-                             // may look lowered.
+    // increase this it is expected that you increase font scale accordingly, otherwise quality
+    // may look lowered.
     ImWchar EllipsisChar; // -1       // Explicitly specify unicode codepoint of ellipsis character. When fonts are
                           // being merged first specified ellipsis will be used.
 
@@ -5100,7 +5100,7 @@ struct ImFontGlyphRangesBuilder
         int off = (int) (n >> 5);
         ImU32 mask = 1u << (n & 31);
         UsedChars[off] |= mask;
-    }                                             // Set bit n in the array
+    } // Set bit n in the array
     inline void AddChar(ImWchar c) { SetBit(c); } // Add character
     IMGUI_API void AddText(const char* text,
                            const char* text_end = NULL); // Add string (each character of the UTF-8 string are added)
@@ -5643,7 +5643,7 @@ IMGUI_API ImGuiKey GetKeyIndex(ImGuiKey key); // Map ImGuiKey_* values into lega
 // OpenPopupOnItemClick(str_id, mb); } // Bool return value removed. Use IsWindowAppearing() in BeginPopup() instead.
 // Renamed in 1.77, renamed back in 1.79. Sorry!
 //-- OBSOLETED in 1.78 (from June 2020): Old drag/sliders functions that took a 'float power > 1.0f' argument instead of
-//ImGuiSliderFlags_Logarithmic. See github.com/ocornut/imgui/issues/3361 for details. IMGUI_API bool DragScalar(const
+// ImGuiSliderFlags_Logarithmic. See github.com/ocornut/imgui/issues/3361 for details. IMGUI_API bool DragScalar(const
 // char* label, ImGuiDataType data_type, void* p_data, float v_speed, const void* p_min, const void* p_max, const char*
 // format, float power = 1.0f)                                                            // OBSOLETED in 1.78 (from
 // June 2020) IMGUI_API bool      DragScalarN(const char* label, ImGuiDataType data_type, void* p_data, int components,
