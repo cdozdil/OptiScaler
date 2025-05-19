@@ -1,25 +1,13 @@
-name: Check C++ Formatting
-
-on:
-  pull_request:
-    paths:
-      - 'OptiScaler/**/*.cpp'
-      - 'OptiScaler/**/*.h'
-      - 'OptiScaler/**/*.hpp'
-      - 'OptiScaler/**/*.cxx'
-      - 'OptiScaler/**/*.cc'
-
+name: clang-format Check
+on: [push, pull_request]
 jobs:
-  clang-format-check:
+  formatting-check:
+    name: Formatting Check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install clang-format
-        run: sudo apt-get install -y clang-format
-
-      - name: Check formatting
-        run: |
-          find . \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' -o -name '*.cxx' -o -name '*.cc' \) \
-            -exec clang-format --dry-run --Werror {} +
+    - uses: actions/checkout@v4
+    - name: Run clang-format style check for C/C++/Protobuf programs.
+      uses: jidicula/clang-format-action@v4.15.0
+      with:
+        clang-format-version: '20'
+        check-path: 'OptiScaler'
