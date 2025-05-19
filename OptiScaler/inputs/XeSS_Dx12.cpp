@@ -92,20 +92,47 @@ xess_result_t hk_xessD3D12CreateContext(ID3D12Device* pDevice, xess_context_hand
     if (pDevice == nullptr)
         return XESS_RESULT_ERROR_DEVICE;
 
-    Util::DllPath();
+    if (!State::Instance().NvngxDx12Inited)
+    {
+        NVSDK_NGX_FeatureCommonInfo fcInfo{};
 
-    NVSDK_NGX_FeatureCommonInfo fcInfo{};
-    wchar_t const** paths = new const wchar_t* [1];
-    auto dllPath = Util::DllPath().remove_filename().wstring();
-    paths[0] = dllPath.c_str();
-    fcInfo.PathListInfo.Path = paths;
-    fcInfo.PathListInfo.Length = 1;
+        auto dllPath = Util::DllPath().remove_filename();
+        auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
+        auto nvngxDlssDPath = Util::FindFilePath(dllPath, "nvngx_dlssd.dll");
+        auto nvngxDlssGPath = Util::FindFilePath(dllPath, "nvngx_dlssg.dll");
 
-    auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                        pDevice, &fcInfo, State::Instance().NVNGX_Version);
+        std::vector<std::wstring> pathStorage;
 
-    if (nvResult != NVSDK_NGX_Result_Success)
-        return XESS_RESULT_ERROR_UNINITIALIZED;
+        pathStorage.push_back(dllPath.wstring());
+
+        if (nvngxDlssPath.has_value())
+            pathStorage.push_back(nvngxDlssPath.value().wstring());
+
+        if (nvngxDlssDPath.has_value())
+            pathStorage.push_back(nvngxDlssDPath.value().wstring());
+
+        if (nvngxDlssGPath.has_value())
+            pathStorage.push_back(nvngxDlssGPath.value().wstring());
+
+        if (Config::Instance()->DLSSFeaturePath.has_value())
+            pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
+
+        // Build pointer array
+        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        for (size_t i = 0; i < pathStorage.size(); ++i)
+        {
+            paths[i] = pathStorage[i].c_str();
+        }
+
+        fcInfo.PathListInfo.Path = paths;
+        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+                                                            pDevice, &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
+
+        if (nvResult != NVSDK_NGX_Result_Success)
+            return XESS_RESULT_ERROR_UNINITIALIZED;
+    }
 
     _d3d12Device = pDevice;
     *phContext = (xess_context_handle_t)++_handleCounter;
@@ -204,13 +231,24 @@ xess_result_t hk_xessD3D12Execute(xess_context_handle_t hContext, ID3D12Graphics
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, pExecParams->pExposureScaleTexture);
 
     if (!isVersionOrBetter({ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch }, { 2, 0, 1 }))
-        params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, pExecParams->pResponsivePixelMaskTexture);    
+        params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, pExecParams->pResponsivePixelMaskTexture);
     else
         params->Set("FSR.reactive", pExecParams->pResponsivePixelMaskTexture);
 
     params->Set(NVSDK_NGX_Parameter_Color, pExecParams->pColorTexture);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pExecParams->pVelocityTexture);
     params->Set(NVSDK_NGX_Parameter_Output, pExecParams->pOutputTexture);
+
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, pExecParams->inputColorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, pExecParams->inputColorBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, pExecParams->inputDepthBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, pExecParams->inputDepthBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, pExecParams->inputMotionVectorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, pExecParams->inputMotionVectorBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, pExecParams->outputColorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, pExecParams->outputColorBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, pExecParams->inputResponsiveMaskBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, pExecParams->inputResponsiveMaskBase.y);
 
     State::Instance().setInputApiName = "XeSS";
 

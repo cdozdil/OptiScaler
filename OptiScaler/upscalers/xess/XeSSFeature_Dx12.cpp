@@ -81,7 +81,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
     float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -128,23 +128,6 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         {
             Config::Instance()->MVResourceBarrier = (int)D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
             ResourceBarrier(InCommandList, params.pVelocityTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        }
-
-        if (!Config::Instance()->DisplayResolution.has_value())
-        {
-            auto desc = params.pVelocityTexture->GetDesc();
-            bool lowResMV = desc.Width < TargetWidth();
-            bool displaySizeEnabled = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
-
-            if (displaySizeEnabled && lowResMV)
-            {
-                LOG_WARN("MotionVectors MVWidth: {0}, DisplayWidth: {1}, Flag: {2} Disabling DisplaySizeMV!!", desc.Width, DisplayWidth(), displaySizeEnabled);
-                Config::Instance()->DisplayResolution = false;
-                State::Instance().changeBackend[_handle->Id] = true;
-                return true;
-            }
-
-            Config::Instance()->DisplayResolution = displaySizeEnabled;
         }
     }
     else
@@ -208,7 +191,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     }
     else
     {
-        if (!Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+        if (LowResMV())
         {
             LOG_ERROR("Depth not exist!!");
             return false;
@@ -217,7 +200,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         params.pDepthTexture = nullptr;
     }
 
-    if (!Config::Instance()->AutoExposure.value_or(false))
+    if (!AutoExposure())
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &params.pExposureScaleTexture) != NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&params.pExposureScaleTexture);
@@ -232,7 +215,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         else
         {
             LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            Config::Instance()->AutoExposure = true;
+            State::Instance().AutoExposure = true;
             State::Instance().changeBackend[_handle->Id] = true;
             return true;
         }
@@ -307,6 +290,17 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     }
     else
         LOG_WARN("Can't get motion vector scales!");
+
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, &params.inputColorBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, &params.inputColorBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, &params.inputDepthBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, &params.inputDepthBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, &params.inputMotionVectorBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, &params.inputMotionVectorBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, &params.outputColorBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, &params.outputColorBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, &params.inputResponsiveMaskBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, &params.inputResponsiveMaskBase.y);
 
     LOG_DEBUG("Executing!!");
     xessResult = XeSSProxy::D3D12Execute()(_xessContext, InCommandList, &params);
@@ -426,9 +420,4 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
 XeSSFeatureDx12::~XeSSFeatureDx12()
 {
-    if (State::Instance().isShuttingDown)
-        return;
-
-    if (RCAS != nullptr && RCAS.get() != nullptr)
-        RCAS.reset();
 }

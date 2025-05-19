@@ -49,10 +49,11 @@ echo  [1] dxgi.dll
 echo  [2] winmm.dll
 echo  [3] version.dll
 echo  [4] dbghelp.dll
-echo  [5] wininet.dll
-echo  [6] winhttp.dll
-echo  [7] OptiScaler.asi
-set /p filenameChoice="Enter 1-7 (or press Enter for default): "
+echo  [5] d3d12.dll
+echo  [6] wininet.dll
+echo  [7] winhttp.dll
+echo  [8] OptiScaler.asi
+set /p filenameChoice="Enter 1-8 (or press Enter for default): "
 
 if "%filenameChoice%"=="" (
     set selectedFilename="dxgi.dll"
@@ -65,10 +66,12 @@ if "%filenameChoice%"=="" (
 ) else if "%filenameChoice%"=="4" (
     set selectedFilename="dbghelp.dll"
 ) else if "%filenameChoice%"=="5" (
-    set selectedFilename="wininet.dll"
+    set selectedFilename="d3d12.dll"
 ) else if "%filenameChoice%"=="6" (
-    set selectedFilename="winhttp.dll"
+    set selectedFilename="wininet.dll"
 ) else if "%filenameChoice%"=="7" (
+    set selectedFilename="winhttp.dll"
+) else if "%filenameChoice%"=="8" (
     set selectedFilename="OptiScaler.asi"
 ) else (
     echo Invalid choice. Please select a valid option.
@@ -143,7 +146,7 @@ if "%gpuChoice%"=="2" (
 :checkFile
 REM Query user for DLSS
 echo.
-echo Will you try to use DLSS inputs?
+echo Will you try to use DLSS inputs? (enables spoofing, required for DLSS FG, Reflex-^>AL2)
 echo [1] Yes
 echo [2] No
 set /p copyNvngx="Enter 1 or 2 (or press Enter for Yes): "

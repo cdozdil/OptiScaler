@@ -29,14 +29,16 @@ If on AMD/Intel and Automated, **used DLSS inputs**?
 - [ ] Yes
 - [ ] No
 
+Also please mention in description which upscaler inputs are used (which upscaler you selected in game settings).
+
 #### Did you check the [Wiki](https://github.com/cdozdil/OptiScaler/wiki)?
  - [ ] Yes
  - [ ] No
 
 #### Please describe the issue and steps to reproduce it
-*Example:* Game is crashing when switching to FSR4.
+*Example:* I am using DLSS in game settings and the game is crashing when switching to FSR4.
 
 #### I have attached
- - [ ] OptiScaler.log _(if too large, then zip it)_
+ - [ ] OptiScaler.log _(set `LogLevel=0` and `LogToFile=true` in Optiscaler.ini, zip it if too big)_
  - [ ] Screenshot of game folder _(where you placed Opti)_
  - [ ] Screenshot of Opti overlay in-game _(opens with shortcut, default Insert)_

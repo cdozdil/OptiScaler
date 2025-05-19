@@ -9,9 +9,16 @@
 #include <detours/detours.h>
 
 #include <dxgi1_6.h>
-#include <DbgHelp.h>
 
+#define METHOD_BASED_SPOOFING_CHECK
+
+#ifdef METHOD_BASED_SPOOFING_CHECK
+#include <DbgHelp.h>
+#endif
+
+#ifndef METHOD_BASED_SPOOFING_CHECK
 //#define FILE_BASED_SPOOFING_CHECK
+#endif
 
 typedef HRESULT(*PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
 typedef HRESULT(*PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
@@ -48,6 +55,7 @@ inline static bool SkipSpoofing()
 {
     auto skip = !Config::Instance()->DxgiSpoofing.value_or_default() || State::Instance().skipSpoofing; // || State::Instance().isRunningOnLinux;
 
+#ifdef METHOD_BASED_SPOOFING_CHECK || FILE_BASED_SPOOFING_CHECK
     if (skip)
         LOG_TRACE("DxgiSpoofing: {}, skipSpoofing: {}, skipping spoofing",
                   Config::Instance()->DxgiSpoofing.value_or_default(), State::Instance().skipSpoofing);
@@ -103,8 +111,9 @@ inline static bool SkipSpoofing()
 
         //&& pos_streamline == std::string::npos;
         skip = pos_intel != std::string::npos && pos_ffx != std::string::npos && pos_fsr != std::string::npos;
+#endif
 
-#else
+#ifdef METHOD_BASED_SPOOFING_CHECK
     if (!skip && Config::Instance()->DxgiBlacklist.has_value() && process != nullptr)
     {
         skip = true;
@@ -151,6 +160,7 @@ inline static bool SkipSpoofing()
         if (skip)
             LOG_DEBUG("skipping spoofing, blacklisting active");
     }
+#endif
 
     return skip;
 }
@@ -168,7 +178,7 @@ inline static HRESULT detGetDesc3(IDXGIAdapter4 * This, DXGI_ADAPTER_DESC3 * pDe
         if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
-            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB, VendorId: {:#x}, DeviceId: {:#x}", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024), pDesc->VendorId, pDesc->DeviceId);
             LOG_INFO("{}", descStr);
             State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
         }
@@ -176,10 +186,13 @@ inline static HRESULT detGetDesc3(IDXGIAdapter4 * This, DXGI_ADAPTER_DESC3 * pDe
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (pDesc->VendorId != 0x1414 &&
+            (!Config::Instance()->TargetVendorId.has_value() || Config::Instance()->TargetVendorId.value() == pDesc->VendorId) &&
+            (!Config::Instance()->TargetDeviceId.has_value() || Config::Instance()->TargetDeviceId.value() == pDesc->DeviceId) &&
+            Config::Instance()->DxgiSpoofing.value_or_default() && !SkipSpoofing())
         {
-            pDesc->VendorId = 0x10de;
-            pDesc->DeviceId = 0x2684;
+            pDesc->VendorId = Config::Instance()->SpoofedVendorId.value_or_default();
+            pDesc->DeviceId = Config::Instance()->SpoofedDeviceId.value_or_default();
 
             auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
@@ -209,7 +222,7 @@ inline static HRESULT detGetDesc2(IDXGIAdapter2 * This, DXGI_ADAPTER_DESC2 * pDe
         if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
-            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB, VendorId: {:#x}, DeviceId: {:#x}", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024), pDesc->VendorId, pDesc->DeviceId);
             LOG_INFO("{}", descStr);
             State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
         }
@@ -217,10 +230,13 @@ inline static HRESULT detGetDesc2(IDXGIAdapter2 * This, DXGI_ADAPTER_DESC2 * pDe
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (pDesc->VendorId != 0x1414 &&
+            (!Config::Instance()->TargetVendorId.has_value() || Config::Instance()->TargetVendorId.value() == pDesc->VendorId) &&
+            (!Config::Instance()->TargetDeviceId.has_value() || Config::Instance()->TargetDeviceId.value() == pDesc->DeviceId) &&
+            Config::Instance()->DxgiSpoofing.value_or_default() && !SkipSpoofing())
         {
-            pDesc->VendorId = 0x10de;
-            pDesc->DeviceId = 0x2684;
+            pDesc->VendorId = Config::Instance()->SpoofedVendorId.value_or_default();
+            pDesc->DeviceId = Config::Instance()->SpoofedDeviceId.value_or_default();
 
             auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
@@ -250,7 +266,7 @@ inline static HRESULT detGetDesc1(IDXGIAdapter1 * This, DXGI_ADAPTER_DESC1 * pDe
         if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
-            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB, VendorId: {:#x}, DeviceId: {:#x}", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024), pDesc->VendorId, pDesc->DeviceId);
             LOG_INFO("{}", descStr);
             State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
         }
@@ -258,10 +274,13 @@ inline static HRESULT detGetDesc1(IDXGIAdapter1 * This, DXGI_ADAPTER_DESC1 * pDe
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (pDesc->VendorId != 0x1414 &&
+            (!Config::Instance()->TargetVendorId.has_value() || Config::Instance()->TargetVendorId.value() == pDesc->VendorId) &&
+            (!Config::Instance()->TargetDeviceId.has_value() || Config::Instance()->TargetDeviceId.value() == pDesc->DeviceId) &&
+            Config::Instance()->DxgiSpoofing.value_or_default() && !SkipSpoofing())
         {
-            pDesc->VendorId = 0x10de;
-            pDesc->DeviceId = 0x2684;
+            pDesc->VendorId = Config::Instance()->SpoofedVendorId.value_or_default();
+            pDesc->DeviceId = Config::Instance()->SpoofedDeviceId.value_or_default();
 
             auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
@@ -291,7 +310,7 @@ inline static HRESULT detGetDesc(IDXGIAdapter * This, DXGI_ADAPTER_DESC * pDesc)
         if (pDesc->VendorId != 0x1414 && !State::Instance().adapterDescs.contains(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart))
         {
             std::wstring szName(pDesc->Description);
-            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024));
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB, VendorId: {:#x}, DeviceId: {:#x}", wstring_to_string(szName), pDesc->DedicatedVideoMemory / (1024 * 1024), pDesc->VendorId, pDesc->DeviceId);
             LOG_INFO("{}", descStr);
             State::Instance().adapterDescs.insert_or_assign(pDesc->AdapterLuid.HighPart | pDesc->AdapterLuid.LowPart, descStr);
         }
@@ -299,10 +318,13 @@ inline static HRESULT detGetDesc(IDXGIAdapter * This, DXGI_ADAPTER_DESC * pDesc)
         if (Config::Instance()->DxgiVRAM.has_value())
             pDesc->DedicatedVideoMemory = (UINT64)Config::Instance()->DxgiVRAM.value() * 1024 * 1024 * 1024;
 
-        if (!SkipSpoofing() && pDesc->VendorId != 0x1414 && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (pDesc->VendorId != 0x1414 && 
+            (!Config::Instance()->TargetVendorId.has_value() || Config::Instance()->TargetVendorId.value() == pDesc->VendorId) &&
+            (!Config::Instance()->TargetDeviceId.has_value() || Config::Instance()->TargetDeviceId.value() == pDesc->DeviceId) &&
+            Config::Instance()->DxgiSpoofing.value_or_default() && !SkipSpoofing())
         {
-            pDesc->VendorId = 0x10de;
-            pDesc->DeviceId = 0x2684;
+            pDesc->VendorId = Config::Instance()->SpoofedVendorId.value_or_default();
+            pDesc->DeviceId = Config::Instance()->SpoofedDeviceId.value_or_default();
 
             auto szName = Config::Instance()->SpoofedGPUName.value_or_default();
             std::memset(pDesc->Description, 0, sizeof(pDesc->Description));
@@ -359,7 +381,7 @@ inline static HRESULT detEnumAdapterByLuid(IDXGIFactory4 * This, LUID AdapterLui
     return result;
 }
 
-inline static HRESULT detEnumAdapters1(IDXGIFactory1 * This, UINT Adapter, IDXGIAdapter1 * *ppAdapter)
+inline static HRESULT detEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IDXGIAdapter1** ppAdapter)
 {
     LOG_TRACE("dllmain");
 

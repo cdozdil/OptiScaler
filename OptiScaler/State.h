@@ -2,6 +2,7 @@
 #include "pch.h"
 
 #include "upscalers/IFeature.h"
+#include "framegen/IFGFeature_Dx12.h"
 
 #include <deque>
 #include <vulkan/vulkan.h>
@@ -23,7 +24,8 @@ typedef enum GameQuirk
     RDR1,
     Banishers,
     SplitFiction,
-    PoE2
+    PoE2,
+    KernelBaseHooks
 } GameQuirk;
 
 typedef enum FGType : uint32_t
@@ -40,8 +42,13 @@ public:
         return instance;
     }
 
-    // Init flags
-    // Used per feature
+    std::string GameName;
+    std::string GameExe;
+
+    bool NvngxDx11Inited = false;
+    bool NvngxDx12Inited = false;
+    bool NvngxVkInited = false;
+
     // Reseting on creation of new feature
     std::optional<bool> AutoExposure;
 
@@ -63,12 +70,13 @@ public:
     bool FGchanged = false;
     bool SCchanged = false;
     bool skipHeapCapture = false;
-    bool useThreadingForHeaps = false;
 
     bool FGcaptureResources = false;
     int FGcapturedResourceCount = false;
     bool FGresetCapturedResources = false;
     bool FGonlyUseCapturedResources = false;
+
+    bool FSRFGFTPchanged = false;
 
     // NVNGX init parameters
     uint64_t NVNGX_ApplicationId = 1337;
@@ -115,8 +123,8 @@ public:
     bool skipDxgiLoadChecks = false;
 
     // FSR3.x
-    std::vector<const char*> fsr3xVersionNames;
-    std::vector<uint64_t> fsr3xVersionIds;
+    std::vector<const char*> fsr3xVersionNames{};
+    std::vector<uint64_t> fsr3xVersionIds{};
 
     // Linux check
     bool isRunningOnLinux = false;
@@ -135,6 +143,7 @@ public:
     // Framegraph
     std::deque<double> upscaleTimes;
     std::deque<double> frameTimes;
+    double lastFrameTime = 0.0;
 
     // Swapchain info
     float screenWidth = 800.0;
@@ -158,6 +167,12 @@ public:
     bool fsrHooks = false;
 
     IFeature* currentFeature = nullptr;
+
+    IFGFeature_Dx12* currentFG = nullptr;
+    IDXGISwapChain* currentSwapchain = nullptr;
+    ID3D12Device* currentD3D12Device = nullptr;
+    ID3D11Device* currentD3D11Device = nullptr;
+    ID3D12CommandQueue* currentCommandQueue = nullptr;
 
     std::vector<ID3D12Device*> d3d12Devices;
     std::vector<ID3D11Device*> d3d11Devices;
@@ -194,14 +209,35 @@ public:
         }
     };
 
+    static void DisableServeOriginal(UINT owner)
+    {
+        if (_serveOwner == 0 || _serveOwner == owner)
+        {
+            _serveOriginal = false;
+            _skipOwner = 0;
+        }
+    };
+
+    static void EnableServeOriginal(UINT owner)
+    {
+        if (_serveOwner == 0 || _serveOwner == owner)
+        {
+            _serveOriginal = true;
+            _skipOwner = owner;
+        }
+    };
+
     static bool SkipDllChecks() { return _skipChecks; }
     static std::string SkipDllName() { return _skipDllName; }
-
+    static bool ServeOriginal() { return _serveOriginal; }
 
 private:
     inline static bool _skipChecks = false;
     inline static std::string _skipDllName = "";
     inline static UINT _skipOwner = 0;
+    
+    inline static bool _serveOriginal = false;
+    inline static UINT _serveOwner = 0;
 
     State() = default;
 };

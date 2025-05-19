@@ -115,7 +115,7 @@ bool DLSSDFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 		ID3D12Resource* paramMotion = nullptr;
 		ID3D12Resource* setBuffer = nullptr;
 
-		bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0);
+		bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV();
 
 		InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
 		InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMotion);
@@ -273,10 +273,10 @@ DLSSDFeatureDx12::DLSSDFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter*
 
 DLSSDFeatureDx12::~DLSSDFeatureDx12()
 {
+	if (State::Instance().isShuttingDown)
+		return;
+
 	if (NVNGXProxy::D3D12_ReleaseFeature() != nullptr && _p_dlssdHandle != nullptr)
 		NVNGXProxy::D3D12_ReleaseFeature()(_p_dlssdHandle);
-
-	if (RCAS != nullptr && RCAS.get() != nullptr)
-		RCAS.reset();
 }
 

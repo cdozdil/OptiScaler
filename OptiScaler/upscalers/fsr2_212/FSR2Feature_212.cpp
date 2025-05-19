@@ -10,16 +10,6 @@ double FSR2Feature212::GetDeltaTime()
 	return deltaTime;
 }
 
-void FSR2Feature212::SetDepthInverted(bool InValue)
-{
-	_depthInverted = InValue;
-}
-
-bool FSR2Feature212::IsDepthInverted() const
-{
-	return _depthInverted;
-}
-
 double FSR2Feature212::MillisecondsNow()
 {
 	static LARGE_INTEGER s_frequency;

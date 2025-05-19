@@ -847,7 +847,6 @@ ImagehlpApiVersionEx = _ImagehlpApiVersionEx
 ImagehlpApiVersion = _ImagehlpApiVersion
 ImageRvaToVa = _ImageRvaToVa
 ImageRvaToSection = _ImageRvaToSection
-ImageNtHeader = _ImageNtHeader
 ImageDirectoryEntryToDataEx = _ImageDirectoryEntryToDataEx
 ImageDirectoryEntryToData = _ImageDirectoryEntryToData
 GetTimestampForLoadedLibrary = _GetTimestampForLoadedLibrary

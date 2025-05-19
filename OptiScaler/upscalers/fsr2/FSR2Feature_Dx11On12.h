@@ -14,7 +14,7 @@ protected:
 	bool InitFSR2(const NVSDK_NGX_Parameter* InParameters);
 
 public:
-	const char* Name() final { return "FSR w/Dx12"; }
+	std::string Name() const { return "FSR w/Dx12"; }
 
 	FSR2FeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : FSR2Feature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature_Dx11wDx12(InHandleId, InParameters), IFeature(InHandleId, InParameters)
 	{

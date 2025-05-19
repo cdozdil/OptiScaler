@@ -22,6 +22,8 @@
 #define SPDLOG_WCHAR_FILENAMES
 #include "spdlog/spdlog.h"
 
+#define BUFFER_COUNT 4
+
 // Enables logging of DLSS NV Parameters
 //#define DLSS_PARAM_DUMP
 
@@ -33,8 +35,11 @@
 //#define DETAILED_DEBUG_LOGS
 
 inline HMODULE dllModule = nullptr;
-inline HMODULE skHandle = nullptr;
-inline HMODULE reshadeHandle = nullptr;
+inline HMODULE originalModule = nullptr;
+inline HMODULE skModule = nullptr;
+inline HMODULE reshadeModule = nullptr;
+inline HMODULE vulkanModule = nullptr;
+inline HMODULE d3d11Module = nullptr;
 inline DWORD processId;
 
 #define LOG_TRACE(msg, ...) \

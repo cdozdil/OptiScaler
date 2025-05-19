@@ -99,7 +99,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
@@ -209,11 +209,13 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     else
     {
         LOG_ERROR("Depth not exist!!");
-        return false;
+
+        if (LowResMV())
+            return false;
     }
 
     ID3D12Resource* paramExp = nullptr;
-    if (Config::Instance()->AutoExposure.value_or(false) || State::Instance().AutoExposure.value_or(false))
+    if (AutoExposure())
     {
         LOG_DEBUG("AutoExposure enabled!");
     }
@@ -326,7 +328,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.cameraNear", &params.cameraNear) != NVSDK_NGX_Result_Success)
     {
-        if (IsDepthInverted())
+        if (DepthInverted())
             params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
         else
             params.cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
@@ -334,7 +336,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() || InParameters->Get("FSR.cameraFar", &params.cameraFar) != NVSDK_NGX_Result_Success)
     {
-        if (IsDepthInverted())
+        if (DepthInverted())
             params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
         else
             params.cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
@@ -367,7 +369,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
         params.preExposure = 1.0f;
 
-    if (isVersionOrBetter(Version(), { 1, 1, 1 }) && _velocity != Config::Instance()->FsrVelocity.value_or_default())
+    if (isVersionOrBetter(Version(), { 3, 1, 1 }) && _velocity != Config::Instance()->FsrVelocity.value_or_default())
     {
         _velocity = Config::Instance()->FsrVelocity.value_or_default();
         ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
@@ -378,6 +380,58 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
         if (result != FFX_API_RETURN_OK)
             LOG_WARN("Velocity configure result: {}", (UINT)result);
+    }
+
+    if (isVersionOrBetter(Version(), { 3, 1, 4 }) && _reactiveScale != Config::Instance()->FsrReactiveScale.value_or_default())
+    {
+        _reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
+        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FREACTIVENESSSCALE;
+        m_upscalerKeyValueConfig.ptr = &_reactiveScale;
+        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
+
+        if (result != FFX_API_RETURN_OK)
+            LOG_WARN("Reactive Scale configure result: {}", (UINT)result);
+    }
+
+    if (isVersionOrBetter(Version(), { 3, 1, 4 }) && _shadingScale != Config::Instance()->FsrShadingScale.value_or_default())
+    {
+        _shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
+        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FSHADINGCHANGESCALE;
+        m_upscalerKeyValueConfig.ptr = &_shadingScale;
+        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
+
+        if (result != FFX_API_RETURN_OK)
+            LOG_WARN("Shading Scale configure result: {}", (UINT)result);
+    }
+
+    if (isVersionOrBetter(Version(), { 3, 1, 4 }) && _accAddPerFrame != Config::Instance()->FsrAccAddPerFrame.value_or_default())
+    {
+        _accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
+        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FACCUMULATIONADDEDPERFRAME;
+        m_upscalerKeyValueConfig.ptr = &_accAddPerFrame;
+        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
+
+        if (result != FFX_API_RETURN_OK)
+            LOG_WARN("Acc. Add Per Frame configure result: {}", (UINT)result);
+    }
+
+    if (isVersionOrBetter(Version(), { 3, 1, 4 }) && _minDisOccAcc != Config::Instance()->FsrMinDisOccAcc.value_or_default())
+    {
+        _minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
+        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FMINDISOCCLUSIONACCUMULATION;
+        m_upscalerKeyValueConfig.ptr = &_minDisOccAcc;
+        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
+
+        if (result != FFX_API_RETURN_OK)
+            LOG_WARN("Minimum Disocclusion Acc. configure result: {}", (UINT)result);
     }
 
     if (InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width) == NVSDK_NGX_Result_Success && Config::Instance()->OutputScalingEnabled.value_or_default())
@@ -548,65 +602,26 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     _contextDesc.fpMessage = FfxLogCallback;
 
-    bool Hdr = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-    bool EnableSharpening = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-    bool DepthInverted = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-    bool JitterMotion = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-    bool AutoExposure = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-
     _contextDesc.flags = 0;
 
-    if (Config::Instance()->DepthInverted.value_or(DepthInverted))
-    {
-        Config::Instance()->DepthInverted.set_volatile_value(true);
+#ifdef _DEBUG
+    _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEBUG_CHECKING;
+#endif
+
+    if (DepthInverted())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DEPTH_INVERTED;
-        SetDepthInverted(true);
-        LOG_INFO("contextDesc.initFlags (DepthInverted) {0:b}", _contextDesc.flags);
-    }
-    else
-        Config::Instance()->DepthInverted.set_volatile_value(false);
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure) || State::Instance().AutoExposure.value_or(false))
-    {
+    if (AutoExposure())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_AUTO_EXPOSURE;
-        LOG_INFO("contextDesc.initFlags (AutoExposure) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        LOG_INFO("contextDesc.initFlags (!AutoExposure) {0:b}", _contextDesc.flags);
-    }
 
-    if (Config::Instance()->HDR.value_or(Hdr))
-    {
-        Config::Instance()->HDR.set_volatile_value(true);
+    if (IsHdr())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE;
-        LOG_INFO("contextDesc.initFlags (HDR) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        Config::Instance()->HDR.set_volatile_value(false);
-        LOG_INFO("contextDesc.initFlags (!HDR) {0:b}", _contextDesc.flags);
-    }
 
-    if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
-    {
-        Config::Instance()->JitterCancellation.set_volatile_value(true);
+    if (JitteredMV())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
-        LOG_INFO("contextDesc.initFlags (JitterCancellation) {0:b}", _contextDesc.flags);
-    }
-    else
-        Config::Instance()->JitterCancellation.set_volatile_value(false);
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
-    {
+    if (!LowResMV())
         _contextDesc.flags |= FFX_UPSCALE_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
-        LOG_INFO("contextDesc.initFlags (!LowResMV) {0:b}", _contextDesc.flags);
-    }
-    else
-    {
-        LOG_INFO("contextDesc.initFlags (LowResMV) {0:b}", _contextDesc.flags);
-    }
 
     if (Config::Instance()->FsrNonLinearPQ.value_or_default() || Config::Instance()->FsrNonLinearSRGB.value_or_default())
     {
@@ -614,7 +629,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("contextDesc.initFlags (NonLinearColorSpace) {0:b}", _contextDesc.flags);
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+    if (Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV())
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or_default();
 
@@ -647,7 +662,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->OutputScalingMultiplier.set_volatile_value(1.0f);
 
         // if output scaling active let it to handle downsampling
-        if (Config::Instance()->OutputScalingEnabled.value_or_default() && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+        if (Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV())
         {
             _contextDesc.maxUpscaleSize.width = _contextDesc.maxRenderSize.width;
             _contextDesc.maxUpscaleSize.height = _contextDesc.maxRenderSize.height;
@@ -698,7 +713,7 @@ bool FSR31FeatureDx12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
     }
 
     auto version = State::Instance().fsr3xVersionNames[Config::Instance()->Fsr3xIndex.value_or_default()];
-    _name = std::format("FSR {}", version);
+    _name = "FSR";
     parse_version(version);
 
     State::Instance().skipSpoofing = false;

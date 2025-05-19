@@ -26,6 +26,8 @@
 #include <hooks/HooksDx.h>
 #include <hooks/HooksVk.h>
 
+#include <cwctype> 
+
 // Enables hooking of GetModuleHandle
 // which might create issues, not tested very well
 //#define HOOK_GET_MODULE
@@ -49,6 +51,8 @@ private:
     inline static Kernel32Proxy::PFN_GetProcAddress o_K32_GetProcAddress = nullptr;
 
     inline static KernelBaseProxy::PFN_FreeLibrary o_KB_FreeLibrary = nullptr;
+    inline static KernelBaseProxy::PFN_LoadLibraryA o_KB_LoadLibraryA = nullptr;
+    inline static KernelBaseProxy::PFN_LoadLibraryW o_KB_LoadLibraryW = nullptr;
     inline static KernelBaseProxy::PFN_LoadLibraryExA o_KB_LoadLibraryExA = nullptr;
     inline static KernelBaseProxy::PFN_LoadLibraryExW o_KB_LoadLibraryExW = nullptr;
     inline static KernelBaseProxy::PFN_GetProcAddress o_KB_GetProcAddress = nullptr;
@@ -82,10 +86,16 @@ private:
 
         if (!State::Instance().isWorkingAsNvngx && (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllName(&lcaseLibName, &dllNames))
         {
-            LOG_INFO("{0} call returning this dll!", lcaseLibName);
-            //loadCount++;
-
-            return dllModule;
+            if (!State::Instance().ServeOriginal())
+            {
+                LOG_INFO("{} call, returning this dll!", lcaseLibName);
+                return dllModule;
+            }
+            else
+            {
+                LOG_INFO("{} call, ServeOriginal active returning original dll!", lcaseLibName);
+                return originalModule;
+            }
         }
 
         // NvApi64.dll
@@ -166,20 +176,21 @@ private:
             return loadedBin;
         }
 
-        if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllName(&lcaseLibName, &blockOverlayNames))
+        // Overlay
+        if (Config::Instance()->DisableOverlays.value_or_default() && CheckDllName(&lcaseLibName, &blockOverlayNames))
         {
-            LOG_DEBUG("Trying to load overlay dll: {}", lcaseLibName);
+            LOG_DEBUG("Blocking overlay dll: {}", lcaseLibName);
             return (HMODULE)1;
         }
         else if (CheckDllName(&lcaseLibName, &overlayNames))
         {
-            LOG_DEBUG("Overlay dll!");
+            LOG_DEBUG("Overlay dll: {}", lcaseLibName);
 
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
             if (module != nullptr)
             {
-                if (!_overlayMethodsCalled && DxgiProxy::Module() != nullptr)
+                if (/*!_overlayMethodsCalled &&*/ DxgiProxy::Module() != nullptr)
                 {
                     LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
                     IDXGIFactory* factory = nullptr;
@@ -344,7 +355,7 @@ private:
 
             return module;
         }
-                
+
         if (CheckDllName(&lcaseLibName, &xessDx11Names))
         {
             auto module = LoadLibxessDx11(string_to_wstring(lcaseLibName)); // KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
@@ -414,12 +425,16 @@ private:
 
         if (!State::Instance().isWorkingAsNvngx && (!State::Instance().isDxgiMode || !State::Instance().skipDxgiLoadChecks) && CheckDllNameW(&lcaseLibName, &dllNamesW))
         {
-            LOG_INFO("{0} call returning this dll!", lcaseLibNameA);
-
-            //if (!dontCount)
-            //loadCount++;
-
-            return dllModule;
+            if (!State::Instance().ServeOriginal())
+            {
+                LOG_INFO("{} call, returning this dll!", lcaseLibNameA);
+                return dllModule;
+            }
+            else
+            {
+                LOG_INFO("{} call, ServeOriginal active returning original dll!", lcaseLibNameA);
+                return originalModule;
+            }
         }
 
         // nvngx_dlss
@@ -501,14 +516,14 @@ private:
         }
 
 
-        if (Config::Instance()->FGDisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &blockOverlayNamesW))
+        if (Config::Instance()->DisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &blockOverlayNamesW))
         {
-            LOG_DEBUG("Trying to load overlay dll: {}", wstring_to_string(lcaseLibName));
+            LOG_DEBUG("Blocking overlay dll: {}", wstring_to_string(lcaseLibName));
             return (HMODULE)1;
         }
         else if (CheckDllNameW(&lcaseLibName, &overlayNamesW))
         {
-            LOG_DEBUG("Overlay dll!");
+            LOG_DEBUG("Overlay dll: {}", wstring_to_string(lcaseLibName));
 
             // If we hook CreateSwapChainForHwnd & CreateSwapChainForCoreWindow here
             // Order of CreateSwapChain calls become
@@ -523,7 +538,7 @@ private:
 
             if (module != nullptr)
             {
-                if (!_overlayMethodsCalled && DxgiProxy::Module() != nullptr)
+                if (/*!_overlayMethodsCalled && */ DxgiProxy::Module() != nullptr)
                 {
                     LOG_INFO("Calling CreateDxgiFactory methods for overlay!");
                     IDXGIFactory* factory = nullptr;
@@ -777,13 +792,16 @@ private:
 
     static HMODULE LoadLibxess(std::wstring originalPath)
     {
+        if (XeSSProxy::Module() != nullptr)
+            return XeSSProxy::Module();
+
         HMODULE libxess = nullptr;
 
         if (Config::Instance()->XeSSLibrary.has_value())
         {
             std::filesystem::path libPath(Config::Instance()->XeSSLibrary.value().c_str());
 
-            if(libPath.has_filename())
+            if (libPath.has_filename())
                 libxess = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
             else
                 libxess = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess.dll").c_str(), NULL, 0);
@@ -815,13 +833,16 @@ private:
 
     static HMODULE LoadLibxessDx11(std::wstring originalPath)
     {
+        if (XeSSProxy::ModuleDx11() != nullptr)
+            return XeSSProxy::ModuleDx11();
+
         HMODULE libxess = nullptr;
 
         if (Config::Instance()->XeSSDx11Library.has_value())
         {
             std::filesystem::path libPath(Config::Instance()->XeSSDx11Library.value().c_str());
 
-            if(libPath.has_filename())
+            if (libPath.has_filename())
                 libxess = KernelBaseProxy::LoadLibraryExW_()(libPath.c_str(), NULL, 0);
             else
                 libxess = KernelBaseProxy::LoadLibraryExW_()((libPath / L"libxess_dx11.dll").c_str(), NULL, 0);
@@ -853,6 +874,9 @@ private:
 
     static HMODULE LoadFfxapiDx12(std::wstring originalPath)
     {
+        if (FfxApiProxy::Dx12Module() != nullptr)
+            return FfxApiProxy::Dx12Module();
+
         HMODULE ffxDx12 = nullptr;
 
         if (Config::Instance()->FfxDx12Path.has_value())
@@ -888,9 +912,12 @@ private:
 
         return nullptr;
     }
-        
+
     static HMODULE LoadFfxapiVk(std::wstring originalPath)
     {
+        if (FfxApiProxy::VkModule() != nullptr)
+            return FfxApiProxy::VkModule();
+
         HMODULE ffxVk = nullptr;
 
         if (Config::Instance()->FfxVkPath.has_value())
@@ -932,17 +959,58 @@ private:
         if (lpLibrary == nullptr)
             return FALSE;
 
-        if (lpLibrary == dllModule)
+        if (!State::Instance().isShuttingDown)
         {
-            //if (loadCount > 0)
-            //    loadCount--;
-
-            LOG_INFO("Call for this module");
-
-            //if (loadCount == 0)
-            // return Kernel32Proxy::FreeLibrary_()(lpLibrary);
-            //else
-            return TRUE;
+            if (lpLibrary == dllModule)
+            {
+                LOG_WARN("Call for OptiScaler");
+                return TRUE;
+            }
+            else if (lpLibrary == FfxApiProxy::Dx12Module())
+            {
+                LOG_WARN("Call for FFX Dx12");
+                return TRUE;
+            }
+            else if (lpLibrary == FfxApiProxy::VkModule())
+            {
+                LOG_WARN("Call for FFX Vulkan");
+                return TRUE;
+            }
+            else if (lpLibrary == XeSSProxy::Module())
+            {
+                LOG_WARN("Call for XeSS");
+                return TRUE;
+            }
+            else if (lpLibrary == DxgiProxy::Module())
+            {
+                LOG_WARN("Call for DXGI");
+                return TRUE;
+            }
+            else if (lpLibrary == D3d12Proxy::Module())
+            {
+                LOG_WARN("Call for D3D12");
+                return TRUE;
+            }
+            else if (lpLibrary == Kernel32Proxy::Module())
+            {
+                LOG_WARN("Call for Kernel32");
+                return TRUE;
+            }
+            else if (lpLibrary == KernelBaseProxy::Module())
+            {
+                LOG_WARN("Call for KernelBase");
+                return TRUE;
+            }
+            else if (lpLibrary == vulkanModule)
+            {
+                LOG_WARN("Call for Vulkan");
+                return TRUE;
+            }
+            else if (lpLibrary == d3d11Module)
+            {
+                LOG_WARN("Call for D3D11");
+                return TRUE;
+            }
         }
 
         return o_K32_FreeLibrary(lpLibrary);
@@ -953,21 +1021,160 @@ private:
         if (lpLibrary == nullptr)
             return FALSE;
 
-        if (lpLibrary == dllModule)
+        if (!State::Instance().isShuttingDown)
         {
-            //if (loadCount > 0)
-            //    loadCount--;
-
-            LOG_INFO("Call for this module");
-
-            //if (loadCount == 0)
-            // return Kernel32Proxy::FreeLibrary_()(lpLibrary);
-            //else
-            return TRUE;
+            if (lpLibrary == dllModule)
+            {
+                LOG_WARN("Call for OptiScaler");
+                return TRUE;
+            }
+            else if (lpLibrary == FfxApiProxy::Dx12Module())
+            {
+                LOG_WARN("Call for FFX Dx12");
+                return TRUE;
+            }
+            else if (lpLibrary == FfxApiProxy::VkModule())
+            {
+                LOG_WARN("Call for FFX Vulkan");
+                return TRUE;
+            }
+            else if (lpLibrary == XeSSProxy::Module())
+            {
+                LOG_WARN("Call for XeSS");
+                return TRUE;
+            }
+            else if (lpLibrary == DxgiProxy::Module())
+            {
+                LOG_WARN("Call for DXGI");
+                return TRUE;
+            }
+            else if (lpLibrary == D3d12Proxy::Module())
+            {
+                LOG_WARN("Call for D3D12");
+                return TRUE;
+            }
+            else if (lpLibrary == Kernel32Proxy::Module())
+            {
+                LOG_WARN("Call for Kernel32");
+                return TRUE;
+            }
+            else if (lpLibrary == KernelBaseProxy::Module())
+            {
+                LOG_WARN("Call for KernelBase");
+                return TRUE;
+            }
+            else if (lpLibrary == vulkanModule)
+            {
+                LOG_WARN("Call for Vulkan");
+                return TRUE;
+            }
+            else if (lpLibrary == d3d11Module)
+            {
+                LOG_WARN("Call for D3D11");
+                return TRUE;
+            }
         }
 
         return o_KB_FreeLibrary(lpLibrary);
     }
+
+    static HMODULE hk_KB_LoadLibraryA(LPCSTR lpLibFileName)
+    {
+        if (lpLibFileName == nullptr)
+            return NULL;
+
+        std::string libName(lpLibFileName);
+        std::string lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+
+        if (State::SkipDllChecks())
+        {
+            if (State::SkipDllName() == "")
+            {
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
+                return o_KB_LoadLibraryA(lpLibFileName);
+            }
+
+            auto dllName = State::SkipDllName();
+            auto pos = lcaseLibName.rfind(dllName);
+
+            // -4 for extension `.dll`
+            if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
+            {
+                LOG_TRACE("Skip checks for: {}", lcaseLibName);
+                return o_KB_LoadLibraryA(lpLibFileName);
+            }
+        }
+
+#if _DEBUG
+        LOG_TRACE("{}", lcaseLibName);
+#endif
+        auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
+
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
+
+        return o_KB_LoadLibraryA(lpLibFileName);
+    }
+
+    static HMODULE hk_KB_LoadLibraryW(LPCWSTR lpLibFileName)
+    {
+        if (lpLibFileName == nullptr)
+            return NULL;
+
+        std::wstring libName(lpLibFileName);
+        std::wstring lcaseLibName(libName);
+
+        for (size_t i = 0; i < lcaseLibName.size(); i++)
+            lcaseLibName[i] = std::towlower(lcaseLibName[i]);
+
+        if (State::SkipDllChecks())
+        {
+            if (State::SkipDllName() == "")
+            {
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                return o_KB_LoadLibraryW(lpLibFileName);
+            }
+
+            auto dllName = State::SkipDllName();
+            auto pos = wstring_to_string(lcaseLibName).rfind(dllName);
+
+            // -4 for extension `.dll`
+            if (pos == (lcaseLibName.length() - dllName.length()) || pos == (lcaseLibName.length() - dllName.length() - 4))
+            {
+                LOG_TRACE("Skip checks for: {}", wstring_to_string(lcaseLibName));
+                return o_KB_LoadLibraryW(lpLibFileName);
+            }
+        }
+
+#if _DEBUG
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+#endif
+
+        auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
+
+        // skip loading of dll
+        if (moduleHandle == (HMODULE)1)
+        {
+            SetLastError(ERROR_ACCESS_DENIED);
+            return NULL;
+        }
+
+        if (moduleHandle != nullptr)
+            return moduleHandle;
+
+        return o_KB_LoadLibraryW(lpLibFileName);
+    }
+
 
     static HMODULE hk_KB_LoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
     {
@@ -976,6 +1183,10 @@ private:
 
         std::string libName(lpLibFileName);
         std::string lcaseLibName(libName);
+
+#if _DEBUG
+        LOG_TRACE("{}", lcaseLibName);
+#endif
 
         for (size_t i = 0; i < lcaseLibName.size(); i++)
             lcaseLibName[i] = std::tolower(lcaseLibName[i]);
@@ -1023,10 +1234,12 @@ private:
         std::wstring libName(lpLibFileName);
         std::wstring lcaseLibName(libName);
 
-        LOG_DEBUG("{}", wstring_to_string(lcaseLibName));
+#if _DEBUG
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+#endif
 
         for (size_t i = 0; i < lcaseLibName.size(); i++)
-            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+            lcaseLibName[i] = std::towlower(lcaseLibName[i]);
 
         if (State::SkipDllChecks())
         {
@@ -1094,7 +1307,7 @@ private:
         }
 
 #if _DEBUG
-        LOG_DEBUG("{}", lcaseLibName);
+        LOG_TRACE("{}", lcaseLibName);
 #endif
 
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
@@ -1144,7 +1357,7 @@ private:
         }
 
 #if _DEBUG
-        LOG_DEBUG("{}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
 #endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
@@ -1194,7 +1407,7 @@ private:
         }
 
 #if _DEBUG
-        LOG_DEBUG("{}", lcaseLibName);
+        LOG_TRACE("{}", lcaseLibName);
 #endif
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
@@ -1220,7 +1433,7 @@ private:
         std::wstring lcaseLibName(libName);
 
         for (size_t i = 0; i < lcaseLibName.size(); i++)
-            lcaseLibName[i] = std::tolower(lcaseLibName[i]);
+            lcaseLibName[i] = std::towlower(lcaseLibName[i]);
 
         if (State::SkipDllChecks())
         {
@@ -1242,7 +1455,7 @@ private:
         }
 
 #if _DEBUG
-        LOG_DEBUG("{}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
 #endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
@@ -1273,8 +1486,29 @@ private:
         if (hModule == dllModule && lpProcName != nullptr)
             LOG_TRACE("Trying to get process address of {0}", lpProcName);
 
+        // For Agility SDK Upgrade
+        if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
+        {
+            HMODULE mod_mainExe = nullptr;
+            KernelBaseProxy::GetModuleHandleExW_()(2u, 0i64, &mod_mainExe);
+            if (hModule == mod_mainExe && lpProcName != nullptr)
+            {
+                if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
+                {
+                    LOG_INFO("D3D12SDKVersion call, returning this version!");
+                    return (FARPROC)&customD3D12SDKVersion;
+                }
+
+                if (strcmp(lpProcName, "D3D12SDKPath") == 0)
+                {
+                    LOG_INFO("D3D12SDKPath call, returning this path!");
+                    return (FARPROC)&customD3D12SDKPath;
+                }
+            }
+        }
+
         if (State::Instance().isRunningOnLinux && lpProcName != nullptr &&
-            hModule == Kernel32Proxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
+            hModule == KernelBaseProxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
             return (FARPROC)&customD3DKMTEnumAdapters2;
 
         return o_K32_GetProcAddress(hModule, lpProcName);
@@ -1293,8 +1527,29 @@ private:
         if (hModule == dllModule && lpProcName != nullptr)
             LOG_TRACE("Trying to get process address of {0}", lpProcName);
 
+        // For Agility SDK Upgrade
+        if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
+        {
+            HMODULE mod_mainExe = nullptr;
+            KernelBaseProxy::GetModuleHandleExW_()(2u, 0i64, &mod_mainExe);
+            if (hModule == mod_mainExe && lpProcName != nullptr)
+            {
+                if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
+                {
+                    LOG_INFO("D3D12SDKVersion call, returning this version!");
+                    return (FARPROC)&customD3D12SDKVersion;
+                }
+
+                if (strcmp(lpProcName, "D3D12SDKPath") == 0)
+                {
+                    LOG_INFO("D3D12SDKPath call, returning this path!");
+                    return (FARPROC)&customD3D12SDKPath;
+                }
+            }
+        }
+
         if (State::Instance().isRunningOnLinux && lpProcName != nullptr &&
-            hModule == Kernel32Proxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
+            hModule == KernelBaseProxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
             return (FARPROC)&customD3DKMTEnumAdapters2;
 
         return o_KB_GetProcAddress(hModule, lpProcName);
@@ -1315,10 +1570,26 @@ public:
         o_K32_LoadLibraryExW = Kernel32Proxy::Hook_LoadLibraryExW(hk_K32_LoadLibraryExW);
         o_K32_GetProcAddress = Kernel32Proxy::Hook_GetProcAddress(hk_K32_GetProcAddress);
 
+    }
+
+    static void HookBase()
+    {
+        if (o_KB_GetProcAddress != nullptr)
+            return;
+
+        LOG_DEBUG("");
+
         // These hooks cause stability regressions
         //o_KB_FreeLibrary = KernelBaseProxy::Hook_FreeLibrary(hk_KB_FreeLibrary);
-        //o_KB_LoadLibraryExA = KernelBaseProxy::Hook_LoadLibraryExA(hk_KB_LoadLibraryExA);
-        //o_KB_LoadLibraryExW = KernelBaseProxy::Hook_LoadLibraryExW(hk_KB_LoadLibraryExW);
+
+        if (State::Instance().gameQuirk == KernelBaseHooks)
+        {
+            //o_KB_LoadLibraryA = KernelBaseProxy::Hook_LoadLibraryA(hk_KB_LoadLibraryA);
+            //o_KB_LoadLibraryW = KernelBaseProxy::Hook_LoadLibraryW(hk_KB_LoadLibraryW);
+            //o_KB_LoadLibraryExA = KernelBaseProxy::Hook_LoadLibraryExA(hk_KB_LoadLibraryExA);
+            o_KB_LoadLibraryExW = KernelBaseProxy::Hook_LoadLibraryExW(hk_KB_LoadLibraryExW);
+        }
+
         o_KB_GetProcAddress = KernelBaseProxy::Hook_GetProcAddress(hk_KB_GetProcAddress);
     }
 };

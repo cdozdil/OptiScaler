@@ -7,16 +7,27 @@
 
 inline static unsigned int handleCounter = DLSS_MOD_ID_OFFSET;
 
+struct InitFlags
+{
+	bool IsHdr;
+	bool SharpenEnabled;
+	bool LowResMV;
+	bool AutoExposure;
+	bool DepthInverted;
+	bool JitteredMV;
+};
+
 class IFeature
 {
 private:
-	bool _initParameters = false;
 	bool _isInited = false;
 	int _featureFlags = 0;
+	InitFlags _initFlags{};
 
 	NVSDK_NGX_PerfQuality_Value _perfQualityValue;
 
 protected:
+	bool _initParameters = false;
 	NVSDK_NGX_Handle* _handle = nullptr;
 
 	float _sharpness = 0;
@@ -49,8 +60,10 @@ protected:
 public:
 	NVSDK_NGX_Handle* Handle() const { return _handle; };
 	static unsigned int GetNextHandleId() { return handleCounter++; }
-
 	int GetFeatureFlags() const { return _featureFlags; }
+
+	virtual feature_version Version() = 0;
+	virtual std::string Name() const = 0;
 
 	bool UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters);
 	unsigned int DisplayWidth() const { return _displayWidth; };
@@ -70,15 +83,19 @@ public:
 	bool AccessToReactiveMask() const { return _accessToReactiveMask; }
 	bool HasExposure() const { return _hasExposure; }
 	bool HasOutput() const { return _hasOutput; }
-	virtual feature_version Version() = 0;
-	virtual const char* Name() = 0;
 	bool ModuleLoaded() const { return _moduleLoaded; }
 	long FrameCount() { return _frameCount; }
+
+	bool AutoExposure() { return _initFlags.AutoExposure; }
+	bool DepthInverted() { return _initFlags.DepthInverted; }
+	bool IsHdr() { return _initFlags.IsHdr; }
+	bool JitteredMV() { return _initFlags.JitteredMV; }
+	bool LowResMV() { return _initFlags.LowResMV; }
+	bool SharpenEnabled() { return _initFlags.SharpenEnabled; }
 
 	IFeature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
 	{
 		SetHandle(InHandleId);
-		_initParameters = SetInitParameters(InParameters);
 	}
 
 	virtual void Shutdown() = 0;

@@ -17,7 +17,7 @@ protected:
 public:
 	// version is above 1.3 if we can use vulkan
 	feature_version Version() final { return feature_version{ XeSSProxy::VersionDx11().major, XeSSProxy::VersionDx11().minor, XeSSProxy::VersionDx11().patch }; }
-	const char* Name() override { return "XeSS"; }
+	std::string Name() const { return "XeSS"; }
 
 	bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Parameter* InParameters) override;

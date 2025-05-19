@@ -118,27 +118,47 @@ xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physi
     _physicalDevice = physicalDevice;
     _device = device;
 
-    Util::DllPath();
+    if (!State::Instance().NvngxVkInited)
+    {
+        NVSDK_NGX_FeatureCommonInfo fcInfo{};
 
-    NVSDK_NGX_FeatureCommonInfo fcInfo{};
-    wchar_t const** paths = new const wchar_t* [1];
+        auto dllPath = Util::DllPath().remove_filename();
+        auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
+        auto nvngxDlssDPath = Util::FindFilePath(dllPath, "nvngx_dlssd.dll");
+        auto nvngxDlssGPath = Util::FindFilePath(dllPath, "nvngx_dlssg.dll");
 
-    std::wstring dllPath;
+        std::vector<std::wstring> pathStorage;
 
-    if (!Config::Instance()->DLSSFeaturePath.has_value())
-        dllPath = Util::DllPath().remove_filename().wstring();
-    else
-        dllPath = Config::Instance()->DLSSFeaturePath.value();
+        pathStorage.push_back(dllPath.wstring());
 
-    paths[0] = dllPath.c_str();
-    fcInfo.PathListInfo.Path = paths;
-    fcInfo.PathListInfo.Length = 1;
+        if (nvngxDlssPath.has_value())
+            pathStorage.push_back(nvngxDlssPath.value().wstring());
 
-    auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                        _instance, _physicalDevice, _device, vkGetInstanceProcAddr, vkGetDeviceProcAddr, State::Instance().NVNGX_Version, &fcInfo);
+        if (nvngxDlssDPath.has_value())
+            pathStorage.push_back(nvngxDlssDPath.value().wstring());
 
-    if (nvResult != NVSDK_NGX_Result_Success)
-        return XESS_RESULT_ERROR_UNINITIALIZED;
+        if (nvngxDlssGPath.has_value())
+            pathStorage.push_back(nvngxDlssGPath.value().wstring());
+
+        if (Config::Instance()->DLSSFeaturePath.has_value())
+            pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
+
+        // Build pointer array
+        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        for (size_t i = 0; i < pathStorage.size(); ++i)
+        {
+            paths[i] = pathStorage[i].c_str();
+        }
+
+        fcInfo.PathListInfo.Path = paths;
+        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+
+        auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext("OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
+                                                            _instance, _physicalDevice, _device, vkGetInstanceProcAddr, vkGetDeviceProcAddr, State::Instance().NVNGX_Version, &fcInfo);
+
+        if (nvResult != NVSDK_NGX_Result_Success)
+            return XESS_RESULT_ERROR_UNINITIALIZED;
+    }
 
     *phContext = (xess_context_handle_t)++_handleCounter;
 
@@ -298,6 +318,17 @@ xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer c
         CreateNVRes(&pExecParams->outputTexture, &outputNVRes[index], true);
         params->Set(NVSDK_NGX_Parameter_Output, &outputNVRes[index]);
     }
+
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, pExecParams->inputColorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, pExecParams->inputColorBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, pExecParams->inputDepthBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, pExecParams->inputDepthBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, pExecParams->inputMotionVectorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, pExecParams->inputMotionVectorBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, pExecParams->outputColorBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, pExecParams->outputColorBase.y);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, pExecParams->inputResponsiveMaskBase.x);
+    params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, pExecParams->inputResponsiveMaskBase.y);
 
     State::Instance().setInputApiName = "XeSS";
 

@@ -79,6 +79,8 @@ private:
     inline static void ShowTooltip(const char* tip);
 
     inline static void ShowHelpMarker(const char* tip);
+    inline static void ShowResetButton(CustomOptional<bool, NoDefault>* initFlag, std::string buttonName);
+    inline static void ReInitUpscaler();
 
     inline static void SeparatorWithHelpMarker(const char* label, const char* tip);
 

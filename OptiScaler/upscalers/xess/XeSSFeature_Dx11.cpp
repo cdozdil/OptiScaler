@@ -76,61 +76,22 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
 
     xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
-    bool Hdr = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-    bool EnableSharpening = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-    bool DepthInverted = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
-    bool JitterMotion = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
-    bool LowRes = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-    bool AutoExposure = GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-
-    if (Config::Instance()->DepthInverted.value_or(DepthInverted))
-    {
-        Config::Instance()->DepthInverted = true;
+    if (DepthInverted())
         xessParams.initFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
-        LOG_DEBUG("xessParams.initFlags (DepthInverted) {0:b}", xessParams.initFlags);
-    }
 
-    if (Config::Instance()->AutoExposure.value_or(AutoExposure))
-    {
-        Config::Instance()->AutoExposure = true;
+    if (AutoExposure())
         xessParams.initFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
-        LOG_DEBUG("xessParams.initFlags (AutoExposure) {0:b}", xessParams.initFlags);
-    }
     else
-    {
-        Config::Instance()->AutoExposure = false;
         xessParams.initFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
-        LOG_DEBUG("xessParams.initFlags (!AutoExposure) {0:b}", xessParams.initFlags);
-    }
 
-    if (!Config::Instance()->HDR.value_or(Hdr))
-    {
-        Config::Instance()->HDR = false;
+    if (!IsHdr())
         xessParams.initFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
-        LOG_DEBUG("xessParams.initFlags (!HDR) {0:b}", xessParams.initFlags);
-    }
-    else
-    {
-        Config::Instance()->HDR = true;
-        LOG_DEBUG("xessParams.initFlags (HDR) {0:b}", xessParams.initFlags);
-    }
 
-    if (Config::Instance()->JitterCancellation.value_or(JitterMotion))
-    {
-        Config::Instance()->JitterCancellation = true;
+    if (JitteredMV())
         xessParams.initFlags |= XESS_INIT_FLAG_JITTERED_MV;
-        LOG_DEBUG("xessParams.initFlags (JitterCancellation) {0:b}", xessParams.initFlags);
-    }
 
-    if (Config::Instance()->DisplayResolution.value_or(!LowRes))
-    {
+    if (!LowResMV())
         xessParams.initFlags |= XESS_INIT_FLAG_HIGH_RES_MV;
-        LOG_DEBUG("xessParams.initFlags (!LowResMV) {0:b}", xessParams.initFlags);
-    }
-    else
-    {
-        LOG_DEBUG("xessParams.initFlags (LowResMV) {0:b}", xessParams.initFlags);
-    }
 
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
@@ -194,7 +155,7 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
             break;
     }
 
-    if (Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+    if (Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV())
     {
         float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
@@ -224,7 +185,7 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
         _targetHeight = RenderHeight();
 
         // enable output scaling to restore image
-        if (!Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+        if (LowResMV())
         {
             Config::Instance()->OutputScalingMultiplier = 1.0f;
             Config::Instance()->OutputScalingEnabled = true;
@@ -336,7 +297,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && !Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);
 
@@ -413,14 +374,14 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     }
     else
     {
-        if (!Config::Instance()->DisplayResolution.value_or((GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0))
+        if (LowResMV())
         {
             LOG_ERROR("Depth not exist!!");
             return false;
         }
     }
 
-    if (!Config::Instance()->AutoExposure.value_or(false))
+    if (!AutoExposure())
     {
         ID3D11Resource* paramExp = nullptr;
         if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp) != NVSDK_NGX_Result_Success)
@@ -434,7 +395,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         else
         {
             LOG_WARN("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            Config::Instance()->AutoExposure = true;
+            State::Instance().AutoExposure = true;
             State::Instance().changeBackend[_handle->Id] = true;
             return true;
         }
@@ -488,6 +449,17 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     }
     else
         LOG_WARN("Can't get motion vector scales!");
+
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_X, &params.inputColorBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Color_Subrect_Base_Y, &params.inputColorBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_X, &params.inputDepthBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Depth_Subrect_Base_Y, &params.inputDepthBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_X, &params.inputMotionVectorBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, &params.inputMotionVectorBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, &params.outputColorBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, &params.outputColorBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, &params.inputResponsiveMaskBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, &params.inputResponsiveMaskBase.y);
 
     LOG_DEBUG("Executing!!");
     xessResult = XeSSProxy::D3D11Execute()(_xessContext, &params);
@@ -596,6 +568,8 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
 XeSSFeature_Dx11::XeSSFeature_Dx11(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters), IFeature_Dx11(handleId, InParameters)
 {
+    _initParameters = SetInitParameters(InParameters);
+
     if (XeSSProxy::ModuleDx11() == nullptr && XeSSProxy::InitXeSSDx11())
         XeSSProxy::HookXeSSDx11();
 

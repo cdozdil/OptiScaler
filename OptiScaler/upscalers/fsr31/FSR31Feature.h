@@ -14,7 +14,6 @@ class FSR31Feature : public virtual IFeature
 {
 private:
     double _lastFrameTime;
-    bool _depthInverted = false;
     unsigned int _lastWidth = 0;
     unsigned int _lastHeight = 0;
     static inline feature_version _version{ 3, 1, 2 };
@@ -29,7 +28,6 @@ protected:
 
     double MillisecondsNow();
     double GetDeltaTime();
-    void SetDepthInverted(bool InValue);
 
     static inline void parse_version(const char* version_str) 
     {
@@ -37,15 +35,19 @@ protected:
             LOG_WARN("can't parse {0}", version_str);
     }
 
-    float _velocity = 0.0f;
+    float _velocity = 1.0f;
+    float _reactiveScale = 1.0f;
+    float _shadingScale = 1.0f;
+    float _accAddPerFrame = 0.333f;
+    float _minDisOccAcc = -0.333f;
 
 public:
-    bool IsDepthInverted() const;
     feature_version Version() final { return _version; }
-    const char* Name() override { return _name.c_str(); }
+    std::string Name() const { return _name.c_str(); }
 
     FSR31Feature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
     {
+        _initParameters = SetInitParameters(InParameters);
         _lastFrameTime = MillisecondsNow();
     }
 

@@ -31,7 +31,6 @@ class FSR2Feature212 : public virtual IFeature
 {
 private:
 	double _lastFrameTime;
-	bool _depthInverted = false;
 	unsigned int _lastWidth = 0;
 	unsigned int _lastHeight = 0;
 	static inline feature_version _version{ 2, 1, 2 };
@@ -44,15 +43,14 @@ protected:
 
 	double MillisecondsNow();
 	double GetDeltaTime();
-	void SetDepthInverted(bool InValue);
 
 public:
-	bool IsDepthInverted() const;
 	feature_version Version() final { return _version; }
-	const char* Name() override { return "FSR"; }
+	std::string Name() const { return "FSR"; }
 
 	FSR2Feature212(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters)
 	{
+		_initParameters = SetInitParameters(InParameters);
 		_moduleLoaded = true;
 		_lastFrameTime = MillisecondsNow();
 	}

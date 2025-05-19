@@ -5,13 +5,13 @@
 
 void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const
 {
-	D3D12_RESOURCE_BARRIER barrier = {};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Transition.pResource = InResource;
-	barrier.Transition.StateBefore = InBeforeState;
-	barrier.Transition.StateAfter = InAfterState;
-	barrier.Transition.Subresource = 0;
-	InCommandList->ResourceBarrier(1, &barrier);
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = InResource;
+    barrier.Transition.StateBefore = InBeforeState;
+    barrier.Transition.StateAfter = InAfterState;
+    barrier.Transition.Subresource = 0;
+    InCommandList->ResourceBarrier(1, &barrier);
 }
 
 IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
@@ -24,48 +24,20 @@ void IFeature_Dx12::Shutdown()
 
 IFeature_Dx12::~IFeature_Dx12()
 {
-	if (Device)
-	{
-		ID3D12Fence* d3d12Fence = nullptr;
+    if (State::Instance().isShuttingDown)
+        return;
 
-		do
-		{
-			if (Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
-				break;
+    LOG_DEBUG("");
 
-			d3d12Fence->Signal(999);
+    if (Imgui != nullptr && Imgui.get() != nullptr)
+        Imgui.reset();
 
-			HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
+        OutputScaler.reset();
 
-			if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-			{
-				WaitForSingleObject(fenceEvent, INFINITE);
-				CloseHandle(fenceEvent);
-			}
+    if (RCAS != nullptr && RCAS.get() != nullptr)
+        RCAS.reset();
 
-		} while (false);
-
-		if (d3d12Fence != nullptr)
-		{
-			d3d12Fence->Release();
-			d3d12Fence = nullptr;
-		}
-	}
-
-	if (!State::Instance().isShuttingDown)
-	{
-		LOG_DEBUG("");
-
-		if (Imgui != nullptr && Imgui.get() != nullptr)
-			Imgui.reset();
-
-		if (OutputScaler != nullptr && OutputScaler.get() != nullptr)
-			OutputScaler.reset();
-
-		if (RCAS != nullptr && RCAS.get() != nullptr)
-			RCAS.reset();
-
-		if (Bias != nullptr && Bias.get() != nullptr)
-			Bias.reset();
-	}
+    if (Bias != nullptr && Bias.get() != nullptr)
+        Bias.reset();
 }

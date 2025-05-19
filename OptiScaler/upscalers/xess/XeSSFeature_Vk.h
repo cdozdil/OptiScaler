@@ -19,7 +19,7 @@ protected:
 public:
 	// version is above 1.3 if we can use vulkan
 	feature_version Version() final { return feature_version{ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch }; }
-	const char* Name() override { return "XeSS"; }
+	std::string Name() const { return "XeSS"; }
 
 	bool Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList, PFN_vkGetInstanceProcAddr InGIPA, PFN_vkGetDeviceProcAddr InGDPA, NVSDK_NGX_Parameter* InParameters) override;
 	bool Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* InParameters) override;

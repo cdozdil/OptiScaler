@@ -321,22 +321,41 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
     if (!upscaleContext)
         return ffxApiResult;
 
-    NVSDK_NGX_FeatureCommonInfo fcInfo{};
-    wchar_t const** paths = new const wchar_t* [1];
-
-    std::wstring dllPath;
-
-    if(!Config::Instance()->DLSSFeaturePath.has_value())
-        dllPath = Util::DllPath().remove_filename().wstring();
-    else
-        dllPath = Config::Instance()->DLSSFeaturePath.value();
-
-    paths[0] = dllPath.c_str();
-    fcInfo.PathListInfo.Path = paths;
-    fcInfo.PathListInfo.Length = 1;
-
-    if (!_nvnxgInited)
+    if (!State::Instance().NvngxVkInited)
     {
+        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+
+        auto dllPath = Util::DllPath().remove_filename();
+        auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
+        auto nvngxDlssDPath = Util::FindFilePath(dllPath, "nvngx_dlssd.dll");
+        auto nvngxDlssGPath = Util::FindFilePath(dllPath, "nvngx_dlssg.dll");
+
+        std::vector<std::wstring> pathStorage;
+
+        pathStorage.push_back(dllPath.wstring());
+
+        if (nvngxDlssPath.has_value())
+            pathStorage.push_back(nvngxDlssPath.value().wstring());
+
+        if (nvngxDlssDPath.has_value())
+            pathStorage.push_back(nvngxDlssDPath.value().wstring());
+
+        if (nvngxDlssGPath.has_value())
+            pathStorage.push_back(nvngxDlssGPath.value().wstring());
+
+        if (Config::Instance()->DLSSFeaturePath.has_value())
+            pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
+
+        // Build pointer array
+        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        for (size_t i = 0; i < pathStorage.size(); ++i)
+        {
+            paths[i] = pathStorage[i].c_str();
+        }
+
+        fcInfo.PathListInfo.Path = paths;
+        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+
         auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(), State::Instance().VulkanInstance,
                                                             _vkPhysicalDevice, _vkDevice, vkGetInstanceProcAddr, _vkDeviceProcAddress, State::Instance().NVNGX_Version, &fcInfo);
 

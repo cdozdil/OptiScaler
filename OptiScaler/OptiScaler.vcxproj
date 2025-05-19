@@ -201,7 +201,7 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>WindowsApp.lib;Dbghelp.lib;dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;freetype.lib;ffx_fsr2_api_x64d.lib;ffx_fsr2_api_dx11_x64d.lib;ffx_fsr2_api_dx12_x64d.lib;ffx_fsr2_api_vk_x64d.lib;ffx_fsr2_212_api_dx12_x64d.lib;ffx_fsr2_212_api_vk_x64d.lib;ffx_fsr2_212_api_x64d.lib;d3dcompiler.lib;d3dx11.lib;ffx_backend_dx11_x64d.lib;ffx_fsr3_x64d.lib;ffx_fsr3upscaler_x64d.lib;ffx_opticalflow_x64d.lib;ffx_frameinterpolation_x64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>Source.def</ModuleDefinitionFile>
-      <DelayLoadDLLs>vulkan-1.dll;dxgi.dll;d3d12.dll;D3DCOMPILER_47.dll;Dbghelp.dll</DelayLoadDLLs>
+      <DelayLoadDLLs>vulkan-1.dll;dxgi.dll;d3d12.dll;D3DCOMPILER_47.dll;Dbghelp.dll;d3d11.dll</DelayLoadDLLs>
       <StackReserveSize>
       </StackReserveSize>
       <StackCommitSize>
@@ -218,7 +218,6 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -227,7 +226,6 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
@@ -237,9 +235,8 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>WindowsApp.lib;Dbghelp.lib;dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;freetype.lib;ffx_fsr2_api_x64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_dx12_x64.lib;ffx_fsr2_api_vk_x64.lib;ffx_fsr2_212_api_dx12_x64.lib;ffx_fsr2_212_api_vk_x64.lib;ffx_fsr2_212_api_x64.lib;d3dcompiler.lib;ffx_backend_dx11_x64.lib;ffx_fsr3_x64.lib;ffx_frameinterpolation_x64.lib;ffx_fsr3upscaler_x64.lib;ffx_opticalflow_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <ModuleDefinitionFile>Source.def</ModuleDefinitionFile>
-      <DelayLoadDLLs>vulkan-1.dll;dxgi.dll;d3d12.dll;D3DCOMPILER_47.dll;Dbghelp.dll</DelayLoadDLLs>
+      <DelayLoadDLLs>vulkan-1.dll;dxgi.dll;d3d12.dll;D3DCOMPILER_47.dll;Dbghelp.dll;d3d11.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>md $(SolutionDir)x64\Release\a\
@@ -268,7 +265,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDebug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NODEBUG;_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -277,7 +273,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
@@ -287,9 +282,8 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>WindowsApp.lib;Dbghelp.lib;dxgi.lib;d3d11.lib;d3d12.lib;vulkan-1.lib;dxguid.lib;freetype.lib;ffx_fsr2_api_x64.lib;ffx_fsr2_api_dx11_x64.lib;ffx_fsr2_api_dx12_x64.lib;ffx_fsr2_api_vk_x64.lib;ffx_fsr2_212_api_dx12_x64.lib;ffx_fsr2_212_api_vk_x64.lib;ffx_fsr2_212_api_x64.lib;d3dcompiler.lib;ffx_backend_dx11_x64.lib;ffx_fsr3_x64.lib;ffx_frameinterpolation_x64.lib;ffx_fsr3upscaler_x64.lib;ffx_opticalflow_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <ModuleDefinitionFile>Source.def</ModuleDefinitionFile>
-      <DelayLoadDLLs>vulkan-1.dll;dxgi.dll;d3d12.dll;D3DCOMPILER_47.dll;Dbghelp.dll</DelayLoadDLLs>
+      <DelayLoadDLLs>vulkan-1.dll;dxgi.dll;d3d12.dll;D3DCOMPILER_47.dll;Dbghelp.dll;d3d11.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>powershell -Command "$timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'; $fileName = '$(OutDir)OptiScaler_' + $timestamp + '.7z'; $backupFileName = '$(OutDir)OptiScaler_' + $timestamp + '_Backup.7z'; &amp; '7z.exe' a -t7z $fileName '$(TargetPath)'; &amp; '7z.exe' a -t7z $backupFileName '$(OutDir)$(TargetName).*'"</Command>
@@ -309,7 +303,11 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="exports\winhttp.h" />
     <ClInclude Include="exports\wininet.h" />
     <ClInclude Include="exports\winmm.h" />
+    <ClInclude Include="framegen\ffx\FSRFG_Dx12.h" />
+    <ClInclude Include="framegen\IFGFeature.h" />
+    <ClInclude Include="framegen\IFGFeature_Dx12.h" />
     <ClInclude Include="hooks\Kernel_Hooks.h" />
+    <ClInclude Include="hudfix\Hudfix_Dx12.h" />
     <ClInclude Include="include\imgui\imgui_impl_uwp.h" />
     <ClInclude Include="inputs\FfxApiExe_Dx12.h" />
     <ClInclude Include="inputs\FfxApi_Vk.h" />
@@ -328,10 +326,16 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="proxies\Dxgi_Proxy.h" />
     <ClInclude Include="proxies\Kernel32_Proxy.h" />
     <ClInclude Include="proxies\KernelBase_Proxy.h" />
+    <ClInclude Include="resource_tracking\ResTrack_dx12.h" />
+    <ClInclude Include="shaders\resource_flip\RF_Common.h" />
+    <ClInclude Include="shaders\resource_flip\RF_Dx12.h" />
     <ClInclude Include="shaders\depth_scale\DS_Common.h" />
     <ClInclude Include="shaders\depth_scale\DS_Dx12.h" />
     <ClInclude Include="shaders\depth_scale\precompiled\DS_Shader.h" />
     <ClInclude Include="shaders\depth_scale\precompiled\DS_Shader_Dx11.h" />
+    <ClInclude Include="shaders\depth_transfer\DT_Common.h" />
+    <ClInclude Include="shaders\depth_transfer\DT_Dx11.h" />
+    <ClInclude Include="shaders\depth_transfer\precompile\dt_Shader_Dx11.h" />
     <ClInclude Include="spoofing\Dxgi_Spoofing.h" />
     <ClInclude Include="spoofing\Vulkan_Spoofing.h" />
     <ClInclude Include="upscalers\dlssd\DLSSDFeature.h" />
@@ -447,6 +451,10 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="proxies\XeSS_Proxy.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="framegen\ffx\FSRFG_Dx12.cpp" />
+    <ClCompile Include="framegen\IFGFeature.cpp" />
+    <ClCompile Include="framegen\IFGFeature_Dx12.cpp" />
+    <ClCompile Include="hudfix\Hudfix_Dx12.cpp" />
     <ClCompile Include="include\imgui\imgui_impl_uwp.cpp" />
     <ClCompile Include="inputs\FfxApiExe_Dx12.cpp" />
     <ClCompile Include="inputs\FfxApi_Vk.cpp" />
@@ -460,7 +468,10 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="nvapi\NvApiHooks.cpp" />
     <ClCompile Include="nvapi\NvApiTypes.cpp" />
     <ClCompile Include="nvapi\ReflexHooks.cpp" />
+    <ClCompile Include="resource_tracking\ResTrack_dx12.cpp" />
+    <ClCompile Include="shaders\resource_flip\RF_Dx12.cpp" />
     <ClCompile Include="shaders\depth_scale\DS_Dx12.cpp" />
+    <ClCompile Include="shaders\depth_transfer\DT_Dx11.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx11.cpp" />
     <ClCompile Include="upscalers\dlssd\DLSSDFeature_Dx12.cpp" />
