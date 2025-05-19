@@ -38,7 +38,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             git add OptiScaler
             git commit -m "chore: apply clang-format in OptiScaler"
-            git push
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
           else
             echo "✔ no formatting changes detected in OptiScaler"
           fi
