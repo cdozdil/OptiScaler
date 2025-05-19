@@ -3,11 +3,11 @@ name: Check C++ Formatting
 on:
   pull_request:
     paths:
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/*.hpp'
-      - '**/*.cxx'
-      - '**/*.cc'
+      - 'OptiScaler/**/*.cpp'
+      - 'OptiScaler/**/*.h'
+      - 'OptiScaler/**/*.hpp'
+      - 'OptiScaler/**/*.cxx'
+      - 'OptiScaler/**/*.cc'
 
 jobs:
   clang-format-check:
