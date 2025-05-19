@@ -1473,9 +1473,6 @@ private:
         return o_K32_LoadLibraryW(lpLibFileName);
     }
 
-    inline static UINT customD3D12SDKVersion = 615;
-    inline static const char8_t* customD3D12SDKPath = u8".\\D3D12_Optiscaler\\"; //Hardcoded for now
-
     static FARPROC hk_K32_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
     {
         if ((size_t)lpProcName < 0x000000000000F000)
@@ -1488,27 +1485,6 @@ private:
 
         if (hModule == dllModule && lpProcName != nullptr)
             LOG_TRACE("Trying to get process address of {0}", lpProcName);
-
-        // For Agility SDK Upgrade
-        if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
-        {
-            HMODULE mod_mainExe = nullptr;
-            KernelBaseProxy::GetModuleHandleExW_()(2u, 0i64, &mod_mainExe);
-            if (hModule == mod_mainExe && lpProcName != nullptr)
-            {
-                if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
-                {
-                    LOG_INFO("D3D12SDKVersion call, returning this version!");
-                    return (FARPROC)&customD3D12SDKVersion;
-                }
-
-                if (strcmp(lpProcName, "D3D12SDKPath") == 0)
-                {
-                    LOG_INFO("D3D12SDKPath call, returning this path!");
-                    return (FARPROC)&customD3D12SDKPath;
-                }
-            }
-        }
 
         if (State::Instance().isRunningOnLinux && lpProcName != nullptr &&
             hModule == KernelBaseProxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
@@ -1529,27 +1505,6 @@ private:
 
         if (hModule == dllModule && lpProcName != nullptr)
             LOG_TRACE("Trying to get process address of {0}", lpProcName);
-
-        // For Agility SDK Upgrade
-        if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
-        {
-            HMODULE mod_mainExe = nullptr;
-            KernelBaseProxy::GetModuleHandleExW_()(2u, 0i64, &mod_mainExe);
-            if (hModule == mod_mainExe && lpProcName != nullptr)
-            {
-                if (strcmp(lpProcName, "D3D12SDKVersion") == 0)
-                {
-                    LOG_INFO("D3D12SDKVersion call, returning this version!");
-                    return (FARPROC)&customD3D12SDKVersion;
-                }
-
-                if (strcmp(lpProcName, "D3D12SDKPath") == 0)
-                {
-                    LOG_INFO("D3D12SDKPath call, returning this path!");
-                    return (FARPROC)&customD3D12SDKPath;
-                }
-            }
-        }
 
         if (State::Instance().isRunningOnLinux && lpProcName != nullptr &&
             hModule == KernelBaseProxy::GetModuleHandleW_()(L"gdi32.dll") && lstrcmpA(lpProcName, "D3DKMTEnumAdapters2") == 0)
