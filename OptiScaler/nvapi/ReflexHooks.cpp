@@ -3,9 +3,10 @@
 
 #include "fakenvapi.h"
 
-//#define LOG_REFLEX_CALLS
+// #define LOG_REFLEX_CALLS
 
-NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetSleepMode(IUnknown* pDev, NV_SET_SLEEP_MODE_PARAMS* pSetSleepModeParams) {
+NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetSleepMode(IUnknown* pDev, NV_SET_SLEEP_MODE_PARAMS* pSetSleepModeParams)
+{
 #ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
@@ -19,15 +20,17 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetSleepMode(IUnknown* pDev, NV_SET_SLEEP_
     return o_NvAPI_D3D_SetSleepMode(pDev, pSetSleepModeParams);
 }
 
-NvAPI_Status ReflexHooks::hkNvAPI_D3D_Sleep(IUnknown* pDev) {
-#ifdef LOG_REFLEX_CALLS		
+NvAPI_Status ReflexHooks::hkNvAPI_D3D_Sleep(IUnknown* pDev)
+{
+#ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
 
     return o_NvAPI_D3D_Sleep(pDev);
 }
 
-NvAPI_Status ReflexHooks::hkNvAPI_D3D_GetLatency(IUnknown* pDev, NV_LATENCY_RESULT_PARAMS* pGetLatencyParams) {
+NvAPI_Status ReflexHooks::hkNvAPI_D3D_GetLatency(IUnknown* pDev, NV_LATENCY_RESULT_PARAMS* pGetLatencyParams)
+{
 #ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
@@ -35,7 +38,9 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D_GetLatency(IUnknown* pDev, NV_LATENCY_RESU
     return o_NvAPI_D3D_GetLatency(pDev, pGetLatencyParams);
 }
 
-NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetLatencyMarker(IUnknown* pDev, NV_LATENCY_MARKER_PARAMS* pSetLatencyMarkerParams) {
+NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetLatencyMarker(IUnknown* pDev,
+                                                       NV_LATENCY_MARKER_PARAMS* pSetLatencyMarkerParams)
+{
 #ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
@@ -48,14 +53,17 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D_SetLatencyMarker(IUnknown* pDev, NV_LATENC
     return o_NvAPI_D3D_SetLatencyMarker(pDev, pSetLatencyMarkerParams);
 }
 
-NvAPI_Status ReflexHooks::hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* pCommandQueue, NV_ASYNC_FRAME_MARKER_PARAMS* pSetAsyncFrameMarkerParams) {
+NvAPI_Status ReflexHooks::hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* pCommandQueue,
+                                                            NV_ASYNC_FRAME_MARKER_PARAMS* pSetAsyncFrameMarkerParams)
+{
 #ifdef LOG_REFLEX_CALLS
     LOG_FUNC();
 #endif
 
     _lastAsyncMarkerFrameId = pSetAsyncFrameMarkerParams->frameID;
 
-    if (pSetAsyncFrameMarkerParams->markerType == OUT_OF_BAND_PRESENT_START) {
+    if (pSetAsyncFrameMarkerParams->markerType == OUT_OF_BAND_PRESENT_START)
+    {
         constexpr size_t history_size = 12;
         static size_t counter = 0;
         static NvU64 previous_frame_ids[history_size] = {};
@@ -65,18 +73,22 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* 
 
         size_t repeat_count = 0;
 
-        for (size_t i = 1; i < history_size; i++) {
+        for (size_t i = 1; i < history_size; i++)
+        {
             // won't catch repeat frame ids across array wrap around
-            if (previous_frame_ids[i] == previous_frame_ids[i - 1]) {
+            if (previous_frame_ids[i] == previous_frame_ids[i - 1])
+            {
                 repeat_count++;
             }
         }
 
-        if (_dlssgDetected && repeat_count == 0) {
+        if (_dlssgDetected && repeat_count == 0)
+        {
             _dlssgDetected = false;
             LOG_DEBUG("DLSS FG no longer detected");
         }
-        else if (!_dlssgDetected && repeat_count >= history_size / 2 - 1) {
+        else if (!_dlssgDetected && repeat_count >= history_size / 2 - 1)
+        {
             _dlssgDetected = true;
             LOG_DEBUG("DLSS FG detected");
         }
@@ -85,49 +97,52 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* 
     return o_NvAPI_D3D12_SetAsyncFrameMarker(pCommandQueue, pSetAsyncFrameMarkerParams);
 }
 
-void ReflexHooks::hookReflex(PFN_NvApi_QueryInterface& queryInterface) {
+void ReflexHooks::hookReflex(PFN_NvApi_QueryInterface& queryInterface)
+{
 #ifdef _DEBUG
     LOG_FUNC();
 #endif
 
-    if (!_inited) {
+    if (!_inited)
+    {
         o_NvAPI_D3D_SetSleepMode = GET_INTERFACE(NvAPI_D3D_SetSleepMode, queryInterface);
         o_NvAPI_D3D_Sleep = GET_INTERFACE(NvAPI_D3D_Sleep, queryInterface);
         o_NvAPI_D3D_GetLatency = GET_INTERFACE(NvAPI_D3D_GetLatency, queryInterface);
         o_NvAPI_D3D_SetLatencyMarker = GET_INTERFACE(NvAPI_D3D_SetLatencyMarker, queryInterface);
         o_NvAPI_D3D12_SetAsyncFrameMarker = GET_INTERFACE(NvAPI_D3D12_SetAsyncFrameMarker, queryInterface);
 
-        _inited = o_NvAPI_D3D_SetSleepMode && o_NvAPI_D3D_Sleep && o_NvAPI_D3D_GetLatency && o_NvAPI_D3D_SetLatencyMarker && o_NvAPI_D3D12_SetAsyncFrameMarker;
+        _inited = o_NvAPI_D3D_SetSleepMode && o_NvAPI_D3D_Sleep && o_NvAPI_D3D_GetLatency &&
+                  o_NvAPI_D3D_SetLatencyMarker && o_NvAPI_D3D12_SetAsyncFrameMarker;
 
         if (_inited)
             LOG_DEBUG("Inited Reflex hooks");
     }
 }
 
-bool ReflexHooks::isDlssgDetected()
-{
-    return _dlssgDetected;
-}
+bool ReflexHooks::isDlssgDetected() { return _dlssgDetected; }
 
-bool ReflexHooks::isReflexHooked()
-{
-    return _inited;
-}
+bool ReflexHooks::isReflexHooked() { return _inited; }
 
-void* ReflexHooks::getHookedReflex(unsigned int InterfaceId) {
-    if (InterfaceId == GET_ID(NvAPI_D3D_SetSleepMode) && o_NvAPI_D3D_SetSleepMode) {
+void* ReflexHooks::getHookedReflex(unsigned int InterfaceId)
+{
+    if (InterfaceId == GET_ID(NvAPI_D3D_SetSleepMode) && o_NvAPI_D3D_SetSleepMode)
+    {
         return &hkNvAPI_D3D_SetSleepMode;
     }
-    if (InterfaceId == GET_ID(NvAPI_D3D_Sleep) && o_NvAPI_D3D_Sleep) {
+    if (InterfaceId == GET_ID(NvAPI_D3D_Sleep) && o_NvAPI_D3D_Sleep)
+    {
         return &hkNvAPI_D3D_Sleep;
     }
-    if (InterfaceId == GET_ID(NvAPI_D3D_GetLatency) && o_NvAPI_D3D_GetLatency) {
+    if (InterfaceId == GET_ID(NvAPI_D3D_GetLatency) && o_NvAPI_D3D_GetLatency)
+    {
         return &hkNvAPI_D3D_GetLatency;
     }
-    if (InterfaceId == GET_ID(NvAPI_D3D_SetLatencyMarker) && o_NvAPI_D3D_SetLatencyMarker) {
+    if (InterfaceId == GET_ID(NvAPI_D3D_SetLatencyMarker) && o_NvAPI_D3D_SetLatencyMarker)
+    {
         return &hkNvAPI_D3D_SetLatencyMarker;
     }
-    if (InterfaceId == GET_ID(NvAPI_D3D12_SetAsyncFrameMarker) && o_NvAPI_D3D12_SetAsyncFrameMarker) {
+    if (InterfaceId == GET_ID(NvAPI_D3D12_SetAsyncFrameMarker) && o_NvAPI_D3D12_SetAsyncFrameMarker)
+    {
         return &hkNvAPI_D3D12_SetAsyncFrameMarker;
     }
 
@@ -135,7 +150,8 @@ void* ReflexHooks::getHookedReflex(unsigned int InterfaceId) {
 }
 
 // For updating information about Reflex hooks
-void ReflexHooks::update(bool optiFg_FgState) {
+void ReflexHooks::update(bool optiFg_FgState)
+{
     // We can still use just the markers to limit the fps with Reflex disabled
     // But need to fallback in case a game stops sending them for some reason
     _updatesWithoutMarker++;
@@ -149,8 +165,10 @@ void ReflexHooks::update(bool optiFg_FgState) {
     }
 
     // Don't use when: Real Reflex markers + OptiFG + Reflex disabled, causes huge input latency
-    State::Instance().reflexLimitsFps = fakenvapi::isUsingFakenvapi() || !optiFg_FgState || _lastSleepParams.bLowLatencyMode;
-    State::Instance().reflexShowWarning = !fakenvapi::isUsingFakenvapi() && optiFg_FgState && _lastSleepParams.bLowLatencyMode;
+    State::Instance().reflexLimitsFps =
+        fakenvapi::isUsingFakenvapi() || !optiFg_FgState || _lastSleepParams.bLowLatencyMode;
+    State::Instance().reflexShowWarning =
+        !fakenvapi::isUsingFakenvapi() && optiFg_FgState && _lastSleepParams.bLowLatencyMode;
     static float lastFps = 0;
     static bool lastReflexLimitsFps = State::Instance().reflexLimitsFps;
 
@@ -182,25 +200,27 @@ void ReflexHooks::update(bool optiFg_FgState) {
     if (optiFg_FgState || (_dlssgDetected && fakenvapi::isUsingFakenvapi()))
         currentFps /= 2;
 
-    if (currentFps != lastFps) {
+    if (currentFps != lastFps)
+    {
         setFPSLimit(currentFps);
         lastFps = currentFps;
     }
 }
 
 // 0 - disables the fps cap
-void ReflexHooks::setFPSLimit(float fps) {
+void ReflexHooks::setFPSLimit(float fps)
+{
     LOG_INFO("Set FPS Limit to: {}", fps);
     if (fps == 0.0)
         _minimumIntervalUs = 0;
     else
         _minimumIntervalUs = static_cast<uint32_t>(std::round(1'000'000 / fps));
 
-    if (_lastSleepDev != nullptr) {
+    if (_lastSleepDev != nullptr)
+    {
         NV_SET_SLEEP_MODE_PARAMS temp{};
         memcpy(&temp, &_lastSleepParams, sizeof(NV_SET_SLEEP_MODE_PARAMS));
         temp.minimumIntervalUs = _minimumIntervalUs;
         o_NvAPI_D3D_SetSleepMode(_lastSleepDev, &temp);
     }
-
 }

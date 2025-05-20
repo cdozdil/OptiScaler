@@ -5,10 +5,10 @@
 
 namespace HooksVk
 {
-	inline VkQueryPool queryPool = VK_NULL_HANDLE;
-	inline double timeStampPeriod = 1.0;
-	inline bool vkUpscaleTrig = false;
+inline VkQueryPool queryPool = VK_NULL_HANDLE;
+inline double timeStampPeriod = 1.0;
+inline bool vkUpscaleTrig = false;
 
-	void HookVk(HMODULE vulkan1);
-	void UnHookVk();
-}
+void HookVk(HMODULE vulkan1);
+void UnHookVk();
+} // namespace HooksVk

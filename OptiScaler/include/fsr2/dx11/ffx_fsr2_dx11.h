@@ -27,72 +27,70 @@
 #include "../ffx_fsr2_interface.h"
 
 #if defined(__cplusplus)
-extern "C" {
+extern "C"
+{
 #endif // #if defined(__cplusplus)
 
-/// Query how much memory is required for the DirectX 11 backend's scratch buffer.
-///
-/// @returns
-/// The size (in bytes) of the required scratch memory buffer for the DX11 backend.
-size_t ffxFsr2GetScratchMemorySizeDX11();
+    /// Query how much memory is required for the DirectX 11 backend's scratch buffer.
+    ///
+    /// @returns
+    /// The size (in bytes) of the required scratch memory buffer for the DX11 backend.
+    size_t ffxFsr2GetScratchMemorySizeDX11();
 
-/// Populate an interface with pointers for the DX11 backend.
-///
-/// @param [out] fsr2Interface              A pointer to a <c><i>FfxFsr2Interface</i></c> structure to populate with pointers.
-/// @param [in] device                      A pointer to the DirectX11 device.
-/// @param [in] scratchBuffer               A pointer to a buffer of memory which can be used by the DirectX(R)11 backend.
-/// @param [in] scratchBufferSize           The size (in bytes) of the buffer pointed to by <c><i>scratchBuffer</i></c>.
-/// 
-/// @retval
-/// FFX_OK                                  The operation completed successfully.
-/// @retval
-/// FFX_ERROR_CODE_INVALID_POINTER          The <c><i>interface</i></c> pointer was <c><i>NULL</i></c>.
-/// 
-/// @ingroup FSR2 DX11
-FfxErrorCode ffxFsr2GetInterfaceDX11(
-    FfxFsr2Interface* fsr2Interface,
-    ID3D11Device* device,
-    void* scratchBuffer,
-    size_t scratchBufferSize);
+    /// Populate an interface with pointers for the DX11 backend.
+    ///
+    /// @param [out] fsr2Interface              A pointer to a <c><i>FfxFsr2Interface</i></c> structure to populate with
+    /// pointers.
+    /// @param [in] device                      A pointer to the DirectX11 device.
+    /// @param [in] scratchBuffer               A pointer to a buffer of memory which can be used by the DirectX(R)11
+    /// backend.
+    /// @param [in] scratchBufferSize           The size (in bytes) of the buffer pointed to by
+    /// <c><i>scratchBuffer</i></c>.
+    ///
+    /// @retval
+    /// FFX_OK                                  The operation completed successfully.
+    /// @retval
+    /// FFX_ERROR_CODE_INVALID_POINTER          The <c><i>interface</i></c> pointer was <c><i>NULL</i></c>.
+    ///
+    /// @ingroup FSR2 DX11
+    FfxErrorCode ffxFsr2GetInterfaceDX11(FfxFsr2Interface* fsr2Interface, ID3D11Device* device, void* scratchBuffer,
+                                         size_t scratchBufferSize);
 
-/// Create a <c><i>FfxFsr2Device</i></c> from a <c><i>ID3D11Device</i></c>.
-///
-/// @param [in] device                      A pointer to the DirectX11 device.
-/// 
-/// @returns
-/// An abstract FidelityFX device.
-/// 
-/// @ingroup FSR2 DX11
-FfxDevice ffxGetDeviceDX11(ID3D11Device* device);
+    /// Create a <c><i>FfxFsr2Device</i></c> from a <c><i>ID3D11Device</i></c>.
+    ///
+    /// @param [in] device                      A pointer to the DirectX11 device.
+    ///
+    /// @returns
+    /// An abstract FidelityFX device.
+    ///
+    /// @ingroup FSR2 DX11
+    FfxDevice ffxGetDeviceDX11(ID3D11Device* device);
 
-/// Create a <c><i>FfxResource</i></c> from a <c><i>ID3D11Resource</i></c>.
-///
-/// @param [in] fsr2Interface               A pointer to a <c><i>FfxFsr2Interface</i></c> structure.
-/// @param [in] resDx11                     A pointer to the DirectX11 resource.
-/// @param [in] name                        (optional) A name string to identify the resource in debug mode.
-/// @param [in] state                       The state the resource is currently in.
-/// 
-/// @returns
-/// An abstract FidelityFX resources.
-/// 
-/// @ingroup FSR2 DX11
-FfxResource ffxGetResourceDX11(
-    FfxFsr2Context* context,
-    ID3D11Resource* resDx11,
-    const wchar_t* name = nullptr,
-    FfxResourceStates state = FFX_RESOURCE_STATE_COMPUTE_READ);
+    /// Create a <c><i>FfxResource</i></c> from a <c><i>ID3D11Resource</i></c>.
+    ///
+    /// @param [in] fsr2Interface               A pointer to a <c><i>FfxFsr2Interface</i></c> structure.
+    /// @param [in] resDx11                     A pointer to the DirectX11 resource.
+    /// @param [in] name                        (optional) A name string to identify the resource in debug mode.
+    /// @param [in] state                       The state the resource is currently in.
+    ///
+    /// @returns
+    /// An abstract FidelityFX resources.
+    ///
+    /// @ingroup FSR2 DX11
+    FfxResource ffxGetResourceDX11(FfxFsr2Context* context, ID3D11Resource* resDx11, const wchar_t* name = nullptr,
+                                   FfxResourceStates state = FFX_RESOURCE_STATE_COMPUTE_READ);
 
-/// Retrieve a <c><i>ID3D11Resource</i></c> pointer associated with a RESOURCE_IDENTIFIER.
-/// Used for debug purposes when blitting internal surfaces.
-///
-/// @param [in] context                     A pointer to a <c><i>FfxFsr2Context</i></c> structure.
-/// @param [in] resId                       A resource.
-/// 
-/// @returns
-/// A <c><i>ID3D11Resource</i> pointer</c>.
-/// 
-/// @ingroup FSR2 DX11
-ID3D11Resource* ffxGetDX11ResourcePtr(FfxFsr2Context* context, uint32_t resId);
+    /// Retrieve a <c><i>ID3D11Resource</i></c> pointer associated with a RESOURCE_IDENTIFIER.
+    /// Used for debug purposes when blitting internal surfaces.
+    ///
+    /// @param [in] context                     A pointer to a <c><i>FfxFsr2Context</i></c> structure.
+    /// @param [in] resId                       A resource.
+    ///
+    /// @returns
+    /// A <c><i>ID3D11Resource</i> pointer</c>.
+    ///
+    /// @ingroup FSR2 DX11
+    ID3D11Resource* ffxGetDX11ResourcePtr(FfxFsr2Context* context, uint32_t resId);
 
 #if defined(__cplusplus)
 }

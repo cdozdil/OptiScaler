@@ -19,21 +19,23 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
 
     frameCounter++;
 
-    //if (!IsVisible())
+    // if (!IsVisible())
     //	return true;
 
     auto outDesc = outTexture->GetDesc();
 
     CreateRenderTarget(outDesc);
 
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
+    (void) io;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
     UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     if (!_dx12Init && io.BackendRendererUserData == nullptr)
     {
         _dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap,
-                                        _srvDescHeap->GetCPUDescriptorHandleForHeapStart(), _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
+                                        _srvDescHeap->GetCPUDescriptorHandleForHeapStart(),
+                                        _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
     }
 
     if (!_dx12Init)
@@ -43,13 +45,13 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
 
     auto backbuf = frameCounter % 2;
 
-    D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
+    D3D12_RENDER_TARGET_VIEW_DESC rtDesc = {};
     rtDesc.Format = outDesc.Format;
     rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
     if ((outDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) > 0)
     {
-        D3D12_RESOURCE_BARRIER outBarrier = { };
+        D3D12_RESOURCE_BARRIER outBarrier = {};
         outBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         outBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
         outBarrier.Transition.pResource = outTexture;
@@ -65,7 +67,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
         pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, NULL);
 
         ImGui_ImplDX12_NewFrame();
-        //ImGui_ImplWin32_NewFrame();
+        // ImGui_ImplWin32_NewFrame();
 
         if (io.Fonts->IsDirty())
             ImGui_ImplDX12_UpdateFontsTexture();
@@ -85,7 +87,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
         return true;
     }
 
-    D3D12_RESOURCE_BARRIER outBarrier = { };
+    D3D12_RESOURCE_BARRIER outBarrier = {};
     outBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     outBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
     outBarrier.Transition.pResource = outTexture;
@@ -93,7 +95,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
     outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
     outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
 
-    D3D12_RESOURCE_BARRIER bufferBarrier = { };
+    D3D12_RESOURCE_BARRIER bufferBarrier = {};
     bufferBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     bufferBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
     bufferBarrier.Transition.pResource = _renderTargetResource[backbuf];
@@ -101,7 +103,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
     bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 
-    D3D12_RESOURCE_BARRIER barriers[] = { bufferBarrier, outBarrier };
+    D3D12_RESOURCE_BARRIER barriers[] = {bufferBarrier, outBarrier};
     pCmdList->ResourceBarrier(2, barriers);
 
     // Copy out to buffer
@@ -119,7 +121,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
     pCmdList->OMSetRenderTargets(1, &_renderTargetDescriptor[backbuf], FALSE, nullptr);
 
     ImGui_ImplDX12_NewFrame();
-    //ImGui_ImplWin32_NewFrame();
+    // ImGui_ImplWin32_NewFrame();
 
     if (io.Fonts->IsDirty())
         ImGui_ImplDX12_UpdateFontsTexture();
@@ -156,7 +158,7 @@ Menu_Dx12::Menu_Dx12(HWND handle, ID3D12Device* pDevice) : MenuDxBase(handle), _
     if (Config::Instance()->OverlayMenu.value_or_default())
         return;
 
-    D3D12_DESCRIPTOR_HEAP_DESC rtvDesc = { };
+    D3D12_DESCRIPTOR_HEAP_DESC rtvDesc = {};
     rtvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvDesc.NumDescriptors = 2;
     rtvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
@@ -170,12 +172,13 @@ Menu_Dx12::Menu_Dx12(HWND handle, ID3D12Device* pDevice) : MenuDxBase(handle), _
     SIZE_T rtvDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = _rtvDescHeap->GetCPUDescriptorHandleForHeapStart();
 
-    for (UINT i = 0; i < 2; ++i) {
+    for (UINT i = 0; i < 2; ++i)
+    {
         _renderTargetDescriptor[i] = rtvHandle;
         rtvHandle.ptr += rtvDescriptorSize;
     }
 
-    D3D12_DESCRIPTOR_HEAP_DESC srvDesc = { };
+    D3D12_DESCRIPTOR_HEAP_DESC srvDesc = {};
     srvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     srvDesc.NumDescriptors = 1;
     srvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
@@ -262,12 +265,15 @@ void Menu_Dx12::CreateRenderTarget(const D3D12_RESOURCE_DESC& InDesc)
         D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
         ID3D12Resource* renderTarget;
-        auto result = _device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_RENDER_TARGET, nullptr, IID_PPV_ARGS(&renderTarget));
+        auto result =
+            _device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
+                                             D3D12_RESOURCE_STATE_RENDER_TARGET, nullptr, IID_PPV_ARGS(&renderTarget));
 
-        if (result == S_OK) {
+        if (result == S_OK)
+        {
             renderTarget->SetName(L"Imgui_Dx12_renderTarget");
 
-            D3D12_RENDER_TARGET_VIEW_DESC rtDesc = { };
+            D3D12_RENDER_TARGET_VIEW_DESC rtDesc = {};
             rtDesc.Format = InDesc.Format;
             rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 

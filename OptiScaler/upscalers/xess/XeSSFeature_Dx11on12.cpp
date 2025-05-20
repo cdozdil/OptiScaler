@@ -8,12 +8,15 @@
 #include <include/d3dx/D3DX11tex.h>
 #endif
 
-XeSSFeatureDx11on12::XeSSFeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
+XeSSFeatureDx11on12::XeSSFeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
+    : IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters),
+      IFeature(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
 {
     _moduleLoaded = XeSSProxy::InitXeSS() && XeSSProxy::D3D12CreateContext() != nullptr;
 }
 
-bool XeSSFeatureDx11on12::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeatureDx11on12::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext,
+                               NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
 
@@ -37,13 +40,13 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         // to prevent creation dx12 device if we are going to recreate feature
         ID3D11Resource* paramVelocity = nullptr;
         if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+            InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**) &paramVelocity);
 
         if (!AutoExposure())
         {
             ID3D11Resource* paramExpo = nullptr;
             if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExpo) != NVSDK_NGX_Result_Success)
-                InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExpo);
+                InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**) &paramExpo);
 
             if (paramExpo == nullptr)
             {
@@ -53,8 +56,9 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         }
 
         ID3D11Resource* paramReactiveMask = nullptr;
-        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) !=
+            NVSDK_NGX_Result_Success)
+            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**) &paramReactiveMask);
         _accessToReactiveMask = paramReactiveMask != nullptr;
 
         if (!Config::Instance()->DisableReactiveMask.has_value())
@@ -144,7 +148,9 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         dumpParams.frame_count = State::Instance().xessDebugFrames;
         dumpParams.frame_idx = dumpCount;
         dumpParams.path = ".";
-        dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY | XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
+        dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH |
+                                        XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY |
+                                        XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
         if (!Config::Instance()->DisableReactiveMask.value_or(true))
             dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
@@ -197,7 +203,8 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
         if (useSS)
         {
-            if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+            if (OutputScaler->CreateBufferResource(Dx12Device, dx11Out.Dx12Resource, TargetWidth(), TargetHeight(),
+                                                   D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
                 OutputScaler->SetBufferState(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                 params.pOutputTexture = OutputScaler->Buffer();
@@ -212,8 +219,10 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
         // RCAS
         if (Config::Instance()->RcasEnabled.value_or(true) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-            RCAS->IsInit() && RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
+                                   Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            RCAS->IsInit() &&
+            RCAS->CreateBufferResource(Dx12Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
         {
             RCAS->SetBufferState(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             params.pOutputTexture = RCAS->Buffer();
@@ -227,12 +236,15 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
         if (dx11Reactive.Dx12Resource != nullptr)
         {
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f &&
-                Bias->IsInit() && Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f && Bias->IsInit() &&
+                Bias->CreateBufferResource(Dx12Device, dx11Reactive.Dx12Resource,
+                                           D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
+                Bias->CanRender())
             {
                 Bias->SetBufferState(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-                if (Bias->Dispatch(Dx12Device, cmdList, dx11Reactive.Dx12Resource, Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
+                if (Bias->Dispatch(Dx12Device, cmdList, dx11Reactive.Dx12Resource,
+                                   Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
                 {
                     Bias->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                     params.pResponsivePixelMaskTexture = Bias->Buffer();
@@ -267,8 +279,10 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, &params.inputMotionVectorBase.y);
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, &params.outputColorBase.x);
         InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, &params.outputColorBase.y);
-        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, &params.inputResponsiveMaskBase.x);
-        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, &params.inputResponsiveMaskBase.y);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X,
+                          &params.inputResponsiveMaskBase.x);
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y,
+                          &params.inputResponsiveMaskBase.y);
 
         // Execute xess
         LOG_DEBUG("Executing!!");
@@ -282,13 +296,15 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
         // apply rcas
         if (Config::Instance()->RcasEnabled.value_or(true) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
+                                   Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
             RCAS->CanRender())
         {
             LOG_DEBUG("Apply RCAS");
 
             if (params.pOutputTexture != RCAS->Buffer())
-                ResourceBarrier(cmdList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                ResourceBarrier(cmdList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
             RCAS->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
@@ -304,7 +320,8 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
             if (useSS)
             {
-                if (!RCAS->Dispatch(Dx12Device, cmdList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, OutputScaler->Buffer()))
+                if (!RCAS->Dispatch(Dx12Device, cmdList, params.pOutputTexture, params.pVelocityTexture, rcasConstants,
+                                    OutputScaler->Buffer()))
                 {
                     Config::Instance()->RcasEnabled = false;
                     break;
@@ -312,7 +329,8 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
             }
             else
             {
-                if (!RCAS->Dispatch(Dx12Device, cmdList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, dx11Out.Dx12Resource))
+                if (!RCAS->Dispatch(Dx12Device, cmdList, params.pOutputTexture, params.pVelocityTexture, rcasConstants,
+                                    dx11Out.Dx12Resource))
                 {
                     Config::Instance()->RcasEnabled = false;
                     break;
@@ -337,7 +355,7 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     } while (false);
 
     cmdList->Close();
-    ID3D12CommandList* ppCommandLists[] = { cmdList };
+    ID3D12CommandList* ppCommandLists[] = {cmdList};
     Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
     Dx12CommandQueue->Signal(dx12FenceTextureCopy, _fenceValue);
 
@@ -355,7 +373,7 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
         }
 
         // imgui - legacy menu disabled for now
-        //if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
+        // if (!Config::Instance()->OverlayMenu.value_or(true) && _frameCount > 30)
         //{
         //    if (Imgui != nullptr && Imgui.get() != nullptr)
         //    {
@@ -381,15 +399,10 @@ bool XeSSFeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
     } while (false);
 
-
-
     _frameCount++;
     Dx12CommandQueue->Signal(Dx12Fence, _frameCount);
 
     return evalResult;
 }
 
-XeSSFeatureDx11on12::~XeSSFeatureDx11on12()
-{
-}
-
+XeSSFeatureDx11on12::~XeSSFeatureDx11on12() {}

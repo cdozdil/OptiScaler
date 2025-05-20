@@ -3,7 +3,8 @@
 
 #include "State.h"
 
-void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const
+void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                    D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const
 {
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -14,13 +15,9 @@ void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID
     InCommandList->ResourceBarrier(1, &barrier);
 }
 
-IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-{
-}
+IFeature_Dx12::IFeature_Dx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) {}
 
-void IFeature_Dx12::Shutdown()
-{
-}
+void IFeature_Dx12::Shutdown() {}
 
 IFeature_Dx12::~IFeature_Dx12()
 {

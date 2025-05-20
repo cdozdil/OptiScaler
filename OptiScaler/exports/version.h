@@ -31,7 +31,7 @@ struct version_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
-        
+
         GetFileVersionInfoA = KernelBaseProxy::GetProcAddress_()(dll, "GetFileVersionInfoA");
         GetFileVersionInfoByHandle = KernelBaseProxy::GetProcAddress_()(dll, "GetFileVersionInfoByHandle");
         GetFileVersionInfoExA = KernelBaseProxy::GetProcAddress_()(dll, "GetFileVersionInfoExA");

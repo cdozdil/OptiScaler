@@ -13,17 +13,20 @@ static inline int64_t GetTicks()
     return ticks.QuadPart;
 }
 
-static inline bool isInteger(const std::string& str, int& value) {
+static inline bool isInteger(const std::string& str, int& value)
+{
     std::istringstream iss(str);
     return (iss >> value) && iss.eof();
 }
 
-static inline bool isUInt(const std::string& str, uint32_t& value) {
+static inline bool isUInt(const std::string& str, uint32_t& value)
+{
     std::istringstream iss(str);
     return (iss >> value) && iss.eof();
 }
 
-static inline bool isFloat(const std::string& str, float& value) {
+static inline bool isFloat(const std::string& str, float& value)
+{
     std::istringstream iss(str);
     return (iss >> value) && iss.eof();
 }
@@ -80,7 +83,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGMakeDepthCopy.set_from_config(readBool("OptiFG", "MakeDepthCopy"));
             FGMakeMVCopy.set_from_config(readBool("OptiFG", "MakeMVCopy"));
             FGUseMutexForSwaphain.set_from_config(readBool("OptiFG", "UseMutexForSwaphain"));
-            
+
             FGEnableDepthScale.set_from_config(readBool("OptiFG", "EnableDepthScale"));
             FGDepthScaleMax.set_from_config(readFloat("OptiFG", "DepthScaleMax"));
 
@@ -90,7 +93,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGFPTAllowHybridSpin.set_from_config(readBool("OptiFG", "FPTHybridSpin"));
             FGFPTHybridSpinTime.set_from_config(readInt("OptiFG", "FPTHybridSpinTime"));
             FGFPTAllowWaitForSingleObjectOnFence.set_from_config(readInt("OptiFG", "FPTWaitForSingleObjectOnFence"));
-            
+
             FGHudfixHalfSync.set_from_config(readBool("OptiFG", "HudfixHalfSync"));
             FGHudfixFullSync.set_from_config(readBool("OptiFG", "HudfixFullSync"));
         }
@@ -157,25 +160,32 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             constexpr size_t presetCount = 17;
 
-            if (auto setting = readInt("DLSS", "RenderPresetForAll"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
+            if (auto setting = readInt("DLSS", "RenderPresetForAll");
+                setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetForAll.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetDLAA"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
+            if (auto setting = readInt("DLSS", "RenderPresetDLAA");
+                setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetDLAA.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetUltraQuality"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
+            if (auto setting = readInt("DLSS", "RenderPresetUltraQuality");
+                setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetUltraQuality.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetQuality"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
+            if (auto setting = readInt("DLSS", "RenderPresetQuality");
+                setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetQuality.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetBalanced"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
+            if (auto setting = readInt("DLSS", "RenderPresetBalanced");
+                setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetBalanced.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetPerformance"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
+            if (auto setting = readInt("DLSS", "RenderPresetPerformance");
+                setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetPerformance.set_from_config(setting);
 
-            if (auto setting = readInt("DLSS", "RenderPresetUltraPerformance"); setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
+            if (auto setting = readInt("DLSS", "RenderPresetUltraPerformance");
+                setting.has_value() && setting >= 0 && (setting < presetCount || setting == 0x00FFFFFF))
                 RenderPresetUltraPerformance.set_from_config(setting);
         }
 
@@ -206,7 +216,10 @@ bool Config::Reload(std::filesystem::path iniPath)
                 auto path = std::filesystem::path(setting.value_or(wstring_to_string(LogFileName.value_or_default())));
                 auto filenameStem = path.stem();
 
-                auto filename = std::filesystem::path(LogSingleFile.value_or_default() ? filenameStem.wstring() + L".log" : filenameStem.wstring() + L"_" + std::to_wstring(GetTicks()) + L".log");
+                auto filename =
+                    std::filesystem::path(LogSingleFile.value_or_default()
+                                              ? filenameStem.wstring() + L".log"
+                                              : filenameStem.wstring() + L"_" + std::to_wstring(GetTicks()) + L".log");
 
                 if (path.has_root_path())
                     LogFileName.set_from_config((path.parent_path() / filename).wstring());
@@ -270,7 +283,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (auto setting = readFloat("CAS", "MotionScaleLimit"); setting.has_value())
                 MotionScaleLimit.set_from_config(std::clamp(setting.value(), 0.01f, 100.0f));
 
-            ContrastEnabled.set_from_config(readBool("CAS", "ContrastEnabled"));            
+            ContrastEnabled.set_from_config(readBool("CAS", "ContrastEnabled"));
             if (auto setting = readFloat("CAS", "Contrast"); setting.has_value())
                 Contrast.set_from_config(std::clamp(setting.value(), -2.0f, 2.0f));
         }
@@ -295,14 +308,13 @@ bool Config::Reload(std::filesystem::path iniPath)
             DisableReactiveMask.set_from_config(readBool("InitFlags", "DisableReactiveMask"));
         }
 
-
         // DRS
         {
             DrsMinOverrideEnabled.set_from_config(readBool("DRS", "DrsMinOverrideEnabled"));
             DrsMaxOverrideEnabled.set_from_config(readBool("DRS", "DrsMaxOverrideEnabled"));
         }
 
-        //Upscale Ratio Override
+        // Upscale Ratio Override
         {
             UpscaleRatioOverrideEnabled.set_from_config(readBool("UpscaleRatio", "UpscaleRatioOverrideEnabled"));
             UpscaleRatioOverrideValue.set_from_config(readFloat("UpscaleRatio", "UpscaleRatioOverrideValue"));
@@ -316,7 +328,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             QualityRatio_Quality.set_from_config(readFloat("QualityOverrides", "QualityRatioQuality"));
             QualityRatio_Balanced.set_from_config(readFloat("QualityOverrides", "QualityRatioBalanced"));
             QualityRatio_Performance.set_from_config(readFloat("QualityOverrides", "QualityRatioPerformance"));
-            QualityRatio_UltraPerformance.set_from_config(readFloat("QualityOverrides", "QualityRatioUltraPerformance"));
+            QualityRatio_UltraPerformance.set_from_config(
+                readFloat("QualityOverrides", "QualityRatioUltraPerformance"));
         }
 
         // Hotfixes
@@ -325,19 +338,22 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             RoundInternalResolution.set_from_config(readInt("Hotfix", "RoundInternalResolution"));
 
-            if (auto setting = readFloat("Hotfix", "MipmapBiasOverride"); setting.has_value() && setting.value() <= 15.0 && setting.value() >= -15.0)
+            if (auto setting = readFloat("Hotfix", "MipmapBiasOverride");
+                setting.has_value() && setting.value() <= 15.0 && setting.value() >= -15.0)
                 MipmapBiasOverride.set_from_config(setting);
 
             // Unsure if that's needed but it resets invalid MipmapBiasOverride on config reload
             // Unexpected place for it but could be playing a role
-            if (MipmapBiasOverride.has_value() && (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
+            if (MipmapBiasOverride.has_value() &&
+                (MipmapBiasOverride.value() > 15.0 || MipmapBiasOverride.value() < -15.0))
                 MipmapBiasOverride.reset();
 
             MipmapBiasFixedOverride.set_from_config(readBool("Hotfix", "MipmapBiasFixedOverride"));
             MipmapBiasScaleOverride.set_from_config(readBool("Hotfix", "MipmapBiasScaleOverride"));
             MipmapBiasOverrideAll.set_from_config(readBool("Hotfix", "MipmapBiasOverrideAll"));
-            
-            if (auto setting = readInt("Hotfix", "AnisotropyOverride"); setting.has_value() && setting.value() <= 16 && setting.value() >= 1)
+
+            if (auto setting = readInt("Hotfix", "AnisotropyOverride");
+                setting.has_value() && setting.value() <= 16 && setting.value() >= 1)
                 AnisotropyOverride.set_from_config(setting);
 
             if (AnisotropyOverride.has_value() && (AnisotropyOverride.value() > 16 || AnisotropyOverride.value() < 1))
@@ -361,9 +377,9 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Dx11 with Dx12
         {
-            //TextureSyncMethod.set_from_config(readInt("Dx11withDx12", "TextureSyncMethod"));
-            //CopyBackSyncMethod.set_from_config(readInt("Dx11withDx12", "CopyBackSyncMethod"));
-            //SyncAfterDx12.set_from_config(readInt("Dx11withDx12", "SyncAfterDx12"));
+            // TextureSyncMethod.set_from_config(readInt("Dx11withDx12", "TextureSyncMethod"));
+            // CopyBackSyncMethod.set_from_config(readInt("Dx11withDx12", "CopyBackSyncMethod"));
+            // SyncAfterDx12.set_from_config(readInt("Dx11withDx12", "SyncAfterDx12"));
 
             Dx11DelayedInit.set_from_config(readInt("Dx11withDx12", "UseDelayedInit"));
             DontUseNTShared.set_from_config(readBool("Dx11withDx12", "DontUseNTShared"));
@@ -430,7 +446,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!DE_Generator.has_value())
                 DE_Generator = readString("FrameGeneration", "Generator", true);
 
-            if (DE_Generator.has_value() && DE_Generator.value() != "fsr30" && DE_Generator.value() != "fsr31" && DE_Generator.value() != "dlssg")
+            if (DE_Generator.has_value() && DE_Generator.value() != "fsr30" && DE_Generator.value() != "fsr31" &&
+                DE_Generator.value() != "dlssg")
                 DE_Generator.reset();
 
             if (!DE_FramerateLimit.has_value() || !DE_FramerateLimitVsync.has_value())
@@ -470,7 +487,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             if (!DE_Reflex.has_value())
                 DE_Reflex = readString("FrameGeneration", "Reflex", true);
 
-            if (DE_Reflex.has_value() && DE_Reflex.value() != "off" && DE_Reflex.value() != "boost" && DE_Reflex.value() != "on")
+            if (DE_Reflex.has_value() && DE_Reflex.value() != "off" && DE_Reflex.value() != "boost" &&
+                DE_Reflex.value() != "on")
                 DE_Reflex.reset();
 
             if (!DE_ReflexEmu.has_value())
@@ -482,8 +500,8 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // HDR
         {
-                ForceHDR.set_from_config(readBool("HDR", "ForceHDR"));
-                UseHDR10.set_from_config(readBool("HDR", "UseHDR10"));
+            ForceHDR.set_from_config(readBool("HDR", "ForceHDR"));
+            UseHDR10.set_from_config(readBool("HDR", "UseHDR10"));
         }
 
         if (fakenvapi::isUsingFakenvapi())
@@ -522,7 +540,7 @@ std::string GetIntValue(std::optional<int> value, bool getHex = false)
     if (!value.has_value())
         return "auto";
 
-    if(getHex)
+    if (getHex)
         return std::format("{:#x}", value.value());
 
     return std::to_string(value.value());
@@ -558,7 +576,7 @@ bool Config::SaveIni()
             ini.SetValue("FrameGeneration", "FrameGenerationMode", "auto");
     }
 
-    // Upscalers 
+    // Upscalers
     {
         ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_for_config_or("auto").c_str());
         ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_for_config_or("auto").c_str());
@@ -580,7 +598,7 @@ bool Config::SaveIni()
         ini.SetValue("FrameGen", "FGType", FGTypeString.c_str());
     }
 
-    // OptiFG 
+    // OptiFG
     {
         ini.SetValue("OptiFG", "Enabled", GetBoolValue(Instance()->FGEnabled.value_for_config()).c_str());
         ini.SetValue("OptiFG", "DebugView", GetBoolValue(Instance()->FGDebugView.value_for_config()).c_str());
@@ -588,40 +606,54 @@ bool Config::SaveIni()
         ini.SetValue("OptiFG", "HUDFix", GetBoolValue(Instance()->FGHUDFix.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HUDLimit", GetIntValue(Instance()->FGHUDLimit.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "HUDFixImmadiate", GetBoolValue(Instance()->FGImmediateCapture.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "HUDFixImmadiate",
+                     GetBoolValue(Instance()->FGImmediateCapture.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectLeft", GetIntValue(Instance()->FGRectLeft.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectTop", GetIntValue(Instance()->FGRectTop.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectWidth", GetIntValue(Instance()->FGRectWidth.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectHeight", GetIntValue(Instance()->FGRectHeight.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "AlwaysTrackHeaps", GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "AlwaysTrackHeaps",
+                     GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "UseMutexForSwaphain", GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
-        
-        ini.SetValue("OptiFG", "EnableDepthScale", GetBoolValue(Instance()->FGEnableDepthScale.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "UseMutexForSwaphain",
+                     GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
+
+        ini.SetValue("OptiFG", "EnableDepthScale",
+                     GetBoolValue(Instance()->FGEnableDepthScale.value_for_config()).c_str());
         ini.SetValue("OptiFG", "DepthScaleMax", GetFloatValue(Instance()->FGDepthScaleMax.value_for_config()).c_str());
 
-        ini.SetValue("OptiFG", "FramePacingTuning", GetBoolValue(Instance()->FGFramePacingTuning.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "FPTSafetyMarginInMs", GetFloatValue(Instance()->FGFPTSafetyMarginInMs.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "FPTVarianceFactor", GetFloatValue(Instance()->FGFPTVarianceFactor.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "FPTHybridSpin", GetBoolValue(Instance()->FGFPTAllowHybridSpin.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "FPTHybridSpinTime", GetIntValue(Instance()->FGFPTHybridSpinTime.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "FPTWaitForSingleObjectOnFence", GetBoolValue(Instance()->FGFPTAllowWaitForSingleObjectOnFence.value_for_config()).c_str());
-        
+        ini.SetValue("OptiFG", "FramePacingTuning",
+                     GetBoolValue(Instance()->FGFramePacingTuning.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTSafetyMarginInMs",
+                     GetFloatValue(Instance()->FGFPTSafetyMarginInMs.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTVarianceFactor",
+                     GetFloatValue(Instance()->FGFPTVarianceFactor.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTHybridSpin",
+                     GetBoolValue(Instance()->FGFPTAllowHybridSpin.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTHybridSpinTime",
+                     GetIntValue(Instance()->FGFPTHybridSpinTime.value_for_config()).c_str());
+        ini.SetValue("OptiFG", "FPTWaitForSingleObjectOnFence",
+                     GetBoolValue(Instance()->FGFPTAllowWaitForSingleObjectOnFence.value_for_config()).c_str());
+
         ini.SetValue("OptiFG", "HudfixHalfSync", GetBoolValue(Instance()->FGHudfixHalfSync.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HudfixFullSync", GetBoolValue(Instance()->FGHudfixFullSync.value_for_config()).c_str());
     }
 
-    // Framerate 
+    // Framerate
     {
-        ini.SetValue("Framerate", "FramerateLimit", GetFloatValue(Instance()->FramerateLimit.value_for_config()).c_str());
+        ini.SetValue("Framerate", "FramerateLimit",
+                     GetFloatValue(Instance()->FramerateLimit.value_for_config()).c_str());
     }
 
     // Output Scaling
     {
-        ini.SetValue("OutputScaling", "Enabled", GetBoolValue(Instance()->OutputScalingEnabled.value_for_config()).c_str());
-        ini.SetValue("OutputScaling", "Multiplier", GetFloatValue(Instance()->OutputScalingMultiplier.value_for_config()).c_str());
-        ini.SetValue("OutputScaling", "UseFsr", GetBoolValue(Instance()->OutputScalingUseFsr.value_for_config()).c_str());
+        ini.SetValue("OutputScaling", "Enabled",
+                     GetBoolValue(Instance()->OutputScalingEnabled.value_for_config()).c_str());
+        ini.SetValue("OutputScaling", "Multiplier",
+                     GetFloatValue(Instance()->OutputScalingMultiplier.value_for_config()).c_str());
+        ini.SetValue("OutputScaling", "UseFsr",
+                     GetBoolValue(Instance()->OutputScalingUseFsr.value_for_config()).c_str());
         ini.SetValue("OutputScaling", "Downscaler", GetIntValue(Instance()->OutputScalingDownscaler).c_str());
     }
 
@@ -631,13 +663,15 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "HorizontalFov", GetFloatValue(Instance()->FsrHorizontalFov.value_for_config()).c_str());
         ini.SetValue("FSR", "CameraNear", GetFloatValue(Instance()->FsrCameraNear.value_for_config()).c_str());
         ini.SetValue("FSR", "CameraFar", GetFloatValue(Instance()->FsrCameraFar.value_for_config()).c_str());
-        ini.SetValue("FSR", "UseFsrInputValues", GetBoolValue(Instance()->FsrUseFsrInputValues.value_for_config()).c_str());
+        ini.SetValue("FSR", "UseFsrInputValues",
+                     GetBoolValue(Instance()->FsrUseFsrInputValues.value_for_config()).c_str());
 
-        ini.SetValue("FSR", "FfxDx12Path", wstring_to_string(Instance()->FfxDx12Path.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("FSR", "FfxDx12Path",
+                     wstring_to_string(Instance()->FfxDx12Path.value_for_config_or(L"auto")).c_str());
         ini.SetValue("FSR", "FfxVkPath", wstring_to_string(Instance()->FfxVkPath.value_for_config_or(L"auto")).c_str());
     }
 
-    // FSR 
+    // FSR
     {
         ini.SetValue("FSR", "VelocityFactor", GetFloatValue(Instance()->FsrVelocity.value_for_config()).c_str());
         ini.SetValue("FSR", "ReactiveScale", GetFloatValue(Instance()->FsrReactiveScale.value_for_config()).c_str());
@@ -646,12 +680,15 @@ bool Config::SaveIni()
         ini.SetValue("FSR", "MinDisOccAcc", GetFloatValue(Instance()->FsrMinDisOccAcc.value_for_config()).c_str());
         ini.SetValue("FSR", "DebugView", GetBoolValue(Instance()->FsrDebugView.value_for_config()).c_str());
         ini.SetValue("FSR", "UpscalerIndex", GetIntValue(Instance()->Fsr3xIndex.value_for_config()).c_str());
-        ini.SetValue("FSR", "UseReactiveMaskForTransparency", GetBoolValue(Instance()->FsrUseMaskForTransparency.value_for_config()).c_str());
-        ini.SetValue("FSR", "DlssReactiveMaskBias", GetFloatValue(Instance()->DlssReactiveMaskBias.value_for_config()).c_str());
+        ini.SetValue("FSR", "UseReactiveMaskForTransparency",
+                     GetBoolValue(Instance()->FsrUseMaskForTransparency.value_for_config()).c_str());
+        ini.SetValue("FSR", "DlssReactiveMaskBias",
+                     GetFloatValue(Instance()->DlssReactiveMaskBias.value_for_config()).c_str());
         ini.SetValue("FSR", "Fsr4Update", GetBoolValue(Instance()->Fsr4Update.value_for_config()).c_str());
         ini.SetValue("FSR", "FsrNonLinearPQ", GetBoolValue(Instance()->FsrNonLinearPQ.value_for_config()).c_str());
         ini.SetValue("FSR", "FsrNonLinearSRGB", GetBoolValue(Instance()->FsrNonLinearSRGB.value_for_config()).c_str());
-        ini.SetValue("FSR", "FsrAgilitySDKUpgrade", GetBoolValue(Instance()->FsrAgilitySDKUpgrade.value_for_config()).c_str());
+        ini.SetValue("FSR", "FsrAgilitySDKUpgrade",
+                     GetBoolValue(Instance()->FsrAgilitySDKUpgrade.value_for_config()).c_str());
     }
 
     // XeSS
@@ -659,25 +696,38 @@ bool Config::SaveIni()
         ini.SetValue("XeSS", "BuildPipelines", GetBoolValue(Instance()->BuildPipelines.value_for_config()).c_str());
         ini.SetValue("XeSS", "CreateHeaps", GetBoolValue(Instance()->CreateHeaps.value_for_config()).c_str());
         ini.SetValue("XeSS", "NetworkModel", GetIntValue(Instance()->NetworkModel.value_for_config()).c_str());
-        ini.SetValue("XeSS", "LibraryPath",  wstring_to_string(Instance()->XeSSLibrary.value_for_config_or(L"auto")).c_str());
-        ini.SetValue("XeSS", "Dx11LibraryPath",  wstring_to_string(Instance()->XeSSDx11Library.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("XeSS", "LibraryPath",
+                     wstring_to_string(Instance()->XeSSLibrary.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("XeSS", "Dx11LibraryPath",
+                     wstring_to_string(Instance()->XeSSDx11Library.value_for_config_or(L"auto")).c_str());
     }
 
     // DLSS
     {
         ini.SetValue("DLSS", "Enabled", GetBoolValue(Instance()->DLSSEnabled.value_for_config()).c_str());
-        ini.SetValue("DLSS", "LibraryPath", wstring_to_string(Instance()->NvngxPath.value_for_config_or(L"auto")).c_str());
-        ini.SetValue("DLSS", "FeaturePath", wstring_to_string(Instance()->DLSSFeaturePath.value_for_config_or(L"auto")).c_str());
-        ini.SetValue("DLSS", "NVNGX_DLSS_Library", wstring_to_string(Instance()->NVNGX_DLSS_Library.value_for_config_or(L"auto")).c_str());
-        ini.SetValue("DLSS", "RenderPresetOverride", GetBoolValue(Instance()->RenderPresetOverride.value_for_config()).c_str());
-        ini.SetValue("DLSS", "RenderPresetForAll", GetIntValue(Instance()->RenderPresetForAll.value_for_config()).c_str());
+        ini.SetValue("DLSS", "LibraryPath",
+                     wstring_to_string(Instance()->NvngxPath.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("DLSS", "FeaturePath",
+                     wstring_to_string(Instance()->DLSSFeaturePath.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("DLSS", "NVNGX_DLSS_Library",
+                     wstring_to_string(Instance()->NVNGX_DLSS_Library.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("DLSS", "RenderPresetOverride",
+                     GetBoolValue(Instance()->RenderPresetOverride.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetForAll",
+                     GetIntValue(Instance()->RenderPresetForAll.value_for_config()).c_str());
         ini.SetValue("DLSS", "RenderPresetDLAA", GetIntValue(Instance()->RenderPresetDLAA.value_for_config()).c_str());
-        ini.SetValue("DLSS", "RenderPresetUltraQuality", GetIntValue(Instance()->RenderPresetUltraQuality.value_for_config()).c_str());
-        ini.SetValue("DLSS", "RenderPresetQuality", GetIntValue(Instance()->RenderPresetQuality.value_for_config()).c_str());
-        ini.SetValue("DLSS", "RenderPresetBalanced", GetIntValue(Instance()->RenderPresetBalanced.value_for_config()).c_str());
-        ini.SetValue("DLSS", "RenderPresetPerformance", GetIntValue(Instance()->RenderPresetPerformance.value_for_config()).c_str());
-        ini.SetValue("DLSS", "RenderPresetUltraPerformance", GetIntValue(Instance()->RenderPresetUltraPerformance.value_for_config()).c_str());
-        ini.SetValue("DLSS", "UseGenericAppIdWithDlss", GetBoolValue(Instance()->UseGenericAppIdWithDlss.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetUltraQuality",
+                     GetIntValue(Instance()->RenderPresetUltraQuality.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetQuality",
+                     GetIntValue(Instance()->RenderPresetQuality.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetBalanced",
+                     GetIntValue(Instance()->RenderPresetBalanced.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetPerformance",
+                     GetIntValue(Instance()->RenderPresetPerformance.value_for_config()).c_str());
+        ini.SetValue("DLSS", "RenderPresetUltraPerformance",
+                     GetIntValue(Instance()->RenderPresetUltraPerformance.value_for_config()).c_str());
+        ini.SetValue("DLSS", "UseGenericAppIdWithDlss",
+                     GetBoolValue(Instance()->UseGenericAppIdWithDlss.value_for_config()).c_str());
     }
 
     // Nukems
@@ -687,7 +737,8 @@ bool Config::SaveIni()
 
     // Sharpness
     {
-        ini.SetValue("Sharpness", "OverrideSharpness", GetBoolValue(Instance()->OverrideSharpness.value_for_config()).c_str());
+        ini.SetValue("Sharpness", "OverrideSharpness",
+                     GetBoolValue(Instance()->OverrideSharpness.value_for_config()).c_str());
         ini.SetValue("Sharpness", "Sharpness", GetFloatValue(Instance()->Sharpness.value_for_config()).c_str());
     }
 
@@ -699,25 +750,33 @@ bool Config::SaveIni()
         ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits.value_for_config()).c_str());
         ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps.value_for_config()).c_str());
         ini.SetValue("Menu", "UseHQFont", GetBoolValue(Instance()->UseHQFont.value_for_config()).c_str());
-        ini.SetValue("Menu", "FpsShortcutKey", GetIntValue(Instance()->FpsShortcutKey.value_for_config(), true).c_str());
-        ini.SetValue("Menu", "FpsCycleShortcutKey", GetIntValue(Instance()->FpsCycleShortcutKey.value_for_config(), true).c_str());
+        ini.SetValue("Menu", "FpsShortcutKey",
+                     GetIntValue(Instance()->FpsShortcutKey.value_for_config(), true).c_str());
+        ini.SetValue("Menu", "FpsCycleShortcutKey",
+                     GetIntValue(Instance()->FpsCycleShortcutKey.value_for_config(), true).c_str());
         ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos.value_for_config()).c_str());
         ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType.value_for_config()).c_str());
-        ini.SetValue("Menu", "FpsOverlayHorizontal", GetBoolValue(Instance()->FpsOverlayHorizontal.value_for_config()).c_str());
+        ini.SetValue("Menu", "FpsOverlayHorizontal",
+                     GetBoolValue(Instance()->FpsOverlayHorizontal.value_for_config()).c_str());
         ini.SetValue("Menu", "FpsOverlayAlpha", GetFloatValue(Instance()->FpsOverlayAlpha.value_for_config()).c_str());
     }
 
     // Hooks
     {
-        ini.SetValue("Hooks", "HookOriginalNvngxOnly", GetBoolValue(Instance()->HookOriginalNvngxOnly.value_for_config()).c_str());
+        ini.SetValue("Hooks", "HookOriginalNvngxOnly",
+                     GetBoolValue(Instance()->HookOriginalNvngxOnly.value_for_config()).c_str());
         ini.SetValue("Hooks", "EarlyHooking", GetBoolValue(Instance()->EarlyHooking.value_for_config()).c_str());
     }
 
     // CAS
     {
-        ini.SetValue("CAS", "Enabled", Instance()->RcasEnabled.has_value() ? (Instance()->RcasEnabled.value() ? "true" : "false") : "auto");
-        ini.SetValue("CAS", "MotionSharpnessEnabled", GetBoolValue(Instance()->MotionSharpnessEnabled.value_for_config()).c_str());
-        ini.SetValue("CAS", "MotionSharpnessDebug", GetBoolValue(Instance()->MotionSharpnessDebug.value_for_config()).c_str());
+        ini.SetValue("CAS", "Enabled",
+                     Instance()->RcasEnabled.has_value() ? (Instance()->RcasEnabled.value() ? "true" : "false")
+                                                         : "auto");
+        ini.SetValue("CAS", "MotionSharpnessEnabled",
+                     GetBoolValue(Instance()->MotionSharpnessEnabled.value_for_config()).c_str());
+        ini.SetValue("CAS", "MotionSharpnessDebug",
+                     GetBoolValue(Instance()->MotionSharpnessDebug.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionSharpness", GetFloatValue(Instance()->MotionSharpness.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionThreshold", GetFloatValue(Instance()->MotionThreshold.value_for_config()).c_str());
         ini.SetValue("CAS", "MotionScaleLimit", GetFloatValue(Instance()->MotionScaleLimit.value_for_config()).c_str());
@@ -730,65 +789,100 @@ bool Config::SaveIni()
         ini.SetValue("InitFlags", "AutoExposure", GetBoolValue(Instance()->AutoExposure.value_for_config()).c_str());
         ini.SetValue("InitFlags", "HDR", GetBoolValue(Instance()->HDR.value_for_config()).c_str());
         ini.SetValue("InitFlags", "DepthInverted", GetBoolValue(Instance()->DepthInverted.value_for_config()).c_str());
-        ini.SetValue("InitFlags", "JitterCancellation", GetBoolValue(Instance()->JitterCancellation.value_for_config()).c_str());
-        ini.SetValue("InitFlags", "DisplayResolution", GetBoolValue(Instance()->DisplayResolution.value_for_config()).c_str());
-        ini.SetValue("InitFlags", "DisableReactiveMask", GetBoolValue(Instance()->DisableReactiveMask.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "JitterCancellation",
+                     GetBoolValue(Instance()->JitterCancellation.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "DisplayResolution",
+                     GetBoolValue(Instance()->DisplayResolution.value_for_config()).c_str());
+        ini.SetValue("InitFlags", "DisableReactiveMask",
+                     GetBoolValue(Instance()->DisableReactiveMask.value_for_config()).c_str());
     }
 
     // Upscale Ratio Override
     {
-        ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideEnabled", GetBoolValue(Instance()->UpscaleRatioOverrideEnabled.value_for_config()).c_str());
-        ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideValue", GetFloatValue(Instance()->UpscaleRatioOverrideValue.value_for_config()).c_str());
+        ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideEnabled",
+                     GetBoolValue(Instance()->UpscaleRatioOverrideEnabled.value_for_config()).c_str());
+        ini.SetValue("UpscaleRatio", "UpscaleRatioOverrideValue",
+                     GetFloatValue(Instance()->UpscaleRatioOverrideValue.value_for_config()).c_str());
     }
 
     // Quality Overrides
     {
-        ini.SetValue("QualityOverrides", "QualityRatioOverrideEnabled", GetBoolValue(Instance()->QualityRatioOverrideEnabled.value_for_config()).c_str());
-        ini.SetValue("QualityOverrides", "QualityRatioDLAA", GetFloatValue(Instance()->QualityRatio_DLAA.value_for_config()).c_str());
-        ini.SetValue("QualityOverrides", "QualityRatioUltraQuality", GetFloatValue(Instance()->QualityRatio_UltraQuality.value_for_config()).c_str());
-        ini.SetValue("QualityOverrides", "QualityRatioQuality", GetFloatValue(Instance()->QualityRatio_Quality.value_for_config()).c_str());
-        ini.SetValue("QualityOverrides", "QualityRatioBalanced", GetFloatValue(Instance()->QualityRatio_Balanced.value_for_config()).c_str());
-        ini.SetValue("QualityOverrides", "QualityRatioPerformance", GetFloatValue(Instance()->QualityRatio_Performance.value_for_config()).c_str());
-        ini.SetValue("QualityOverrides", "QualityRatioUltraPerformance", GetFloatValue(Instance()->QualityRatio_UltraPerformance.value_for_config()).c_str());
+        ini.SetValue("QualityOverrides", "QualityRatioOverrideEnabled",
+                     GetBoolValue(Instance()->QualityRatioOverrideEnabled.value_for_config()).c_str());
+        ini.SetValue("QualityOverrides", "QualityRatioDLAA",
+                     GetFloatValue(Instance()->QualityRatio_DLAA.value_for_config()).c_str());
+        ini.SetValue("QualityOverrides", "QualityRatioUltraQuality",
+                     GetFloatValue(Instance()->QualityRatio_UltraQuality.value_for_config()).c_str());
+        ini.SetValue("QualityOverrides", "QualityRatioQuality",
+                     GetFloatValue(Instance()->QualityRatio_Quality.value_for_config()).c_str());
+        ini.SetValue("QualityOverrides", "QualityRatioBalanced",
+                     GetFloatValue(Instance()->QualityRatio_Balanced.value_for_config()).c_str());
+        ini.SetValue("QualityOverrides", "QualityRatioPerformance",
+                     GetFloatValue(Instance()->QualityRatio_Performance.value_for_config()).c_str());
+        ini.SetValue("QualityOverrides", "QualityRatioUltraPerformance",
+                     GetFloatValue(Instance()->QualityRatio_UltraPerformance.value_for_config()).c_str());
     }
 
     // Hotfixes
     {
-        ini.SetValue("Hotfix", "DisableOverlays", Instance()->DisableOverlays.has_value() ? (Instance()->DisableOverlays.value() ? "true" : "false") : "auto");
+        ini.SetValue("Hotfix", "DisableOverlays",
+                     Instance()->DisableOverlays.has_value() ? (Instance()->DisableOverlays.value() ? "true" : "false")
+                                                             : "auto");
 
-        ini.SetValue("Hotfix", "MipmapBiasOverride", GetFloatValue(Instance()->MipmapBiasOverride.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "MipmapBiasOverrideAll", GetBoolValue(Instance()->MipmapBiasOverrideAll.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "MipmapBiasFixedOverride", GetBoolValue(Instance()->MipmapBiasFixedOverride.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "MipmapBiasScaleOverride", GetBoolValue(Instance()->MipmapBiasScaleOverride.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasOverride",
+                     GetFloatValue(Instance()->MipmapBiasOverride.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasOverrideAll",
+                     GetBoolValue(Instance()->MipmapBiasOverrideAll.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasFixedOverride",
+                     GetBoolValue(Instance()->MipmapBiasFixedOverride.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "MipmapBiasScaleOverride",
+                     GetBoolValue(Instance()->MipmapBiasScaleOverride.value_for_config()).c_str());
 
-        ini.SetValue("Hotfix", "AnisotropyOverride", GetIntValue(Instance()->AnisotropyOverride.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "RoundInternalResolution", GetIntValue(Instance()->RoundInternalResolution.value_for_config()).c_str());
-        
-        ini.SetValue("Hotfix", "OverrideShaderSampler", GetBoolValue(Instance()->OverrideShaderSampler.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "AnisotropyOverride",
+                     GetIntValue(Instance()->AnisotropyOverride.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "RoundInternalResolution",
+                     GetIntValue(Instance()->RoundInternalResolution.value_for_config()).c_str());
 
-        ini.SetValue("Hotfix", "RestoreComputeSignature", GetBoolValue(Instance()->RestoreComputeSignature.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "RestoreGraphicSignature", GetBoolValue(Instance()->RestoreGraphicSignature.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "OverrideShaderSampler",
+                     GetBoolValue(Instance()->OverrideShaderSampler.value_for_config()).c_str());
+
+        ini.SetValue("Hotfix", "RestoreComputeSignature",
+                     GetBoolValue(Instance()->RestoreComputeSignature.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "RestoreGraphicSignature",
+                     GetBoolValue(Instance()->RestoreGraphicSignature.value_for_config()).c_str());
         ini.SetValue("Hotfix", "SkipFirstFrames", GetIntValue(Instance()->SkipFirstFrames.value_for_config()).c_str());
 
-        ini.SetValue("Hotfix", "UsePrecompiledShaders", GetBoolValue(Instance()->UsePrecompiledShaders.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "PreferDedicatedGpu", GetBoolValue(Instance()->PreferDedicatedGpu.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "PreferFirstDedicatedGpu", GetBoolValue(Instance()->PreferFirstDedicatedGpu.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "UsePrecompiledShaders",
+                     GetBoolValue(Instance()->UsePrecompiledShaders.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "PreferDedicatedGpu",
+                     GetBoolValue(Instance()->PreferDedicatedGpu.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "PreferFirstDedicatedGpu",
+                     GetBoolValue(Instance()->PreferFirstDedicatedGpu.value_for_config()).c_str());
 
-        ini.SetValue("Hotfix", "ColorResourceBarrier", GetIntValue(Instance()->ColorResourceBarrier.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "MotionVectorResourceBarrier", GetIntValue(Instance()->MVResourceBarrier.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "DepthResourceBarrier", GetIntValue(Instance()->DepthResourceBarrier.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "ColorMaskResourceBarrier", GetIntValue(Instance()->MaskResourceBarrier.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "ExposureResourceBarrier", GetIntValue(Instance()->ExposureResourceBarrier.value_for_config()).c_str());
-        ini.SetValue("Hotfix", "OutputResourceBarrier", GetIntValue(Instance()->OutputResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "ColorResourceBarrier",
+                     GetIntValue(Instance()->ColorResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "MotionVectorResourceBarrier",
+                     GetIntValue(Instance()->MVResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "DepthResourceBarrier",
+                     GetIntValue(Instance()->DepthResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "ColorMaskResourceBarrier",
+                     GetIntValue(Instance()->MaskResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "ExposureResourceBarrier",
+                     GetIntValue(Instance()->ExposureResourceBarrier.value_for_config()).c_str());
+        ini.SetValue("Hotfix", "OutputResourceBarrier",
+                     GetIntValue(Instance()->OutputResourceBarrier.value_for_config()).c_str());
     }
 
     // Dx11 with Dx12
     {
-        //ini.SetValue("Dx11withDx12", "TextureSyncMethod", GetIntValue(Instance()->TextureSyncMethod.value_for_config()).c_str());
-        //ini.SetValue("Dx11withDx12", "CopyBackSyncMethod", GetIntValue(Instance()->CopyBackSyncMethod.value_for_config()).c_str());
-        //ini.SetValue("Dx11withDx12", "SyncAfterDx12", GetBoolValue(Instance()->SyncAfterDx12.value_for_config()).c_str());
-        //ini.SetValue("Dx11withDx12", "UseDelayedInit", GetBoolValue(Instance()->Dx11DelayedInit.value_for_config()).c_str());
-        ini.SetValue("Dx11withDx12", "DontUseNTShared", GetBoolValue(Instance()->DontUseNTShared.value_for_config()).c_str());
+        // ini.SetValue("Dx11withDx12", "TextureSyncMethod",
+        // GetIntValue(Instance()->TextureSyncMethod.value_for_config()).c_str()); ini.SetValue("Dx11withDx12",
+        // "CopyBackSyncMethod", GetIntValue(Instance()->CopyBackSyncMethod.value_for_config()).c_str());
+        // ini.SetValue("Dx11withDx12", "SyncAfterDx12",
+        // GetBoolValue(Instance()->SyncAfterDx12.value_for_config()).c_str()); ini.SetValue("Dx11withDx12",
+        // "UseDelayedInit", GetBoolValue(Instance()->Dx11DelayedInit.value_for_config()).c_str());
+        ini.SetValue("Dx11withDx12", "DontUseNTShared",
+                     GetBoolValue(Instance()->DontUseNTShared.value_for_config()).c_str());
     }
 
     // Logging
@@ -806,15 +900,20 @@ bool Config::SaveIni()
 
     // NvApi
     {
-        ini.SetValue("NvApi", "OverrideNvapiDll", GetBoolValue(Instance()->OverrideNvapiDll.value_for_config()).c_str());
-        ini.SetValue("NvApi", "NvapiDllPath", wstring_to_string(Instance()->NvapiDllPath.value_for_config_or(L"auto")).c_str());
-        ini.SetValue("NvApi", "DisableFlipMetering", GetBoolValue(Instance()->DisableFlipMetering.value_for_config()).c_str());
+        ini.SetValue("NvApi", "OverrideNvapiDll",
+                     GetBoolValue(Instance()->OverrideNvapiDll.value_for_config()).c_str());
+        ini.SetValue("NvApi", "NvapiDllPath",
+                     wstring_to_string(Instance()->NvapiDllPath.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("NvApi", "DisableFlipMetering",
+                     GetBoolValue(Instance()->DisableFlipMetering.value_for_config()).c_str());
     }
 
     // DRS
     {
-        ini.SetValue("DRS", "DrsMinOverrideEnabled", GetBoolValue(Instance()->DrsMinOverrideEnabled.value_for_config()).c_str());
-        ini.SetValue("DRS", "DrsMaxOverrideEnabled", GetBoolValue(Instance()->DrsMaxOverrideEnabled.value_for_config()).c_str());
+        ini.SetValue("DRS", "DrsMinOverrideEnabled",
+                     GetBoolValue(Instance()->DrsMinOverrideEnabled.value_for_config()).c_str());
+        ini.SetValue("DRS", "DrsMaxOverrideEnabled",
+                     GetBoolValue(Instance()->DrsMaxOverrideEnabled.value_for_config()).c_str());
     }
 
     // Spoofing
@@ -822,21 +921,28 @@ bool Config::SaveIni()
         ini.SetValue("Spoofing", "Dxgi", GetBoolValue(Instance()->DxgiSpoofing.value_for_config()).c_str());
         ini.SetValue("Spoofing", "DxgiBlacklist", Instance()->DxgiBlacklist.value_for_config_or("auto").c_str());
         ini.SetValue("Spoofing", "Vulkan", GetBoolValue(Instance()->VulkanSpoofing.value_for_config()).c_str());
-        ini.SetValue("Spoofing", "VulkanExtensionSpoofing", GetBoolValue(Instance()->VulkanExtensionSpoofing.value_for_config()).c_str());
+        ini.SetValue("Spoofing", "VulkanExtensionSpoofing",
+                     GetBoolValue(Instance()->VulkanExtensionSpoofing.value_for_config()).c_str());
         ini.SetValue("Spoofing", "VulkanVRAM", GetIntValue(Instance()->VulkanVRAM.value_for_config()).c_str());
         ini.SetValue("Spoofing", "DxgiVRAM", GetIntValue(Instance()->DxgiVRAM.value_for_config()).c_str());
-        ini.SetValue("Spoofing", "SpoofedGPUName", wstring_to_string(Instance()->SpoofedGPUName.value_for_config_or(L"auto")).c_str());
+        ini.SetValue("Spoofing", "SpoofedGPUName",
+                     wstring_to_string(Instance()->SpoofedGPUName.value_for_config_or(L"auto")).c_str());
         ini.SetValue("Spoofing", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS.value_for_config()).c_str());
-        ini.SetValue("Spoofing", "D3DFeatureLevel", GetBoolValue(Instance()->SpoofFeatureLevel.value_for_config()).c_str());
-        ini.SetValue("Spoofing", "SpoofedVendorId", GetIntValue(Instance()->SpoofedVendorId.value_for_config(), true).c_str());
-        ini.SetValue("Spoofing", "SpoofedDeviceId", GetIntValue(Instance()->SpoofedDeviceId.value_for_config(), true).c_str());
-        ini.SetValue("Spoofing", "TargetVendorId", GetIntValue(Instance()->TargetVendorId.value_for_config(), true).c_str());
-        ini.SetValue("Spoofing", "TargetDeviceId", GetIntValue(Instance()->TargetDeviceId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "D3DFeatureLevel",
+                     GetBoolValue(Instance()->SpoofFeatureLevel.value_for_config()).c_str());
+        ini.SetValue("Spoofing", "SpoofedVendorId",
+                     GetIntValue(Instance()->SpoofedVendorId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "SpoofedDeviceId",
+                     GetIntValue(Instance()->SpoofedDeviceId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "TargetVendorId",
+                     GetIntValue(Instance()->TargetVendorId.value_for_config(), true).c_str());
+        ini.SetValue("Spoofing", "TargetDeviceId",
+                     GetIntValue(Instance()->TargetDeviceId.value_for_config(), true).c_str());
     }
 
     // Plugins
     {
-        
+
         ini.SetValue("Plugins", "Path", wstring_to_string(Instance()->PluginPath.value_for_config_or(L"auto")).c_str());
         ini.SetValue("Plugins", "LoadSpecialK", GetBoolValue(Instance()->LoadSpecialK.value_for_config()).c_str());
         ini.SetValue("Plugins", "LoadReShade", GetBoolValue(Instance()->LoadReShade.value_for_config()).c_str());
@@ -852,7 +958,8 @@ bool Config::SaveIni()
         ini.SetValue("Inputs", "Fsr3", GetBoolValue(Instance()->Fsr3Inputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr3Pattern", GetBoolValue(Instance()->Fsr3Pattern.value_for_config()).c_str());
         ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->FfxInputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "EnableHotSwapping", GetBoolValue(Instance()->EnableHotSwapping.value_for_config()).c_str());
+        ini.SetValue("Inputs", "EnableHotSwapping",
+                     GetBoolValue(Instance()->EnableHotSwapping.value_for_config()).c_str());
     }
 
     auto pathWStr = absoluteFileName.wstring();
@@ -862,7 +969,8 @@ bool Config::SaveIni()
     return ini.SaveFile(absoluteFileName.wstring().c_str()) >= 0;
 }
 
-bool Config::ReloadFakenvapi() {
+bool Config::ReloadFakenvapi()
+{
     auto FN_iniPath = Util::DllPath().parent_path() / L"fakenvapi.ini";
     if (NvapiDllPath.has_value())
         FN_iniPath = std::filesystem::path(NvapiDllPath.value()).parent_path() / L"fakenvapi.ini";
@@ -885,7 +993,8 @@ bool Config::ReloadFakenvapi() {
     return false;
 }
 
-bool Config::SaveFakenvapiIni() {
+bool Config::SaveFakenvapiIni()
+{
     auto FN_iniPath = Util::DllPath().parent_path() / L"fakenvapi.ini";
     if (NvapiDllPath.has_value())
         FN_iniPath = std::filesystem::path(NvapiDllPath.value()).parent_path() / L"fakenvapi.ini";
@@ -922,7 +1031,6 @@ void Config::CheckUpscalerFiles()
             LOG_INFO("nvngx.dll found in memory");
         else
             LOG_WARN("nvngx.dll not found!");
-
     }
     else
     {
@@ -938,7 +1046,6 @@ void Config::CheckUpscalerFiles()
             LOG_INFO("libxess.dll found in memory");
         else
             LOG_WARN("libxess.dll not found!");
-
     }
     else
     {
@@ -1012,9 +1119,7 @@ std::optional<int> Config::readInt(std::string section, std::string key)
         int result;
 
         // detect hex prefix
-        if (s.size() > 2
-            && (s[0] == '0')
-            && (s[1] == 'x' || s[1] == 'X'))
+        if (s.size() > 2 && (s[0] == '0') && (s[1] == 'x' || s[1] == 'X'))
         {
             result = std::stoi(s, &idx, 16);
         }
@@ -1056,9 +1161,7 @@ std::optional<uint32_t> Config::readUInt(std::string section, std::string key)
         int result;
 
         // detect hex prefix
-        if (s.size() > 2
-            && (s[0] == '0')
-            && (s[1] == 'x' || s[1] == 'X'))
+        if (s.size() > 2 && (s[0] == '0') && (s[1] == 'x' || s[1] == 'X'))
         {
             result = std::stoi(s, &idx, 16);
         }

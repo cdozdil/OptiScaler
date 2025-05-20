@@ -17,42 +17,43 @@ static HMODULE moduleAmdxc64 = nullptr;
 #pragma region GDI32
 
 // Manually define structures
-typedef struct _D3DKMT_UMDFILENAMEINFO_L {
-    UINT    Version;
-    WCHAR   UmdFileName[MAX_PATH];
+typedef struct _D3DKMT_UMDFILENAMEINFO_L
+{
+    UINT Version;
+    WCHAR UmdFileName[MAX_PATH];
 } D3DKMT_UMDFILENAMEINFO_L;
 
 typedef struct _D3DKMT_ADAPTERINFO_L
 {
-    UINT    hAdapter;
-    LUID    AdapterLuid;
-    ULONG   NumOfSources;
-    BOOL    bPrecisePresentRegionsPreferred;
+    UINT hAdapter;
+    LUID AdapterLuid;
+    ULONG NumOfSources;
+    BOOL bPrecisePresentRegionsPreferred;
 } D3DKMT_ADAPTERINFO_L;
 
 typedef struct _D3DKMT_QUERYADAPTERINFO_L
 {
-    UINT    hAdapter;
-    UINT    Type;
+    UINT hAdapter;
+    UINT Type;
     VOID* pPrivateDriverData;
-    UINT    PrivateDriverDataSize;
+    UINT PrivateDriverDataSize;
 } D3DKMT_QUERYADAPTERINFO_L;
 
 typedef struct _D3DKMT_ENUMADAPTERS_L
 {
-    ULONG               NumAdapters;
-    D3DKMT_ADAPTERINFO_L  Adapters[16];
+    ULONG NumAdapters;
+    D3DKMT_ADAPTERINFO_L Adapters[16];
 } D3DKMT_ENUMADAPTERS_L;
 
 typedef struct _D3DKMT_CLOSEADAPTER_L
 {
-    UINT   hAdapter;   // in: adapter handle
+    UINT hAdapter; // in: adapter handle
 } D3DKMT_CLOSEADAPTER_L;
 
 // Function pointers
-typedef UINT(*PFN_D3DKMTQueryAdapterInfo_L)(D3DKMT_QUERYADAPTERINFO_L*);
-typedef UINT(*PFN_D3DKMTEnumAdapters_L)(D3DKMT_ENUMADAPTERS_L*);
-typedef UINT(*PFN_D3DKMTCloseAdapter)(D3DKMT_CLOSEADAPTER_L*);
+typedef UINT (*PFN_D3DKMTQueryAdapterInfo_L)(D3DKMT_QUERYADAPTERINFO_L*);
+typedef UINT (*PFN_D3DKMTEnumAdapters_L)(D3DKMT_ENUMADAPTERS_L*);
+typedef UINT (*PFN_D3DKMTCloseAdapter)(D3DKMT_CLOSEADAPTER_L*);
 
 inline static std::vector<std::filesystem::path> GetDriverStore()
 {
@@ -76,9 +77,12 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
 
     do
     {
-        auto o_D3DKMTEnumAdapters = (PFN_D3DKMTEnumAdapters_L)KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTEnumAdapters");
-        auto o_D3DKMTQueryAdapterInfo = (PFN_D3DKMTQueryAdapterInfo_L)KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTQueryAdapterInfo");
-        auto o_D3DKMTCloseAdapter = (PFN_D3DKMTCloseAdapter)KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTCloseAdapter");
+        auto o_D3DKMTEnumAdapters =
+            (PFN_D3DKMTEnumAdapters_L) KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTEnumAdapters");
+        auto o_D3DKMTQueryAdapterInfo =
+            (PFN_D3DKMTQueryAdapterInfo_L) KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTQueryAdapterInfo");
+        auto o_D3DKMTCloseAdapter =
+            (PFN_D3DKMTCloseAdapter) KernelBaseProxy::GetProcAddress_()(hGdi32, "D3DKMTCloseAdapter");
 
         if (o_D3DKMTEnumAdapters == nullptr || o_D3DKMTQueryAdapterInfo == nullptr || o_D3DKMTCloseAdapter == nullptr)
         {
@@ -117,7 +121,6 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
                 else
                     result.push_back(std::filesystem::path(umdFileInfo.UmdFileName).parent_path());
 
-
                 D3DKMT_CLOSEADAPTER_L closeAdapter = {};
                 closeAdapter.hAdapter = adapter.hAdapter;
                 auto closeResult = o_D3DKMTCloseAdapter(&closeAdapter);
@@ -147,7 +150,7 @@ inline static std::vector<std::filesystem::path> GetDriverStore()
 MIDL_INTERFACE("b58d6601-7401-4234-8180-6febfc0e484c")
 IAmdExtFfxApi : public IUnknown
 {
-public:
+  public:
     virtual HRESULT UpdateFfxApiProvider(void* pData, uint32_t dataSizeInBytes) = 0;
 };
 
@@ -196,7 +199,8 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
                 return E_NOINTERFACE;
             }
 
-            o_UpdateFfxApiProvider = (PFN_UpdateFfxApiProvider)KernelBaseProxy::GetProcAddress_()(fsr4Module, "UpdateFfxApiProvider");
+            o_UpdateFfxApiProvider =
+                (PFN_UpdateFfxApiProvider) KernelBaseProxy::GetProcAddress_()(fsr4Module, "UpdateFfxApiProvider");
 
             if (o_UpdateFfxApiProvider == nullptr)
             {
@@ -209,7 +213,7 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
         {
             State::DisableChecks(1);
             auto result = o_UpdateFfxApiProvider(pData, dataSizeInBytes);
-            LOG_INFO("UpdateFfxApiProvider called, result: {} ({:X})", result == S_OK ? "Ok" : "Error", (UINT)result);
+            LOG_INFO("UpdateFfxApiProvider called, result: {} ({:X})", result == S_OK ? "Ok" : "Error", (UINT) result);
             State::EnableChecks(1);
             return result;
         }
@@ -217,20 +221,11 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
         return E_NOINTERFACE;
     }
 
-    HRESULT __stdcall QueryInterface(REFIID riid, void** ppvObject) override
-    {
-        return E_NOTIMPL;
-    }
+    HRESULT __stdcall QueryInterface(REFIID riid, void** ppvObject) override { return E_NOTIMPL; }
 
-    ULONG __stdcall AddRef(void) override
-    {
-        return 0;
-    }
+    ULONG __stdcall AddRef(void) override { return 0; }
 
-    ULONG __stdcall Release(void) override
-    {
-        return 0;
-    }
+    ULONG __stdcall Release(void) override { return 0; }
 };
 
 #pragma endregion
@@ -274,7 +269,8 @@ static inline void CheckForGPU()
         if (result == S_OK && adapterDesc.VendorId != 0x00001414)
         {
             std::wstring szName(adapterDesc.Description);
-            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName), adapterDesc.DedicatedVideoMemory / (1024 * 1024));
+            std::string descStr = std::format("Adapter: {}, VRAM: {} MB", wstring_to_string(szName),
+                                              adapterDesc.DedicatedVideoMemory / (1024 * 1024));
             LOG_INFO("{}", descStr);
 
             // If GPU is AMD
@@ -311,7 +307,7 @@ inline static HRESULT STDMETHODCALLTYPE hkAmdExtD3DCreateInterface(IUnknown* pOu
     if (!Config::Instance()->Fsr4Update.value_or_default())
         return o_AmdExtD3DCreateInterface(pOuter, riid, ppvObject);
 
-    // If querying IAmdExtFfxApi 
+    // If querying IAmdExtFfxApi
     if (riid == __uuidof(IAmdExtFfxApi))
     {
         if (_amdExtFfxApi == nullptr)
@@ -349,14 +345,15 @@ inline void InitFSR4Update()
     if (moduleAmdxc64 != nullptr)
     {
         LOG_INFO("amdxc64.dll loaded");
-        o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface)KernelBaseProxy::GetProcAddress_()(moduleAmdxc64, "AmdExtD3DCreateInterface");
+        o_AmdExtD3DCreateInterface = (PFN_AmdExtD3DCreateInterface) KernelBaseProxy::GetProcAddress_()(
+            moduleAmdxc64, "AmdExtD3DCreateInterface");
 
         if (o_AmdExtD3DCreateInterface != nullptr)
         {
             LOG_DEBUG("Hooking AmdExtD3DCreateInterface");
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
-            DetourAttach(&(PVOID&)o_AmdExtD3DCreateInterface, hkAmdExtD3DCreateInterface);
+            DetourAttach(&(PVOID&) o_AmdExtD3DCreateInterface, hkAmdExtD3DCreateInterface);
             DetourTransactionCommit();
         }
     }

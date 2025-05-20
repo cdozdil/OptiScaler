@@ -7,7 +7,7 @@
 #include <framegen/IFGFeature_Dx12.h>
 
 // Use time limit to stop hudless search before Present call
-//#define USE_TIME_LIMIT
+// #define USE_TIME_LIMIT
 
 bool Hudfix_Dx12::CreateObjects()
 {
@@ -20,19 +20,20 @@ bool Hudfix_Dx12::CreateObjects()
 
         for (size_t i = 0; i < BUFFER_COUNT; i++)
         {
-            result = State::Instance().currentD3D12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_commandAllocator[i]));
+            result = State::Instance().currentD3D12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                                                                  IID_PPV_ARGS(&_commandAllocator[i]));
             if (result != S_OK)
             {
-                LOG_ERROR("CreateCommandAllocator: {:X}", (unsigned long)result);
+                LOG_ERROR("CreateCommandAllocator: {:X}", (unsigned long) result);
                 break;
             }
             _commandAllocator[i]->SetName(L"Hudfix CommandAllocator");
 
-
-            result = State::Instance().currentD3D12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocator[i], NULL, IID_PPV_ARGS(&_commandList[i]));
+            result = State::Instance().currentD3D12Device->CreateCommandList(
+                0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocator[i], NULL, IID_PPV_ARGS(&_commandList[i]));
             if (result != S_OK)
             {
-                LOG_ERROR("CreateCommandList: {:X}", (unsigned long)result);
+                LOG_ERROR("CreateCommandList: {:X}", (unsigned long) result);
                 break;
             }
 
@@ -41,14 +42,15 @@ bool Hudfix_Dx12::CreateObjects()
             result = _commandList[i]->Close();
             if (result != S_OK)
             {
-                LOG_ERROR("_commandList->Close: {:X}", (unsigned long)result);
+                LOG_ERROR("_commandList->Close: {:X}", (unsigned long) result);
                 break;
             }
 
-            result = State::Instance().currentD3D12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence[i]));
+            result =
+                State::Instance().currentD3D12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_fence[i]));
             if (result != S_OK)
             {
-                LOG_ERROR("CreateFence: {0:X}", (unsigned long)result);
+                LOG_ERROR("CreateFence: {0:X}", (unsigned long) result);
                 break;
             }
         }
@@ -63,7 +65,7 @@ bool Hudfix_Dx12::CreateObjects()
         HRESULT hr = State::Instance().currentD3D12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&_commandQueue));
         if (result != S_OK)
         {
-            LOG_ERROR("CreateCommandQueue: {:X}", (unsigned long)result);
+            LOG_ERROR("CreateCommandQueue: {:X}", (unsigned long) result);
             break;
         }
 
@@ -76,7 +78,8 @@ bool Hudfix_Dx12::CreateObjects()
     return false;
 }
 
-bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState, ID3D12Resource** OutResource)
+bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InSource, D3D12_RESOURCE_STATES InState,
+                                       ID3D12Resource** OutResource)
 {
     if (InDevice == nullptr || InSource == nullptr)
         return false;
@@ -85,7 +88,8 @@ bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InS
     {
         auto bufDesc = (*OutResource)->GetDesc();
 
-        if (bufDesc.Width != (UINT64)(InSource->width) || bufDesc.Height != (UINT)(InSource->height) || bufDesc.Format != InSource->format)
+        if (bufDesc.Width != (UINT64) (InSource->width) || bufDesc.Height != (UINT) (InSource->height) ||
+            bufDesc.Format != InSource->format)
         {
             (*OutResource)->Release();
             (*OutResource) = nullptr;
@@ -103,18 +107,19 @@ bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InS
 
     if (hr != S_OK)
     {
-        LOG_ERROR("GetHeapProperties result: {:X}", (UINT64)hr);
+        LOG_ERROR("GetHeapProperties result: {:X}", (UINT64) hr);
         return false;
     }
 
     D3D12_RESOURCE_DESC texDesc = InSource->buffer->GetDesc();
     texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-    hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(OutResource));
+    hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr,
+                                           IID_PPV_ARGS(OutResource));
 
     if (hr != S_OK)
     {
-        LOG_ERROR("CreateCommittedResource result: {:X}", (UINT64)hr);
+        LOG_ERROR("CreateCommittedResource result: {:X}", (UINT64) hr);
         return false;
     }
 
@@ -122,7 +127,8 @@ bool Hudfix_Dx12::CreateBufferResource(ID3D12Device* InDevice, ResourceInfo* InS
     return true;
 }
 
-void Hudfix_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
+void Hudfix_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                  D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
 {
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -145,14 +151,15 @@ bool Hudfix_Dx12::CheckCapture()
         std::lock_guard<std::mutex> lock(_counterMutex);
         _captureCounter[fIndex]++;
 
-        LOG_TRACE("frameCounter: {}, _captureCounter: {}, Limit: {}", State::Instance().currentFeature->FrameCount(), _captureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or_default());
+        LOG_TRACE("frameCounter: {}, _captureCounter: {}, Limit: {}", State::Instance().currentFeature->FrameCount(),
+                  _captureCounter[fIndex], Config::Instance()->FGHUDLimit.value_or_default());
 
-        if (_captureCounter[fIndex] > 999 || _captureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or_default())
+        if (_captureCounter[fIndex] > 999 ||
+            _captureCounter[fIndex] != Config::Instance()->FGHUDLimit.value_or_default())
             return false;
     }
 
     return true;
-
 }
 
 bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
@@ -182,23 +189,23 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 
     // Check if info is valid
     auto currentMs = Util::MillisecondsNow();
-    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() &&
-        resource->lastUsedFrame != 0 && (currentMs - resource->lastUsedFrame) > 0.3)
+    if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && resource->lastUsedFrame != 0 &&
+        (currentMs - resource->lastUsedFrame) > 0.3)
     {
-        //LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
-        //          (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
+        // LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
+        //           (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
 
         resource->lastUsedFrame = currentMs; // use it next time if timing is ok
         return false;
     }
 
     // Check if resource is valid
-    //LOG_TRACE("Check resource if resource is still valid, if crashes here ResTrack is missing something");
+    // LOG_TRACE("Check resource if resource is still valid, if crashes here ResTrack is missing something");
     ID3D12Resource* testRes;
     auto queryResult = resource->buffer->QueryInterface(IID_PPV_ARGS(&testRes));
     if (queryResult != S_OK)
     {
-        //LOG_WARN("Resource is not valid anymore!");
+        // LOG_WARN("Resource is not valid anymore!");
         return false;
     }
 
@@ -216,8 +223,10 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     }
 
     // check for resource flags
-    if ((resDesc.Flags & (D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY |
-        D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY)) > 0)
+    if ((resDesc.Flags & (D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE |
+                          D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY |
+                          D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE | D3D12_RESOURCE_FLAG_VIDEO_ENCODE_REFERENCE_ONLY)) >
+        0)
     {
         return false;
     }
@@ -226,40 +235,55 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     if (resDesc.Format == scDesc.BufferDesc.Format)
     {
         LOG_DEBUG("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
-                  resDesc.Width, scDesc.BufferDesc.Width, resDesc.Height, scDesc.BufferDesc.Height, (UINT)resDesc.Format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
+                  resDesc.Width, scDesc.BufferDesc.Width, resDesc.Height, scDesc.BufferDesc.Height,
+                  (UINT) resDesc.Format, (UINT) scDesc.BufferDesc.Format, (size_t) resource->buffer,
+                  Config::Instance()->FGHUDFixExtended.value_or_default());
 
         resource->lastUsedFrame = currentMs;
 
         return true;
     }
 
-    // extended not active 
+    // extended not active
     if (!Config::Instance()->FGHUDFixExtended.value_or_default())
     {
-        //LOG_TRACE("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
-        //          resDesc.Width, scDesc.BufferDesc.Width, resDesc.Height, scDesc.BufferDesc.Height, (UINT)resDesc.Format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
+        // LOG_TRACE("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> FALSE",
+        //           resDesc.Width, scDesc.BufferDesc.Width, resDesc.Height, scDesc.BufferDesc.Height,
+        //           (UINT)resDesc.Format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer,
+        //           Config::Instance()->FGHUDFixExtended.value_or_default());
 
         return false;
     }
 
     // resource and target formats are supported by converter
     if ((resDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM || resDesc.Format == DXGI_FORMAT_R10G10B10A2_TYPELESS ||
-        resDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT || resDesc.Format == DXGI_FORMAT_R16G16B16A16_TYPELESS ||
-        resDesc.Format == DXGI_FORMAT_R11G11B10_FLOAT ||
-        resDesc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT || resDesc.Format == DXGI_FORMAT_R32G32B32A32_TYPELESS ||
-        resDesc.Format == DXGI_FORMAT_R32G32B32_FLOAT || resDesc.Format == DXGI_FORMAT_R32G32B32_TYPELESS ||
-        resDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS || resDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || resDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
-        resDesc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS || resDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || resDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) &&
-        (scDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM || scDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_TYPELESS ||
-        scDesc.BufferDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT || scDesc.BufferDesc.Format == DXGI_FORMAT_R16G16B16A16_TYPELESS ||
-        scDesc.BufferDesc.Format == DXGI_FORMAT_R11G11B10_FLOAT ||
-        scDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT || scDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32A32_TYPELESS ||
-        scDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32_FLOAT || scDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32_TYPELESS ||
-        scDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS || scDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || scDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
-        scDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS || scDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || scDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB))
+         resDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT || resDesc.Format == DXGI_FORMAT_R16G16B16A16_TYPELESS ||
+         resDesc.Format == DXGI_FORMAT_R11G11B10_FLOAT || resDesc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT ||
+         resDesc.Format == DXGI_FORMAT_R32G32B32A32_TYPELESS || resDesc.Format == DXGI_FORMAT_R32G32B32_FLOAT ||
+         resDesc.Format == DXGI_FORMAT_R32G32B32_TYPELESS || resDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS ||
+         resDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || resDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
+         resDesc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS || resDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM ||
+         resDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB) &&
+        (scDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R10G10B10A2_TYPELESS ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R16G16B16A16_TYPELESS ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R11G11B10_FLOAT ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32A32_TYPELESS ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32_FLOAT ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R32G32B32_TYPELESS ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM ||
+         scDesc.BufferDesc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB))
     {
         LOG_DEBUG("Width: {}/{}, Height: {}/{}, Format: {}/{}, Resource: {:X}, convertFormat: {} -> TRUE",
-                  resDesc.Width, scDesc.BufferDesc.Width, resDesc.Height, scDesc.BufferDesc.Height, (UINT)resDesc.Format, (UINT)scDesc.BufferDesc.Format, (size_t)resource->buffer, Config::Instance()->FGHUDFixExtended.value_or_default());
+                  resDesc.Width, scDesc.BufferDesc.Width, resDesc.Height, scDesc.BufferDesc.Height,
+                  (UINT) resDesc.Format, (UINT) scDesc.BufferDesc.Format, (size_t) resource->buffer,
+                  Config::Instance()->FGHUDFixExtended.value_or_default());
 
         resource->lastUsedFrame = currentMs;
 
@@ -269,10 +293,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     return false;
 }
 
-int Hudfix_Dx12::GetIndex()
-{
-    return _upscaleCounter % BUFFER_COUNT;
-}
+int Hudfix_Dx12::GetIndex() { return _upscaleCounter % BUFFER_COUNT; }
 
 void Hudfix_Dx12::HudlessFound()
 {
@@ -287,7 +308,7 @@ void Hudfix_Dx12::HudlessFound()
     _captureCounter[GetIndex()] = 9999;
 
     // Increase counter
-    _fgCounter++; 
+    _fgCounter++;
 
     // Let resource tracker to continue
     _skipHudlessChecks = false;
@@ -295,7 +316,7 @@ void Hudfix_Dx12::HudlessFound()
 
 bool Hudfix_Dx12::CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
 {
-    //return false;
+    // return false;
 
     if (streamlineRiid.Data1 == 0)
     {
@@ -305,7 +326,7 @@ bool Hudfix_Dx12::CheckForRealObject(std::string functionName, IUnknown* pObject
             return false;
     }
 
-    auto qResult = pObject->QueryInterface(streamlineRiid, (void**)ppRealObject);
+    auto qResult = pObject->QueryInterface(streamlineRiid, (void**) ppRealObject);
 
     if (qResult == S_OK && *ppRealObject != nullptr)
     {
@@ -320,14 +341,14 @@ bool Hudfix_Dx12::CheckForRealObject(std::string functionName, IUnknown* pObject
 void Hudfix_Dx12::UpscaleStart()
 {
     return;
-    
-    //LOG_DEBUG("");
 
-    //if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
+    // LOG_DEBUG("");
+
+    // if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
     //{
-    //    LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-    //    HudlessFound(false);
-    //}
+    //     LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
+    //     HudlessFound(false);
+    // }
 }
 
 void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
@@ -363,7 +384,7 @@ void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
 
     _upscaleEndTime = now;
     _lastDiffTime = 0.0f;
-#endif 
+#endif
 }
 
 void Hudfix_Dx12::PresentStart()
@@ -371,33 +392,24 @@ void Hudfix_Dx12::PresentStart()
     return;
 
     //// Calculate last upscale to present time
-    //if (_upscaleEndTime > 0.1f)
-    //    _lastDiffTime = Util::MillisecondsNow() - _upscaleEndTime;
-    //else
-    //    _lastDiffTime = 0.0f;
+    // if (_upscaleEndTime > 0.1f)
+    //     _lastDiffTime = Util::MillisecondsNow() - _upscaleEndTime;
+    // else
+    //     _lastDiffTime = 0.0f;
 
     //// FG not run yet!
-    //if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
+    // if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
     //{
-    //    LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-    //    HudlessFound(false);
-    //}
+    //     LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
+    //     HudlessFound(false);
+    // }
 }
 
-void Hudfix_Dx12::PresentEnd()
-{
-    LOG_DEBUG("");
-}
+void Hudfix_Dx12::PresentEnd() { LOG_DEBUG(""); }
 
-UINT64 Hudfix_Dx12::ActiveUpscaleFrame()
-{
-    return _upscaleCounter;
-}
+UINT64 Hudfix_Dx12::ActiveUpscaleFrame() { return _upscaleCounter; }
 
-UINT64 Hudfix_Dx12::ActivePresentFrame()
-{
-    return _fgCounter;
-}
+UINT64 Hudfix_Dx12::ActivePresentFrame() { return _fgCounter; }
 
 bool Hudfix_Dx12::IsResourceCheckActive()
 {
@@ -420,12 +432,10 @@ bool Hudfix_Dx12::IsResourceCheckActive()
     return true;
 }
 
-bool Hudfix_Dx12::SkipHudlessChecks()
-{
-    return _skipHudlessChecks;
-}
+bool Hudfix_Dx12::SkipHudlessChecks() { return _skipHudlessChecks; }
 
-bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource, D3D12_RESOURCE_STATES state)
+bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandList* cmdList, ResourceInfo* resource,
+                                  D3D12_RESOURCE_STATES state)
 {
     if (State::Instance().currentFG == nullptr)
         return false;
@@ -455,7 +465,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                     // start retry period
                     if (info->retryStartFrame == 0)
                     {
-                        LOG_WARN("Retry for {:X} as hudless, current frame: {}", (size_t)resource->buffer, _upscaleCounter);
+                        LOG_WARN("Retry for {:X} as hudless, current frame: {}", (size_t) resource->buffer,
+                                 _upscaleCounter);
                         info->retryStartFrame = _upscaleCounter;
                         info->lastTriedFrame = _upscaleCounter;
                         info->retryCount = 0;
@@ -465,14 +476,16 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                     info->retryCount++;
                     info->lastTriedFrame = _upscaleCounter;
 
-                    // If still in retry period (70 frames) 
+                    // If still in retry period (70 frames)
                     if ((_upscaleCounter - info->retryStartFrame) < 69)
                     {
                         // and used at least 20 times (around every 3rd frame)
                         // try reusing the resource
                         if (info->retryCount > 19)
                         {
-                            LOG_WARN("Reusing {:X} as hudless, retry start frame: {}, current frame: {}, reuse count: {}", (size_t)resource->buffer, info->retryStartFrame, _upscaleCounter, info->retryCount);
+                            LOG_WARN(
+                                "Reusing {:X} as hudless, retry start frame: {}, current frame: {}, reuse count: {}",
+                                (size_t) resource->buffer, info->retryStartFrame, _upscaleCounter, info->retryCount);
 
                             info->lastUsedFrame = _upscaleCounter;
                             info->retryStartFrame = 0;
@@ -486,7 +499,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                     {
                         // Retry period ended without success, reset values
 
-                        LOG_WARN("Retry failed for {:X} as hudless, current frame: {}", (size_t)resource->buffer, _upscaleCounter);
+                        LOG_WARN("Retry failed for {:X} as hudless, current frame: {}", (size_t) resource->buffer,
+                                 _upscaleCounter);
 
                         info->useCount = 0;
                         info->retryCount = 0;
@@ -502,7 +516,8 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             // if buffer is not used in last 5 frames stop using it
             if ((_upscaleCounter - info->lastUsedFrame) > 6 && info->useCount < 100)
             {
-                LOG_WARN("Blocked {:X} as hudless, last used frame: {}, current frame: {}, use count: {}", (size_t)resource->buffer, info->lastUsedFrame, _upscaleCounter, info->useCount);
+                LOG_WARN("Blocked {:X} as hudless, last used frame: {}, current frame: {}, use count: {}",
+                         (size_t) resource->buffer, info->lastUsedFrame, _upscaleCounter, info->useCount);
 
                 info->ignore = true;
                 info->retryCount = 0;
@@ -523,7 +538,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
         else
         {
-            _hudlessList[resource->buffer] = { _upscaleCounter, 0, 0, 0, 0, 1, false, false };
+            _hudlessList[resource->buffer] = {_upscaleCounter, 0, 0, 0, 0, 1, false, false};
         }
 
         if (!CheckCapture())
@@ -539,7 +554,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
             break;
         }
 
-        LOG_TRACE("Capture resource: {:X}, index: {}", (size_t)resource->buffer, fIndex);
+        LOG_TRACE("Capture resource: {:X}, index: {}", (size_t) resource->buffer, fIndex);
 
         if (_commandQueue == nullptr && !CreateObjects())
         {
@@ -549,9 +564,10 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
 
         // Make a copy of resource to capture current state
-        if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST, &_captureBuffer[fIndex]))
+        if (CreateBufferResource(State::Instance().currentD3D12Device, resource, D3D12_RESOURCE_STATE_COPY_DEST,
+                                 &_captureBuffer[fIndex]))
         {
-            LOG_DEBUG("Create a copy of resource: {:X}", (size_t)resource->buffer);
+            LOG_DEBUG("Create a copy of resource: {:X}", (size_t) resource->buffer);
 
             // Using state D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE as skip flag
             if (state != D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE)
@@ -584,19 +600,25 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
 
                 _formatTransfer = nullptr;
                 State::Instance().skipHeapCapture = true;
-                _formatTransfer = new FT_Dx12("FormatTransfer", State::Instance().currentD3D12Device, scDesc.BufferDesc.Format);
+                _formatTransfer =
+                    new FT_Dx12("FormatTransfer", State::Instance().currentD3D12Device, scDesc.BufferDesc.Format);
                 State::Instance().skipHeapCapture = false;
             }
 
-            if (_formatTransfer != nullptr && _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+            if (_formatTransfer != nullptr &&
+                _formatTransfer->CreateBufferResource(State::Instance().currentD3D12Device, resource->buffer,
+                                                      D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
                 // This will prevent resource tracker to check these operations
                 // Will reset after FG dispatch
                 _skipHudlessChecks = true;
 
-                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                _formatTransfer->Dispatch(State::Instance().currentD3D12Device, cmdList, _captureBuffer[fIndex], _formatTransfer->Buffer());
-                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST,
+                                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                _formatTransfer->Dispatch(State::Instance().currentD3D12Device, cmdList, _captureBuffer[fIndex],
+                                          _formatTransfer->Buffer());
+                ResourceBarrier(cmdList, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                                D3D12_RESOURCE_STATE_COPY_DEST);
 
                 LOG_TRACE("Using _formatTransfer->Buffer()");
 

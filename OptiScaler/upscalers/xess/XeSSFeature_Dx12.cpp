@@ -4,7 +4,8 @@
 
 #include "XeSSFeature_Dx12.h"
 
-bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
+bool XeSSFeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList,
+                           NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
 
@@ -54,10 +55,11 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         dumpParams.frame_count = State::Instance().xessDebugFrames;
         dumpParams.frame_idx = dumpCount;
         dumpParams.path = Util::DllPath().string().c_str();
-        dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY;
+        dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH |
+                                        XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY;
 
-        //if (!Config::Instance()->DisableReactiveMask.value_or(true))
-        //    dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
+        // if (!Config::Instance()->DisableReactiveMask.value_or(true))
+        //     dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
 
         xessResult = XeSSProxy::StartDump()(_xessContext, &dumpParams);
         LOG_DEBUG("Dump result: {}", ResultToString(xessResult));
@@ -87,7 +89,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
     ID3D12Resource* paramColor;
     if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor);
+        InParameters->Get(NVSDK_NGX_Parameter_Color, (void**) &paramColor);
 
     if (paramColor)
     {
@@ -96,12 +98,15 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
         if (Config::Instance()->ColorResourceBarrier.has_value())
         {
-            ResourceBarrier(InCommandList, paramColor, (D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            ResourceBarrier(InCommandList, paramColor,
+                            (D3D12_RESOURCE_STATES) Config::Instance()->ColorResourceBarrier.value(),
+                            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
         else if (State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
         {
-            Config::Instance()->ColorResourceBarrier = (int)D3D12_RESOURCE_STATE_RENDER_TARGET;
-            ResourceBarrier(InCommandList, paramColor, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            Config::Instance()->ColorResourceBarrier = (int) D3D12_RESOURCE_STATE_RENDER_TARGET;
+            ResourceBarrier(InCommandList, paramColor, D3D12_RESOURCE_STATE_RENDER_TARGET,
+                            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
 
         params.pColorTexture = paramColor;
@@ -113,7 +118,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     }
 
     if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &params.pVelocityTexture) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&params.pVelocityTexture);
+        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**) &params.pVelocityTexture);
 
     if (params.pVelocityTexture)
     {
@@ -122,12 +127,15 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
         if (Config::Instance()->MVResourceBarrier.has_value())
         {
-            ResourceBarrier(InCommandList, params.pVelocityTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            ResourceBarrier(InCommandList, params.pVelocityTexture,
+                            (D3D12_RESOURCE_STATES) Config::Instance()->MVResourceBarrier.value(),
+                            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
         else if (State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL)
         {
-            Config::Instance()->MVResourceBarrier = (int)D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-            ResourceBarrier(InCommandList, params.pVelocityTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            Config::Instance()->MVResourceBarrier = (int) D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            ResourceBarrier(InCommandList, params.pVelocityTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
     }
     else
@@ -139,7 +147,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     ID3D12Resource* paramOutput;
 
     if (InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput);
+        InParameters->Get(NVSDK_NGX_Parameter_Output, (void**) &paramOutput);
 
     if (paramOutput)
     {
@@ -148,12 +156,15 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
         if (Config::Instance()->OutputResourceBarrier.has_value())
         {
-            ResourceBarrier(InCommandList, paramOutput, (D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            ResourceBarrier(InCommandList, paramOutput,
+                            (D3D12_RESOURCE_STATES) Config::Instance()->OutputResourceBarrier.value(),
+                            D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
         }
 
         if (useSS)
         {
-            if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+            if (OutputScaler->CreateBufferResource(Device, paramOutput, TargetWidth(), TargetHeight(),
+                                                   D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
                 OutputScaler->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                 params.pOutputTexture = OutputScaler->Buffer();
@@ -165,8 +176,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
             params.pOutputTexture = paramOutput;
 
         if (Config::Instance()->RcasEnabled.value_or(true) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-            RCAS->IsInit() && RCAS->CreateBufferResource(Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
+                                   Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            RCAS->IsInit() &&
+            RCAS->CreateBufferResource(Device, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
         {
             RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             params.pOutputTexture = RCAS->Buffer();
@@ -179,7 +192,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     }
 
     if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &params.pDepthTexture) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&params.pDepthTexture);
+        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**) &params.pDepthTexture);
 
     if (params.pDepthTexture)
     {
@@ -187,7 +200,9 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         params.pDepthTexture->SetName(L"params.pDepthTexture");
 
         if (Config::Instance()->DepthResourceBarrier.has_value())
-            ResourceBarrier(InCommandList, params.pDepthTexture, (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            ResourceBarrier(InCommandList, params.pDepthTexture,
+                            (D3D12_RESOURCE_STATES) Config::Instance()->DepthResourceBarrier.value(),
+                            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     }
     else
     {
@@ -202,15 +217,18 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
     if (!AutoExposure())
     {
-        if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &params.pExposureScaleTexture) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&params.pExposureScaleTexture);
+        if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &params.pExposureScaleTexture) !=
+            NVSDK_NGX_Result_Success)
+            InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**) &params.pExposureScaleTexture);
 
         if (params.pExposureScaleTexture)
         {
             LOG_DEBUG("ExposureTexture exist..");
 
             if (Config::Instance()->ExposureResourceBarrier.has_value())
-                ResourceBarrier(InCommandList, params.pExposureScaleTexture, (D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                ResourceBarrier(InCommandList, params.pExposureScaleTexture,
+                                (D3D12_RESOURCE_STATES) Config::Instance()->ExposureResourceBarrier.value(),
+                                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
         else
         {
@@ -225,30 +243,37 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
     ID3D12Resource* paramReactiveMask = nullptr;
 
-    if (isVersionOrBetter(Version(), { 2, 0, 1 }) && InParameters->Get("FSR.reactive", &paramReactiveMask) == NVSDK_NGX_Result_Success)
+    if (isVersionOrBetter(Version(), {2, 0, 1}) &&
+        InParameters->Get("FSR.reactive", &paramReactiveMask) == NVSDK_NGX_Result_Success)
     {
-        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })))
+        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), {2, 0, 1})))
             params.pResponsivePixelMaskTexture = paramReactiveMask;
     }
     else
     {
-        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) !=
+            NVSDK_NGX_Result_Success)
+            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**) &paramReactiveMask);
 
-        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })) && paramReactiveMask)
+        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), {2, 0, 1})) &&
+            paramReactiveMask)
         {
             LOG_DEBUG("Input Bias mask exist..");
             Config::Instance()->DisableReactiveMask = false;
 
             if (Config::Instance()->MaskResourceBarrier.has_value())
-                ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture, (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture,
+                                (D3D12_RESOURCE_STATES) Config::Instance()->MaskResourceBarrier.value(),
+                                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f &&
-                Bias->IsInit() && Bias->CreateBufferResource(Device, paramReactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && Bias->CanRender())
+            if (Config::Instance()->DlssReactiveMaskBias.value_or(0.0f) > 0.0f && Bias->IsInit() &&
+                Bias->CreateBufferResource(Device, paramReactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
+                Bias->CanRender())
             {
                 Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-                if (Bias->Dispatch(Device, InCommandList, paramReactiveMask, Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
+                if (Bias->Dispatch(Device, InCommandList, paramReactiveMask,
+                                   Config::Instance()->DlssReactiveMaskBias.value_or(0.0f), Bias->Buffer()))
                 {
                     Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                     params.pResponsivePixelMaskTexture = Bias->Buffer();
@@ -299,8 +324,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, &params.inputMotionVectorBase.y);
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, &params.outputColorBase.x);
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, &params.outputColorBase.y);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, &params.inputResponsiveMaskBase.x);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, &params.inputResponsiveMaskBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X,
+                      &params.inputResponsiveMaskBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y,
+                      &params.inputResponsiveMaskBase.y);
 
     LOG_DEBUG("Executing!!");
     xessResult = XeSSProxy::D3D12Execute()(_xessContext, InCommandList, &params);
@@ -313,11 +340,13 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
     // Apply RCAS
     if (Config::Instance()->RcasEnabled.value_or(true) &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
+                               Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS->CanRender())
     {
         if (params.pOutputTexture != RCAS->Buffer())
-            ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            ResourceBarrier(InCommandList, params.pOutputTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
         RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
@@ -334,7 +363,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
         if (useSS)
         {
-            if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, OutputScaler->Buffer()))
+            if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants,
+                                OutputScaler->Buffer()))
             {
                 Config::Instance()->RcasEnabled = false;
                 return true;
@@ -342,7 +372,8 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         }
         else
         {
-            if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants, paramOutput))
+            if (!RCAS->Dispatch(Device, InCommandList, params.pOutputTexture, params.pVelocityTexture, rcasConstants,
+                                paramOutput))
             {
                 Config::Instance()->RcasEnabled = false;
                 return true;
@@ -384,40 +415,33 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
     // restore resource states
     if (params.pColorTexture && Config::Instance()->ColorResourceBarrier.has_value())
-        ResourceBarrier(InCommandList, params.pColorTexture,
-                        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES)Config::Instance()->ColorResourceBarrier.value());
+        ResourceBarrier(InCommandList, params.pColorTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                        (D3D12_RESOURCE_STATES) Config::Instance()->ColorResourceBarrier.value());
 
     if (params.pVelocityTexture && Config::Instance()->MVResourceBarrier.has_value())
-        ResourceBarrier(InCommandList, params.pVelocityTexture,
-                        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES)Config::Instance()->MVResourceBarrier.value());
+        ResourceBarrier(InCommandList, params.pVelocityTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                        (D3D12_RESOURCE_STATES) Config::Instance()->MVResourceBarrier.value());
 
     if (paramOutput && Config::Instance()->OutputResourceBarrier.has_value())
-        ResourceBarrier(InCommandList, paramOutput,
-                        D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                        (D3D12_RESOURCE_STATES)Config::Instance()->OutputResourceBarrier.value());
+        ResourceBarrier(InCommandList, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                        (D3D12_RESOURCE_STATES) Config::Instance()->OutputResourceBarrier.value());
 
     if (params.pDepthTexture && Config::Instance()->DepthResourceBarrier.has_value())
-        ResourceBarrier(InCommandList, params.pDepthTexture,
-                        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES)Config::Instance()->DepthResourceBarrier.value());
+        ResourceBarrier(InCommandList, params.pDepthTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                        (D3D12_RESOURCE_STATES) Config::Instance()->DepthResourceBarrier.value());
 
     if (params.pExposureScaleTexture && Config::Instance()->ExposureResourceBarrier.has_value())
-        ResourceBarrier(InCommandList, params.pExposureScaleTexture,
-                        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES)Config::Instance()->ExposureResourceBarrier.value());
+        ResourceBarrier(InCommandList, params.pExposureScaleTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                        (D3D12_RESOURCE_STATES) Config::Instance()->ExposureResourceBarrier.value());
 
     if (params.pResponsivePixelMaskTexture && Config::Instance()->MaskResourceBarrier.has_value())
         ResourceBarrier(InCommandList, params.pResponsivePixelMaskTexture,
                         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES)Config::Instance()->MaskResourceBarrier.value());
+                        (D3D12_RESOURCE_STATES) Config::Instance()->MaskResourceBarrier.value());
 
     _frameCount++;
 
     return true;
 }
 
-XeSSFeatureDx12::~XeSSFeatureDx12()
-{
-}
+XeSSFeatureDx12::~XeSSFeatureDx12() {}

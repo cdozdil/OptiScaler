@@ -8,14 +8,14 @@
 extern HMODULE dllModule;
 
 typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
-typedef DWORD(*PFN_GetFileVersionInfoSizeW)(LPCWSTR lptstrFilename, LPDWORD lpdwHandle);
-typedef BOOL(*PFN_GetFileVersionInfoW)(LPCWSTR lptstrFilename, DWORD dwHandle, DWORD dwLen, LPVOID lpData);
-typedef BOOL(*PFN_VerQueryValueW)(LPCVOID pBlock, LPCWSTR lpSubBlock, LPVOID* lplpBuffer, PUINT puLen);
+typedef DWORD (*PFN_GetFileVersionInfoSizeW)(LPCWSTR lptstrFilename, LPDWORD lpdwHandle);
+typedef BOOL (*PFN_GetFileVersionInfoW)(LPCWSTR lptstrFilename, DWORD dwHandle, DWORD dwLen, LPVOID lpData);
+typedef BOOL (*PFN_VerQueryValueW)(LPCVOID pBlock, LPCWSTR lpSubBlock, LPVOID* lplpBuffer, PUINT puLen);
 
 std::wstring Util::GetWindowTitle(HWND hwnd)
 {
     const int maxLength = 512;
-    wchar_t buffer[maxLength] = { 0 };
+    wchar_t buffer[maxLength] = {0};
 
     // First, check if the window is valid and visible
     if (!IsWindow(hwnd) || !IsWindowVisible(hwnd))
@@ -23,8 +23,8 @@ std::wstring Util::GetWindowTitle(HWND hwnd)
 
     // Try to get the text using SendMessageTimeout to avoid hanging
     LRESULT result = 0;
-    if (SendMessageTimeoutW(hwnd, WM_GETTEXT, (WPARAM)maxLength, (LPARAM)buffer,
-        SMTO_ABORTIFHUNG | SMTO_BLOCK, 2, (PDWORD_PTR)&result) != 0)
+    if (SendMessageTimeoutW(hwnd, WM_GETTEXT, (WPARAM) maxLength, (LPARAM) buffer, SMTO_ABORTIFHUNG | SMTO_BLOCK, 2,
+                            (PDWORD_PTR) &result) != 0)
     {
         return std::wstring(buffer);
     }
@@ -88,36 +88,38 @@ std::wstring Util::GetExeProductName()
     if (dll == nullptr)
         return L"";
 
-    auto o_GetFileVersionInfoSizeW = (PFN_GetFileVersionInfoSizeW)GetProcAddress(dll, "GetFileVersionInfoSizeW");
-    auto o_GetFileVersionInfoW = (PFN_GetFileVersionInfoW)GetProcAddress(dll, "GetFileVersionInfoW");
-    auto o_VerQueryValueW = (PFN_VerQueryValueW)GetProcAddress(dll, "VerQueryValueW");
+    auto o_GetFileVersionInfoSizeW = (PFN_GetFileVersionInfoSizeW) GetProcAddress(dll, "GetFileVersionInfoSizeW");
+    auto o_GetFileVersionInfoW = (PFN_GetFileVersionInfoW) GetProcAddress(dll, "GetFileVersionInfoW");
+    auto o_VerQueryValueW = (PFN_VerQueryValueW) GetProcAddress(dll, "VerQueryValueW");
 
     if (o_GetFileVersionInfoSizeW == nullptr || o_GetFileVersionInfoW == nullptr || o_VerQueryValueW == nullptr)
         return L"";
 
     DWORD handle = 0;
     DWORD versionSize = o_GetFileVersionInfoSizeW(Util::ExePath().c_str(), &handle);
-    if (versionSize == 0) 
+    if (versionSize == 0)
         return L"";
 
     std::vector<BYTE> versionData(versionSize);
     if (!o_GetFileVersionInfoW(Util::ExePath().c_str(), handle, versionSize, versionData.data()))
         return L"";
 
-    struct LANGANDCODEPAGE 
+    struct LANGANDCODEPAGE
     {
         WORD wLanguage;
         WORD wCodePage;
-    } *lpTranslate;
+    }* lpTranslate;
 
     UINT cbTranslate = 0;
-    if (!o_VerQueryValueW(versionData.data(), L"\\VarFileInfo\\Translation", (LPVOID*)&lpTranslate, &cbTranslate))
+    if (!o_VerQueryValueW(versionData.data(), L"\\VarFileInfo\\Translation", (LPVOID*) &lpTranslate, &cbTranslate))
         return L"";
 
-    std::wstring query = L"\\StringFileInfo\\" + std::format(L"{:04x}{:04x}", lpTranslate[0].wLanguage, lpTranslate[0].wCodePage) + L"\\ProductName";
+    std::wstring query = L"\\StringFileInfo\\" +
+                         std::format(L"{:04x}{:04x}", lpTranslate[0].wLanguage, lpTranslate[0].wCodePage) +
+                         L"\\ProductName";
     LPWSTR productName = nullptr;
     UINT size = 0;
-    if (o_VerQueryValueW(versionData.data(), query.c_str(), (LPVOID*)&productName, &size) && productName)
+    if (o_VerQueryValueW(versionData.data(), query.c_str(), (LPVOID*) &productName, &size) && productName)
         return productName;
 
     return L"";
@@ -126,7 +128,6 @@ std::wstring Util::GetExeProductName()
 std::filesystem::path Util::DllPath()
 {
     static std::filesystem::path dll;
-
 
     if (dll.empty())
     {
@@ -140,10 +141,9 @@ std::filesystem::path Util::DllPath()
     return dll;
 }
 
-
 std::optional<std::filesystem::path> Util::NvngxPath()
 {
-    // Checking _nvngx.dll / nvngx.dll location from registry based on DLSSTweaks 
+    // Checking _nvngx.dll / nvngx.dll location from registry based on DLSSTweaks
     // https://github.com/emoose/DLSSTweaks/blob/7ebf418c79670daad60a079c0e7b84096c6a7037/src/ProxyNvngx.cpp#L303
     LOG_INFO("trying to load nvngx from registry path!");
 
@@ -151,14 +151,15 @@ std::optional<std::filesystem::path> Util::NvngxPath()
     LSTATUS ls;
     std::optional<std::filesystem::path> result;
 
-    ls = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"System\\CurrentControlSet\\Services\\nvlddmkm\\NGXCore", 0, KEY_READ, &regNGXCore);
+    ls = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"System\\CurrentControlSet\\Services\\nvlddmkm\\NGXCore", 0, KEY_READ,
+                       &regNGXCore);
 
     if (ls == ERROR_SUCCESS)
     {
         wchar_t regNGXCorePath[260];
         DWORD NGXCorePathSize = 260;
 
-        ls = RegQueryValueExW(regNGXCore, L"NGXPath", nullptr, nullptr, (LPBYTE)regNGXCorePath, &NGXCorePathSize);
+        ls = RegQueryValueExW(regNGXCore, L"NGXPath", nullptr, nullptr, (LPBYTE) regNGXCorePath, &NGXCorePathSize);
 
         if (ls == ERROR_SUCCESS)
         {
@@ -205,10 +206,10 @@ std::filesystem::path Util::ExePath()
     return exe;
 }
 
-static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam) {
-    const auto isMainWindow = [handle]() {
-        return GetWindow(handle, GW_OWNER) == nullptr && IsWindowVisible(handle) && handle != GetConsoleWindow();
-        };
+static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam)
+{
+    const auto isMainWindow = [handle]()
+    { return GetWindow(handle, GW_OWNER) == nullptr && IsWindowVisible(handle) && handle != GetConsoleWindow(); };
 
     DWORD pID = 0;
     GetWindowThreadProcessId(handle, &pID);
@@ -221,7 +222,8 @@ static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam) {
     return FALSE;
 }
 
-HWND Util::GetProcessWindow() {
+HWND Util::GetProcessWindow()
+{
     HWND hwnd = nullptr;
     EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&hwnd));
 
@@ -238,15 +240,17 @@ inline std::string LogLastError()
 {
     DWORD errorCode = GetLastError();
     LPWSTR errorBuffer = nullptr;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                  NULL, errorCode, 0, (LPWSTR)&errorBuffer, 0, NULL);
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+                  errorCode, 0, (LPWSTR) &errorBuffer, 0, NULL);
 
     std::string result;
 
     if (errorBuffer)
     {
         std::wstring errMsg(errorBuffer);
-        result = std::format("{} ({})", errorCode, wstring_to_string(errMsg).erase(wstring_to_string(errMsg).find_last_not_of("\t\n\v\f\r ") + 1));
+        result =
+            std::format("{} ({})", errorCode,
+                        wstring_to_string(errMsg).erase(wstring_to_string(errMsg).find_last_not_of("\t\n\v\f\r ") + 1));
         LocalFree(errorBuffer);
     }
     else
@@ -257,14 +261,15 @@ inline std::string LogLastError()
     return result;
 }
 
-bool Util::GetDLLVersion(std::wstring dllPath, version_t* versionOut) {
+bool Util::GetDLLVersion(std::wstring dllPath, version_t* versionOut)
+{
     // Step 1: Get the size of the version information
     DWORD handle = 0;
     DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
 
     if (versionSize == 0)
     {
-        //LOG_ERROR("Failed to get version info size: {0:X}", LogLastError());
+        // LOG_ERROR("Failed to get version info size: {0:X}", LogLastError());
         return false;
     }
 
@@ -272,19 +277,21 @@ bool Util::GetDLLVersion(std::wstring dllPath, version_t* versionOut) {
     std::vector<BYTE> versionInfo(versionSize);
     if (!GetFileVersionInfoW(dllPath.c_str(), handle, versionSize, versionInfo.data()))
     {
-        //LOG_ERROR("Failed to get version info: {0:X}", LogLastError());
+        // LOG_ERROR("Failed to get version info: {0:X}", LogLastError());
         return false;
     }
 
     // Step 3: Extract the version information
     VS_FIXEDFILEINFO* fileInfo = nullptr;
     UINT size = 0;
-    if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
-        //LOG_ERROR("Failed to query version value: {0:X}", LogLastError());
+    if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size))
+    {
+        // LOG_ERROR("Failed to query version value: {0:X}", LogLastError());
         return false;
     }
 
-    if (fileInfo != nullptr && versionOut != nullptr) {
+    if (fileInfo != nullptr && versionOut != nullptr)
+    {
         // Extract major, minor, build, and revision numbers from version information
         DWORD fileVersionMS = fileInfo->dwFileVersionMS;
         DWORD fileVersionLS = fileInfo->dwFileVersionLS;
@@ -308,7 +315,8 @@ bool Util::GetDLLVersion(std::wstring dllPath, xess_version_t* xessVersionOut)
     auto result = Util::GetDLLVersion(dllPath, &tempVersion);
 
     // Don't assume that the structs are identical
-    if (result) {
+    if (result)
+    {
         xessVersionOut->major = tempVersion.major;
         xessVersionOut->minor = tempVersion.minor;
         xessVersionOut->patch = tempVersion.patch;
@@ -318,7 +326,8 @@ bool Util::GetDLLVersion(std::wstring dllPath, xess_version_t* xessVersionOut)
     return result;
 }
 
-std::optional<std::filesystem::path> Util::FindFilePath(const std::filesystem::path& startDir, const std::filesystem::path fileName)
+std::optional<std::filesystem::path> Util::FindFilePath(const std::filesystem::path& startDir,
+                                                        const std::filesystem::path fileName)
 {
     // 1) Direct check in startDir
     std::filesystem::path candidate = startDir / fileName;
@@ -329,7 +338,8 @@ std::optional<std::filesystem::path> Util::FindFilePath(const std::filesystem::p
     }
 
     // 2) Recursive search under startDir
-    for (auto& entry : std::filesystem::recursive_directory_iterator(startDir, std::filesystem::directory_options::skip_permission_denied))
+    for (auto& entry : std::filesystem::recursive_directory_iterator(
+             startDir, std::filesystem::directory_options::skip_permission_denied))
     {
         if (!entry.is_directory() && entry.path().filename() == fileName)
         {
@@ -340,13 +350,14 @@ std::optional<std::filesystem::path> Util::FindFilePath(const std::filesystem::p
 
     // 3) Unreal-Engine/WinGDK fallback: check for Win64 or WinGDK in parent
     std::filesystem::path parent = startDir.parent_path().parent_path();
-    for (const char* folder : { "Win64", "WinGDK" }) 
+    for (const char* folder : {"Win64", "WinGDK"})
     {
         if (std::filesystem::exists(parent / folder) && std::filesystem::is_directory(parent / folder))
         {
             // Move up two more levels from 'parent' to reach UE project root
             std::filesystem::path ueRoot = parent.parent_path().parent_path();
-            for (auto& entry : std::filesystem::recursive_directory_iterator(ueRoot, std::filesystem::directory_options::skip_permission_denied))
+            for (auto& entry : std::filesystem::recursive_directory_iterator(
+                     ueRoot, std::filesystem::directory_options::skip_permission_denied))
             {
                 if (!entry.is_directory() && entry.path().filename() == fileName)
                 {

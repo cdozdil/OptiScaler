@@ -23,57 +23,79 @@
 
 #pragma comment(lib, "Version.lib")
 
-typedef xess_result_t(*PFN_xessD3D12CreateContext)(ID3D12Device* pDevice, xess_context_handle_t* phContext);
-typedef xess_result_t(*PFN_xessD3D12BuildPipelines)(xess_context_handle_t hContext, ID3D12PipelineLibrary* pPipelineLibrary, bool blocking, uint32_t initFlags);
-typedef xess_result_t(*PRN_xessD3D12Init)(xess_context_handle_t hContext, const xess_d3d12_init_params_t* pInitParams);
-typedef xess_result_t(*PFN_xessD3D12Execute)(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList, const xess_d3d12_execute_params_t* pExecParams);
-typedef xess_result_t(*PFN_xessSelectNetworkModel)(xess_context_handle_t hContext, xess_network_model_t network);
-typedef xess_result_t(*PFN_xessStartDump)(xess_context_handle_t hContext, const xess_dump_parameters_t* dump_parameters);
-typedef xess_result_t(*PFN_xessGetVersion)(xess_version_t* pVersion);
-typedef xess_result_t(*PFN_xessIsOptimalDriver)(xess_context_handle_t hContext);
-typedef xess_result_t(*PFN_xessSetLoggingCallback)(xess_context_handle_t hContext, xess_logging_level_t loggingLevel, xess_app_log_callback_t loggingCallback);
-typedef xess_result_t(*PFN_xessGetProperties)(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_properties_t* pBindingProperties);
-typedef xess_result_t(*PFN_xessDestroyContext)(xess_context_handle_t hContext);
-typedef xess_result_t(*PFN_xessSetVelocityScale)(xess_context_handle_t hContext, float x, float y);
+typedef xess_result_t (*PFN_xessD3D12CreateContext)(ID3D12Device* pDevice, xess_context_handle_t* phContext);
+typedef xess_result_t (*PFN_xessD3D12BuildPipelines)(xess_context_handle_t hContext,
+                                                     ID3D12PipelineLibrary* pPipelineLibrary, bool blocking,
+                                                     uint32_t initFlags);
+typedef xess_result_t (*PRN_xessD3D12Init)(xess_context_handle_t hContext, const xess_d3d12_init_params_t* pInitParams);
+typedef xess_result_t (*PFN_xessD3D12Execute)(xess_context_handle_t hContext, ID3D12GraphicsCommandList* pCommandList,
+                                              const xess_d3d12_execute_params_t* pExecParams);
+typedef xess_result_t (*PFN_xessSelectNetworkModel)(xess_context_handle_t hContext, xess_network_model_t network);
+typedef xess_result_t (*PFN_xessStartDump)(xess_context_handle_t hContext,
+                                           const xess_dump_parameters_t* dump_parameters);
+typedef xess_result_t (*PFN_xessGetVersion)(xess_version_t* pVersion);
+typedef xess_result_t (*PFN_xessIsOptimalDriver)(xess_context_handle_t hContext);
+typedef xess_result_t (*PFN_xessSetLoggingCallback)(xess_context_handle_t hContext, xess_logging_level_t loggingLevel,
+                                                    xess_app_log_callback_t loggingCallback);
+typedef xess_result_t (*PFN_xessGetProperties)(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution,
+                                               xess_properties_t* pBindingProperties);
+typedef xess_result_t (*PFN_xessDestroyContext)(xess_context_handle_t hContext);
+typedef xess_result_t (*PFN_xessSetVelocityScale)(xess_context_handle_t hContext, float x, float y);
 
-typedef xess_result_t(*PFN_xessD3D12GetInitParams)(xess_context_handle_t hContext, xess_d3d12_init_params_t* pInitParams);
-typedef xess_result_t(*PFN_xessForceLegacyScaleFactors)(xess_context_handle_t hContext, bool force);
-typedef xess_result_t(*PFN_xessGetExposureMultiplier)(xess_context_handle_t hContext, float* pScale);
-typedef xess_result_t(*PFN_xessGetInputResolution)(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_quality_settings_t qualitySettings, xess_2d_t* pInputResolution);
-typedef xess_result_t(*PFN_xessGetIntelXeFXVersion)(xess_context_handle_t hContext, xess_version_t* pVersion);
-typedef xess_result_t(*PFN_xessGetJitterScale)(xess_context_handle_t hContext, float* pX, float* pY);
-typedef xess_result_t(*PFN_xessGetOptimalInputResolution)(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_quality_settings_t qualitySettings,
-                                                          xess_2d_t* pInputResolutionOptimal, xess_2d_t* pInputResolutionMin, xess_2d_t* pInputResolutionMax);
-typedef xess_result_t(*PFN_xessSetExposureMultiplier)(xess_context_handle_t hContext, float scale);
-typedef xess_result_t(*PFN_xessSetJitterScale)(xess_context_handle_t hContext, float x, float y);
+typedef xess_result_t (*PFN_xessD3D12GetInitParams)(xess_context_handle_t hContext,
+                                                    xess_d3d12_init_params_t* pInitParams);
+typedef xess_result_t (*PFN_xessForceLegacyScaleFactors)(xess_context_handle_t hContext, bool force);
+typedef xess_result_t (*PFN_xessGetExposureMultiplier)(xess_context_handle_t hContext, float* pScale);
+typedef xess_result_t (*PFN_xessGetInputResolution)(xess_context_handle_t hContext, const xess_2d_t* pOutputResolution,
+                                                    xess_quality_settings_t qualitySettings,
+                                                    xess_2d_t* pInputResolution);
+typedef xess_result_t (*PFN_xessGetIntelXeFXVersion)(xess_context_handle_t hContext, xess_version_t* pVersion);
+typedef xess_result_t (*PFN_xessGetJitterScale)(xess_context_handle_t hContext, float* pX, float* pY);
+typedef xess_result_t (*PFN_xessGetOptimalInputResolution)(
+    xess_context_handle_t hContext, const xess_2d_t* pOutputResolution, xess_quality_settings_t qualitySettings,
+    xess_2d_t* pInputResolutionOptimal, xess_2d_t* pInputResolutionMin, xess_2d_t* pInputResolutionMax);
+typedef xess_result_t (*PFN_xessSetExposureMultiplier)(xess_context_handle_t hContext, float scale);
+typedef xess_result_t (*PFN_xessSetJitterScale)(xess_context_handle_t hContext, float x, float y);
 
-typedef xess_result_t(*PFN_xessD3D12GetResourcesToDump)(xess_context_handle_t hContext, xess_resources_to_dump_t** pResourcesToDump);
-typedef xess_result_t(*PFN_xessD3D12GetProfilingData)(xess_context_handle_t hContext, xess_profiling_data_t** pProfilingData);
+typedef xess_result_t (*PFN_xessD3D12GetResourcesToDump)(xess_context_handle_t hContext,
+                                                         xess_resources_to_dump_t** pResourcesToDump);
+typedef xess_result_t (*PFN_xessD3D12GetProfilingData)(xess_context_handle_t hContext,
+                                                       xess_profiling_data_t** pProfilingData);
 
-typedef xess_result_t(*PFN_xessSetContextParameterF)();
-typedef xess_result_t(*PFN_xessGetPipelineBuildStatus)(xess_context_handle_t hContext);
+typedef xess_result_t (*PFN_xessSetContextParameterF)();
+typedef xess_result_t (*PFN_xessGetPipelineBuildStatus)(xess_context_handle_t hContext);
 
 // Vulkan?!?
-typedef xess_result_t(*PFN_xessVKGetRequiredInstanceExtensions)(uint32_t* instanceExtensionsCount, const char* const** instanceExtensions, uint32_t* minVkApiVersion);
-typedef xess_result_t(*PFN_xessVKGetRequiredDeviceExtensions)(VkInstance instance, VkPhysicalDevice physicalDevice, uint32_t* deviceExtensionsCount, const char* const** deviceExtensions);
-typedef xess_result_t(*PFN_xessVKGetRequiredDeviceFeatures)(VkInstance instance, VkPhysicalDevice physicalDevice, void** features);
-typedef xess_result_t(*PFN_xessVKCreateContext)(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, xess_context_handle_t* phContext);
-typedef xess_result_t(*PFN_xessVKBuildPipelines)(xess_context_handle_t hContext, VkPipelineCache pipelineCache, bool blocking, uint32_t initFlags);
-typedef xess_result_t(*PFN_xessVKInit)(xess_context_handle_t hContext, const xess_vk_init_params_t* pInitParams);
-typedef xess_result_t(*PFN_xessVKGetInitParams)(xess_context_handle_t hContext, xess_vk_init_params_t* pInitParams);
-typedef xess_result_t(*PFN_xessVKExecute)(xess_context_handle_t hContext, VkCommandBuffer commandBuffer, const xess_vk_execute_params_t* pExecParams);
-typedef xess_result_t(*PFN_xessVKGetResourcesToDump)(xess_context_handle_t hContext, xess_vk_resources_to_dump_t** pResourcesToDump);
+typedef xess_result_t (*PFN_xessVKGetRequiredInstanceExtensions)(uint32_t* instanceExtensionsCount,
+                                                                 const char* const** instanceExtensions,
+                                                                 uint32_t* minVkApiVersion);
+typedef xess_result_t (*PFN_xessVKGetRequiredDeviceExtensions)(VkInstance instance, VkPhysicalDevice physicalDevice,
+                                                               uint32_t* deviceExtensionsCount,
+                                                               const char* const** deviceExtensions);
+typedef xess_result_t (*PFN_xessVKGetRequiredDeviceFeatures)(VkInstance instance, VkPhysicalDevice physicalDevice,
+                                                             void** features);
+typedef xess_result_t (*PFN_xessVKCreateContext)(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device,
+                                                 xess_context_handle_t* phContext);
+typedef xess_result_t (*PFN_xessVKBuildPipelines)(xess_context_handle_t hContext, VkPipelineCache pipelineCache,
+                                                  bool blocking, uint32_t initFlags);
+typedef xess_result_t (*PFN_xessVKInit)(xess_context_handle_t hContext, const xess_vk_init_params_t* pInitParams);
+typedef xess_result_t (*PFN_xessVKGetInitParams)(xess_context_handle_t hContext, xess_vk_init_params_t* pInitParams);
+typedef xess_result_t (*PFN_xessVKExecute)(xess_context_handle_t hContext, VkCommandBuffer commandBuffer,
+                                           const xess_vk_execute_params_t* pExecParams);
+typedef xess_result_t (*PFN_xessVKGetResourcesToDump)(xess_context_handle_t hContext,
+                                                      xess_vk_resources_to_dump_t** pResourcesToDump);
 
 // Dx11
-typedef xess_result_t(*PFN_xessD3D11CreateContext)(ID3D11Device* device, xess_context_handle_t* phContext);
-typedef xess_result_t(*PFN_xessD3D11Init)(xess_context_handle_t hContext, const xess_d3d11_init_params_t* pInitParams);
-typedef xess_result_t(*PFN_xessD3D11GetInitParams)(xess_context_handle_t hContext, xess_d3d11_init_params_t* pInitParams);
-typedef xess_result_t(*PFN_xessD3D11Execute)(xess_context_handle_t hContext, const xess_d3d11_execute_params_t* pExecParams);
-
+typedef xess_result_t (*PFN_xessD3D11CreateContext)(ID3D11Device* device, xess_context_handle_t* phContext);
+typedef xess_result_t (*PFN_xessD3D11Init)(xess_context_handle_t hContext, const xess_d3d11_init_params_t* pInitParams);
+typedef xess_result_t (*PFN_xessD3D11GetInitParams)(xess_context_handle_t hContext,
+                                                    xess_d3d11_init_params_t* pInitParams);
+typedef xess_result_t (*PFN_xessD3D11Execute)(xess_context_handle_t hContext,
+                                              const xess_d3d11_execute_params_t* pExecParams);
 
 class XeSSProxy
 {
-private:
+  private:
     inline static HMODULE _dll = nullptr;
     inline static HMODULE _dlldx11 = nullptr;
 
@@ -145,8 +167,7 @@ private:
         // Step 1: Get the size of the version information
         DWORD handle = 0;
         DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
-        xess_version_t version{ 0, 0, 0 };
-
+        xess_version_t version{0, 0, 0};
 
         if (versionSize == 0)
         {
@@ -165,12 +186,14 @@ private:
         // Step 3: Extract the version information
         VS_FIXEDFILEINFO* fileInfo = nullptr;
         UINT size = 0;
-        if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size)) {
+        if (!VerQueryValueW(versionInfo.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &size))
+        {
             LOG_ERROR("Failed to query version value: {0:X}", GetLastError());
             return version;
         }
 
-        if (fileInfo != nullptr) {
+        if (fileInfo != nullptr)
+        {
             // Extract major, minor, build, and revision numbers from version information
             DWORD fileVersionMS = fileInfo->dwFileVersionMS;
             DWORD fileVersionLS = fileInfo->dwFileVersionLS;
@@ -202,7 +225,7 @@ private:
         return dll;
     }
 
-public:
+  public:
     static HMODULE Module() { return _dll; }
     static HMODULE ModuleDx11() { return _dlldx11; }
 
@@ -328,198 +351,247 @@ public:
 
         if (_dll != nullptr)
         {
-            _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12CreateContext");
-            _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12BuildPipelines");
-            _xessD3D12Init = (PRN_xessD3D12Init)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12Init");
-            _xessD3D12Execute = (PFN_xessD3D12Execute)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12Execute");
-            _xessSelectNetworkModel = (PFN_xessSelectNetworkModel)KernelBaseProxy::GetProcAddress_()(_dll, "xessSelectNetworkModel");
-            _xessStartDump = (PFN_xessStartDump)KernelBaseProxy::GetProcAddress_()(_dll, "xessStartDump");
-            _xessGetVersion = (PFN_xessGetVersion)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetVersion");
-            _xessIsOptimalDriver = (PFN_xessIsOptimalDriver)KernelBaseProxy::GetProcAddress_()(_dll, "xessIsOptimalDriver");
-            _xessSetLoggingCallback = (PFN_xessSetLoggingCallback)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetLoggingCallback");
-            _xessGetProperties = (PFN_xessGetProperties)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetProperties");
-            _xessDestroyContext = (PFN_xessDestroyContext)KernelBaseProxy::GetProcAddress_()(_dll, "xessDestroyContext");
-            _xessSetVelocityScale = (PFN_xessSetVelocityScale)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetVelocityScale");
+            _xessD3D12CreateContext =
+                (PFN_xessD3D12CreateContext) KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12CreateContext");
+            _xessD3D12BuildPipelines =
+                (PFN_xessD3D12BuildPipelines) KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12BuildPipelines");
+            _xessD3D12Init = (PRN_xessD3D12Init) KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12Init");
+            _xessD3D12Execute = (PFN_xessD3D12Execute) KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12Execute");
+            _xessSelectNetworkModel =
+                (PFN_xessSelectNetworkModel) KernelBaseProxy::GetProcAddress_()(_dll, "xessSelectNetworkModel");
+            _xessStartDump = (PFN_xessStartDump) KernelBaseProxy::GetProcAddress_()(_dll, "xessStartDump");
+            _xessGetVersion = (PFN_xessGetVersion) KernelBaseProxy::GetProcAddress_()(_dll, "xessGetVersion");
+            _xessIsOptimalDriver =
+                (PFN_xessIsOptimalDriver) KernelBaseProxy::GetProcAddress_()(_dll, "xessIsOptimalDriver");
+            _xessSetLoggingCallback =
+                (PFN_xessSetLoggingCallback) KernelBaseProxy::GetProcAddress_()(_dll, "xessSetLoggingCallback");
+            _xessGetProperties = (PFN_xessGetProperties) KernelBaseProxy::GetProcAddress_()(_dll, "xessGetProperties");
+            _xessDestroyContext =
+                (PFN_xessDestroyContext) KernelBaseProxy::GetProcAddress_()(_dll, "xessDestroyContext");
+            _xessSetVelocityScale =
+                (PFN_xessSetVelocityScale) KernelBaseProxy::GetProcAddress_()(_dll, "xessSetVelocityScale");
 
-            _xessD3D12GetInitParams = (PFN_xessD3D12GetInitParams)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12GetInitParams");
-            _xessForceLegacyScaleFactors = (PFN_xessForceLegacyScaleFactors)KernelBaseProxy::GetProcAddress_()(_dll, "xessForceLegacyScaleFactors");
-            _xessGetExposureMultiplier = (PFN_xessGetExposureMultiplier)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetExposureMultiplier");
-            _xessGetInputResolution = (PFN_xessGetInputResolution)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetInputResolution");
-            _xessGetIntelXeFXVersion = (PFN_xessGetIntelXeFXVersion)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetIntelXeFXVersion");
-            _xessGetJitterScale = (PFN_xessGetJitterScale)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetJitterScale");
-            _xessGetOptimalInputResolution = (PFN_xessGetOptimalInputResolution)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetOptimalInputResolution");
-            _xessSetExposureMultiplier = (PFN_xessSetExposureMultiplier)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetExposureMultiplier");
-            _xessSetJitterScale = (PFN_xessSetJitterScale)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetJitterScale");
+            _xessD3D12GetInitParams =
+                (PFN_xessD3D12GetInitParams) KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12GetInitParams");
+            _xessForceLegacyScaleFactors = (PFN_xessForceLegacyScaleFactors) KernelBaseProxy::GetProcAddress_()(
+                _dll, "xessForceLegacyScaleFactors");
+            _xessGetExposureMultiplier =
+                (PFN_xessGetExposureMultiplier) KernelBaseProxy::GetProcAddress_()(_dll, "xessGetExposureMultiplier");
+            _xessGetInputResolution =
+                (PFN_xessGetInputResolution) KernelBaseProxy::GetProcAddress_()(_dll, "xessGetInputResolution");
+            _xessGetIntelXeFXVersion =
+                (PFN_xessGetIntelXeFXVersion) KernelBaseProxy::GetProcAddress_()(_dll, "xessGetIntelXeFXVersion");
+            _xessGetJitterScale =
+                (PFN_xessGetJitterScale) KernelBaseProxy::GetProcAddress_()(_dll, "xessGetJitterScale");
+            _xessGetOptimalInputResolution = (PFN_xessGetOptimalInputResolution) KernelBaseProxy::GetProcAddress_()(
+                _dll, "xessGetOptimalInputResolution");
+            _xessSetExposureMultiplier =
+                (PFN_xessSetExposureMultiplier) KernelBaseProxy::GetProcAddress_()(_dll, "xessSetExposureMultiplier");
+            _xessSetJitterScale =
+                (PFN_xessSetJitterScale) KernelBaseProxy::GetProcAddress_()(_dll, "xessSetJitterScale");
 
-            _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12GetResourcesToDump");
-            _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12GetProfilingData");
-            _xessSetContextParameterF = (PFN_xessSetContextParameterF)KernelBaseProxy::GetProcAddress_()(_dll, "xessSetContextParameterF");
-            _xessGetPipelineBuildStatus = (PFN_xessGetPipelineBuildStatus)KernelBaseProxy::GetProcAddress_()(_dll, "xessGetPipelineBuildStatus");
+            _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump) KernelBaseProxy::GetProcAddress_()(
+                _dll, "xessD3D12GetResourcesToDump");
+            _xessD3D12GetProfilingData =
+                (PFN_xessD3D12GetProfilingData) KernelBaseProxy::GetProcAddress_()(_dll, "xessD3D12GetProfilingData");
+            _xessSetContextParameterF =
+                (PFN_xessSetContextParameterF) KernelBaseProxy::GetProcAddress_()(_dll, "xessSetContextParameterF");
+            _xessGetPipelineBuildStatus =
+                (PFN_xessGetPipelineBuildStatus) KernelBaseProxy::GetProcAddress_()(_dll, "xessGetPipelineBuildStatus");
 
-            _xessVKGetRequiredInstanceExtensions = (PFN_xessVKGetRequiredInstanceExtensions)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetRequiredInstanceExtensions");
-            _xessVKGetRequiredDeviceExtensions = (PFN_xessVKGetRequiredDeviceExtensions)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetRequiredDeviceExtensions");
-            _xessVKGetRequiredDeviceFeatures = (PFN_xessVKGetRequiredDeviceFeatures)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetRequiredDeviceFeatures");
-            _xessVKCreateContext = (PFN_xessVKCreateContext)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKCreateContext");
-            _xessVKBuildPipelines = (PFN_xessVKBuildPipelines)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKBuildPipelines");
-            _xessVKInit = (PFN_xessVKInit)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKInit");
-            _xessVKGetInitParams = (PFN_xessVKGetInitParams)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetInitParams");
-            _xessVKExecute = (PFN_xessVKExecute)KernelBaseProxy::GetProcAddress_()(_dll, "xessVKExecute");
+            _xessVKGetRequiredInstanceExtensions =
+                (PFN_xessVKGetRequiredInstanceExtensions) KernelBaseProxy::GetProcAddress_()(
+                    _dll, "xessVKGetRequiredInstanceExtensions");
+            _xessVKGetRequiredDeviceExtensions =
+                (PFN_xessVKGetRequiredDeviceExtensions) KernelBaseProxy::GetProcAddress_()(
+                    _dll, "xessVKGetRequiredDeviceExtensions");
+            _xessVKGetRequiredDeviceFeatures = (PFN_xessVKGetRequiredDeviceFeatures) KernelBaseProxy::GetProcAddress_()(
+                _dll, "xessVKGetRequiredDeviceFeatures");
+            _xessVKCreateContext =
+                (PFN_xessVKCreateContext) KernelBaseProxy::GetProcAddress_()(_dll, "xessVKCreateContext");
+            _xessVKBuildPipelines =
+                (PFN_xessVKBuildPipelines) KernelBaseProxy::GetProcAddress_()(_dll, "xessVKBuildPipelines");
+            _xessVKInit = (PFN_xessVKInit) KernelBaseProxy::GetProcAddress_()(_dll, "xessVKInit");
+            _xessVKGetInitParams =
+                (PFN_xessVKGetInitParams) KernelBaseProxy::GetProcAddress_()(_dll, "xessVKGetInitParams");
+            _xessVKExecute = (PFN_xessVKExecute) KernelBaseProxy::GetProcAddress_()(_dll, "xessVKExecute");
         }
 
-        // if libxess not loaded 
+        // if libxess not loaded
         if (_xessD3D12CreateContext == nullptr)
         {
             LOG_INFO("Trying to load libxess.dll with Detours");
 
-            _xessD3D12CreateContext = (PFN_xessD3D12CreateContext)DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
-            _xessD3D12BuildPipelines = (PFN_xessD3D12BuildPipelines)DetourFindFunction("libxess.dll", "xessD3D12BuildPipelines");
-            _xessD3D12Init = (PRN_xessD3D12Init)DetourFindFunction("libxess.dll", "xessD3D12Init");
-            _xessGetVersion = (PFN_xessGetVersion)DetourFindFunction("libxess.dll", "xessGetVersion");
-            _xessD3D12Execute = (PFN_xessD3D12Execute)DetourFindFunction("libxess.dll", "xessD3D12Execute");
-            _xessSelectNetworkModel = (PFN_xessSelectNetworkModel)DetourFindFunction("libxess.dll", "xessSelectNetworkModel");
-            _xessStartDump = (PFN_xessStartDump)DetourFindFunction("libxess.dll", "xessStartDump");
-            _xessIsOptimalDriver = (PFN_xessIsOptimalDriver)DetourFindFunction("libxess.dll", "xessIsOptimalDriver");
-            _xessSetLoggingCallback = (PFN_xessSetLoggingCallback)DetourFindFunction("libxess.dll", "xessSetLoggingCallback");
-            _xessGetProperties = (PFN_xessGetProperties)DetourFindFunction("libxess.dll", "xessGetProperties");
-            _xessDestroyContext = (PFN_xessDestroyContext)DetourFindFunction("libxess.dll", "xessDestroyContext");
-            _xessSetVelocityScale = (PFN_xessSetVelocityScale)DetourFindFunction("libxess.dll", "xessSetVelocityScale");
-            _xessD3D12GetInitParams = (PFN_xessD3D12GetInitParams)DetourFindFunction("libxess.dll", "xessD3D12GetInitParams");
-            _xessForceLegacyScaleFactors = (PFN_xessForceLegacyScaleFactors)DetourFindFunction("libxess.dll", "xessForceLegacyScaleFactors");
-            _xessGetExposureMultiplier = (PFN_xessGetExposureMultiplier)DetourFindFunction("libxess.dll", "xessGetExposureMultiplier");
-            _xessGetInputResolution = (PFN_xessGetInputResolution)DetourFindFunction("libxess.dll", "xessGetInputResolution");
-            _xessGetIntelXeFXVersion = (PFN_xessGetIntelXeFXVersion)DetourFindFunction("libxess.dll", "xessGetIntelXeFXVersion");
-            _xessGetJitterScale = (PFN_xessGetJitterScale)DetourFindFunction("libxess.dll", "xessGetJitterScale");
-            _xessGetOptimalInputResolution = (PFN_xessGetOptimalInputResolution)DetourFindFunction("libxess.dll", "xessGetOptimalInputResolution");
-            _xessSetExposureMultiplier = (PFN_xessSetExposureMultiplier)DetourFindFunction("libxess.dll", "xessSetExposureMultiplier");
-            _xessSetJitterScale = (PFN_xessSetJitterScale)DetourFindFunction("libxess.dll", "xessSetJitterScale");
-            _xessD3D12GetResourcesToDump = (PFN_xessD3D12GetResourcesToDump)DetourFindFunction("libxess.dll", "xessD3D12GetResourcesToDump");
-            _xessD3D12GetProfilingData = (PFN_xessD3D12GetProfilingData)DetourFindFunction("libxess.dll", "xessD3D12GetProfilingData");
-            _xessSetContextParameterF = (PFN_xessSetContextParameterF)DetourFindFunction("libxess.dll", "xessSetContextParameterF");
-            _xessGetPipelineBuildStatus = (PFN_xessGetPipelineBuildStatus)DetourFindFunction("libxess.dll", "xessGetPipelineBuildStatus");
+            _xessD3D12CreateContext =
+                (PFN_xessD3D12CreateContext) DetourFindFunction("libxess.dll", "xessD3D12CreateContext");
+            _xessD3D12BuildPipelines =
+                (PFN_xessD3D12BuildPipelines) DetourFindFunction("libxess.dll", "xessD3D12BuildPipelines");
+            _xessD3D12Init = (PRN_xessD3D12Init) DetourFindFunction("libxess.dll", "xessD3D12Init");
+            _xessGetVersion = (PFN_xessGetVersion) DetourFindFunction("libxess.dll", "xessGetVersion");
+            _xessD3D12Execute = (PFN_xessD3D12Execute) DetourFindFunction("libxess.dll", "xessD3D12Execute");
+            _xessSelectNetworkModel =
+                (PFN_xessSelectNetworkModel) DetourFindFunction("libxess.dll", "xessSelectNetworkModel");
+            _xessStartDump = (PFN_xessStartDump) DetourFindFunction("libxess.dll", "xessStartDump");
+            _xessIsOptimalDriver = (PFN_xessIsOptimalDriver) DetourFindFunction("libxess.dll", "xessIsOptimalDriver");
+            _xessSetLoggingCallback =
+                (PFN_xessSetLoggingCallback) DetourFindFunction("libxess.dll", "xessSetLoggingCallback");
+            _xessGetProperties = (PFN_xessGetProperties) DetourFindFunction("libxess.dll", "xessGetProperties");
+            _xessDestroyContext = (PFN_xessDestroyContext) DetourFindFunction("libxess.dll", "xessDestroyContext");
+            _xessSetVelocityScale =
+                (PFN_xessSetVelocityScale) DetourFindFunction("libxess.dll", "xessSetVelocityScale");
+            _xessD3D12GetInitParams =
+                (PFN_xessD3D12GetInitParams) DetourFindFunction("libxess.dll", "xessD3D12GetInitParams");
+            _xessForceLegacyScaleFactors =
+                (PFN_xessForceLegacyScaleFactors) DetourFindFunction("libxess.dll", "xessForceLegacyScaleFactors");
+            _xessGetExposureMultiplier =
+                (PFN_xessGetExposureMultiplier) DetourFindFunction("libxess.dll", "xessGetExposureMultiplier");
+            _xessGetInputResolution =
+                (PFN_xessGetInputResolution) DetourFindFunction("libxess.dll", "xessGetInputResolution");
+            _xessGetIntelXeFXVersion =
+                (PFN_xessGetIntelXeFXVersion) DetourFindFunction("libxess.dll", "xessGetIntelXeFXVersion");
+            _xessGetJitterScale = (PFN_xessGetJitterScale) DetourFindFunction("libxess.dll", "xessGetJitterScale");
+            _xessGetOptimalInputResolution =
+                (PFN_xessGetOptimalInputResolution) DetourFindFunction("libxess.dll", "xessGetOptimalInputResolution");
+            _xessSetExposureMultiplier =
+                (PFN_xessSetExposureMultiplier) DetourFindFunction("libxess.dll", "xessSetExposureMultiplier");
+            _xessSetJitterScale = (PFN_xessSetJitterScale) DetourFindFunction("libxess.dll", "xessSetJitterScale");
+            _xessD3D12GetResourcesToDump =
+                (PFN_xessD3D12GetResourcesToDump) DetourFindFunction("libxess.dll", "xessD3D12GetResourcesToDump");
+            _xessD3D12GetProfilingData =
+                (PFN_xessD3D12GetProfilingData) DetourFindFunction("libxess.dll", "xessD3D12GetProfilingData");
+            _xessSetContextParameterF =
+                (PFN_xessSetContextParameterF) DetourFindFunction("libxess.dll", "xessSetContextParameterF");
+            _xessGetPipelineBuildStatus =
+                (PFN_xessGetPipelineBuildStatus) DetourFindFunction("libxess.dll", "xessGetPipelineBuildStatus");
 
-            _xessVKGetRequiredInstanceExtensions = (PFN_xessVKGetRequiredInstanceExtensions)DetourFindFunction("libxess.dll", "xessVKGetRequiredInstanceExtensions");
-            _xessVKGetRequiredDeviceExtensions = (PFN_xessVKGetRequiredDeviceExtensions)DetourFindFunction("libxess.dll", "xessVKGetRequiredDeviceExtensions");
-            _xessVKGetRequiredDeviceFeatures = (PFN_xessVKGetRequiredDeviceFeatures)DetourFindFunction("libxess.dll", "xessVKGetRequiredDeviceFeatures");
-            _xessVKCreateContext = (PFN_xessVKCreateContext)DetourFindFunction("libxess.dll", "xessVKCreateContext");
-            _xessVKBuildPipelines = (PFN_xessVKBuildPipelines)DetourFindFunction("libxess.dll", "xessVKBuildPipelines");
-            _xessVKInit = (PFN_xessVKInit)DetourFindFunction("libxess.dll", "xessVKInit");
-            _xessVKGetInitParams = (PFN_xessVKGetInitParams)DetourFindFunction("libxess.dll", "xessVKGetInitParams");
-            _xessVKExecute = (PFN_xessVKExecute)DetourFindFunction("libxess.dll", "xessVKExecute");
-            _xessVKGetResourcesToDump = (PFN_xessVKGetResourcesToDump)DetourFindFunction("libxess.dll", "xessVKGetResourcesToDump");
+            _xessVKGetRequiredInstanceExtensions = (PFN_xessVKGetRequiredInstanceExtensions) DetourFindFunction(
+                "libxess.dll", "xessVKGetRequiredInstanceExtensions");
+            _xessVKGetRequiredDeviceExtensions = (PFN_xessVKGetRequiredDeviceExtensions) DetourFindFunction(
+                "libxess.dll", "xessVKGetRequiredDeviceExtensions");
+            _xessVKGetRequiredDeviceFeatures = (PFN_xessVKGetRequiredDeviceFeatures) DetourFindFunction(
+                "libxess.dll", "xessVKGetRequiredDeviceFeatures");
+            _xessVKCreateContext = (PFN_xessVKCreateContext) DetourFindFunction("libxess.dll", "xessVKCreateContext");
+            _xessVKBuildPipelines =
+                (PFN_xessVKBuildPipelines) DetourFindFunction("libxess.dll", "xessVKBuildPipelines");
+            _xessVKInit = (PFN_xessVKInit) DetourFindFunction("libxess.dll", "xessVKInit");
+            _xessVKGetInitParams = (PFN_xessVKGetInitParams) DetourFindFunction("libxess.dll", "xessVKGetInitParams");
+            _xessVKExecute = (PFN_xessVKExecute) DetourFindFunction("libxess.dll", "xessVKExecute");
+            _xessVKGetResourcesToDump =
+                (PFN_xessVKGetResourcesToDump) DetourFindFunction("libxess.dll", "xessVKGetResourcesToDump");
         }
 
         State::Instance().skipDxgiLoadChecks = true;
 
         if (_xessD3D12CreateContext != nullptr)
         {
-            // read version from file because 
+            // read version from file because
             // xessGetVersion cause access violation errors
-            //HMODULE moduleHandle = nullptr;
-            //moduleHandle = GetModuleHandle(L"libxess.dll");
-            //if (moduleHandle != nullptr)
+            // HMODULE moduleHandle = nullptr;
+            // moduleHandle = GetModuleHandle(L"libxess.dll");
+            // if (moduleHandle != nullptr)
             //{
             //    auto path = DllPath(moduleHandle);
             //    _xessVersion = GetDLLVersion(path.wstring());
             //}
 
-            //if (_xessVersion.major == 0)
-            //    _xessGetVersion(&_xessVersion);
+            // if (_xessVersion.major == 0)
+            //     _xessGetVersion(&_xessVersion);
 
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 
             if (_xessD3D12CreateContext != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12CreateContext, hk_xessD3D12CreateContext);
+                DetourAttach(&(PVOID&) _xessD3D12CreateContext, hk_xessD3D12CreateContext);
 
             if (_xessD3D12BuildPipelines != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12BuildPipelines, hk_xessD3D12BuildPipelines);
+                DetourAttach(&(PVOID&) _xessD3D12BuildPipelines, hk_xessD3D12BuildPipelines);
 
             if (_xessD3D12Init != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12Init, hk_xessD3D12Init);
+                DetourAttach(&(PVOID&) _xessD3D12Init, hk_xessD3D12Init);
 
             if (_xessGetVersion != nullptr)
-                DetourAttach(&(PVOID&)_xessGetVersion, hk_xessGetVersion);
+                DetourAttach(&(PVOID&) _xessGetVersion, hk_xessGetVersion);
 
             if (_xessD3D12Execute != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12Execute, hk_xessD3D12Execute);
+                DetourAttach(&(PVOID&) _xessD3D12Execute, hk_xessD3D12Execute);
 
             if (_xessSelectNetworkModel != nullptr)
-                DetourAttach(&(PVOID&)_xessSelectNetworkModel, hk_xessSelectNetworkModel);
+                DetourAttach(&(PVOID&) _xessSelectNetworkModel, hk_xessSelectNetworkModel);
 
             if (_xessStartDump != nullptr)
-                DetourAttach(&(PVOID&)_xessStartDump, hk_xessStartDump);
+                DetourAttach(&(PVOID&) _xessStartDump, hk_xessStartDump);
 
             if (_xessIsOptimalDriver != nullptr)
-                DetourAttach(&(PVOID&)_xessIsOptimalDriver, hk_xessIsOptimalDriver);
+                DetourAttach(&(PVOID&) _xessIsOptimalDriver, hk_xessIsOptimalDriver);
 
             if (_xessSetLoggingCallback != nullptr)
-                DetourAttach(&(PVOID&)_xessSetLoggingCallback, hk_xessSetLoggingCallback);
+                DetourAttach(&(PVOID&) _xessSetLoggingCallback, hk_xessSetLoggingCallback);
 
             if (_xessGetProperties != nullptr)
-                DetourAttach(&(PVOID&)_xessGetProperties, hk_xessGetProperties);
+                DetourAttach(&(PVOID&) _xessGetProperties, hk_xessGetProperties);
 
             if (_xessDestroyContext != nullptr)
-                DetourAttach(&(PVOID&)_xessDestroyContext, hk_xessDestroyContext);
+                DetourAttach(&(PVOID&) _xessDestroyContext, hk_xessDestroyContext);
 
             if (_xessSetVelocityScale != nullptr)
-                DetourAttach(&(PVOID&)_xessSetVelocityScale, hk_xessSetVelocityScale);
+                DetourAttach(&(PVOID&) _xessSetVelocityScale, hk_xessSetVelocityScale);
 
             if (_xessD3D12GetInitParams != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetInitParams, hk_xessD3D12GetInitParams);
+                DetourAttach(&(PVOID&) _xessD3D12GetInitParams, hk_xessD3D12GetInitParams);
 
             if (_xessForceLegacyScaleFactors != nullptr)
-                DetourAttach(&(PVOID&)_xessForceLegacyScaleFactors, hk_xessForceLegacyScaleFactors);
+                DetourAttach(&(PVOID&) _xessForceLegacyScaleFactors, hk_xessForceLegacyScaleFactors);
 
             if (_xessGetExposureMultiplier != nullptr)
-                DetourAttach(&(PVOID&)_xessGetExposureMultiplier, hk_xessGetExposureMultiplier);
+                DetourAttach(&(PVOID&) _xessGetExposureMultiplier, hk_xessGetExposureMultiplier);
 
             if (_xessGetInputResolution != nullptr)
-                DetourAttach(&(PVOID&)_xessGetInputResolution, hk_xessGetInputResolution);
+                DetourAttach(&(PVOID&) _xessGetInputResolution, hk_xessGetInputResolution);
 
             if (_xessGetIntelXeFXVersion != nullptr)
-                DetourAttach(&(PVOID&)_xessGetIntelXeFXVersion, hk_xessGetIntelXeFXVersion);
+                DetourAttach(&(PVOID&) _xessGetIntelXeFXVersion, hk_xessGetIntelXeFXVersion);
 
             if (_xessGetJitterScale != nullptr)
-                DetourAttach(&(PVOID&)_xessGetJitterScale, hk_xessGetJitterScale);
+                DetourAttach(&(PVOID&) _xessGetJitterScale, hk_xessGetJitterScale);
 
             if (_xessGetOptimalInputResolution != nullptr)
-                DetourAttach(&(PVOID&)_xessGetOptimalInputResolution, hk_xessGetOptimalInputResolution);
+                DetourAttach(&(PVOID&) _xessGetOptimalInputResolution, hk_xessGetOptimalInputResolution);
 
             if (_xessSetExposureMultiplier != nullptr)
-                DetourAttach(&(PVOID&)_xessSetExposureMultiplier, hk_xessSetExposureMultiplier);
+                DetourAttach(&(PVOID&) _xessSetExposureMultiplier, hk_xessSetExposureMultiplier);
 
             if (_xessSetJitterScale != nullptr)
-                DetourAttach(&(PVOID&)_xessSetJitterScale, hk_xessSetJitterScale);
+                DetourAttach(&(PVOID&) _xessSetJitterScale, hk_xessSetJitterScale);
 
             if (_xessD3D12GetResourcesToDump != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetResourcesToDump, hk_xessD3D12GetResourcesToDump);
+                DetourAttach(&(PVOID&) _xessD3D12GetResourcesToDump, hk_xessD3D12GetResourcesToDump);
 
             if (_xessD3D12GetProfilingData != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetProfilingData, hk_xessD3D12GetProfilingData);
+                DetourAttach(&(PVOID&) _xessD3D12GetProfilingData, hk_xessD3D12GetProfilingData);
 
             if (_xessSetContextParameterF != nullptr)
-                DetourAttach(&(PVOID&)_xessSetContextParameterF, hk_xessSetContextParameterF);
+                DetourAttach(&(PVOID&) _xessSetContextParameterF, hk_xessSetContextParameterF);
 
             if (_xessVKCreateContext != nullptr)
-                DetourAttach(&(PVOID&)_xessVKCreateContext, hk_xessVKCreateContext);
+                DetourAttach(&(PVOID&) _xessVKCreateContext, hk_xessVKCreateContext);
 
             if (_xessVKBuildPipelines != nullptr)
-                DetourAttach(&(PVOID&)_xessVKBuildPipelines, hk_xessVKBuildPipelines);
+                DetourAttach(&(PVOID&) _xessVKBuildPipelines, hk_xessVKBuildPipelines);
 
             if (_xessVKInit != nullptr)
-                DetourAttach(&(PVOID&)_xessVKInit, hk_xessVKInit);
+                DetourAttach(&(PVOID&) _xessVKInit, hk_xessVKInit);
 
             if (_xessVKGetInitParams != nullptr)
-                DetourAttach(&(PVOID&)_xessVKGetInitParams, hk_xessVKGetInitParams);
+                DetourAttach(&(PVOID&) _xessVKGetInitParams, hk_xessVKGetInitParams);
 
             if (_xessVKExecute != nullptr)
-                DetourAttach(&(PVOID&)_xessVKExecute, hk_xessVKExecute);
+                DetourAttach(&(PVOID&) _xessVKExecute, hk_xessVKExecute);
 
             if (_xessVKGetResourcesToDump != nullptr)
-                DetourAttach(&(PVOID&)_xessVKGetResourcesToDump, hk_xessVKGetResourcesToDump);
+                DetourAttach(&(PVOID&) _xessVKGetResourcesToDump, hk_xessVKGetResourcesToDump);
 
             if (_xessGetPipelineBuildStatus != nullptr)
-                DetourAttach(&(PVOID&)_xessGetPipelineBuildStatus, hk_xessGetPipelineBuildStatus);
+                DetourAttach(&(PVOID&) _xessGetPipelineBuildStatus, hk_xessGetPipelineBuildStatus);
 
             DetourTransactionCommit();
         }
@@ -551,7 +623,8 @@ public:
 
             if (_dlldx11 != nullptr)
             {
-                LOG_INFO("libxess_dx11.dll loaded from {0}", wstring_to_string(Config::Instance()->XeSSDx11Library.value()));
+                LOG_INFO("libxess_dx11.dll loaded from {0}",
+                         wstring_to_string(Config::Instance()->XeSSDx11Library.value()));
             }
         }
 
@@ -567,58 +640,90 @@ public:
 
         if (_dlldx11 != nullptr)
         {
-            _xessD3D11CreateContext = (PFN_xessD3D11CreateContext)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11CreateContext");
-            _xessD3D11Init = (PFN_xessD3D11Init)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11Init");
-            _xessD3D11GetInitParams = (PFN_xessD3D11GetInitParams)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11GetInitParams");
-            _xessD3D11Execute = (PFN_xessD3D11Execute)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11Execute");
+            _xessD3D11CreateContext =
+                (PFN_xessD3D11CreateContext) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11CreateContext");
+            _xessD3D11Init = (PFN_xessD3D11Init) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11Init");
+            _xessD3D11GetInitParams =
+                (PFN_xessD3D11GetInitParams) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11GetInitParams");
+            _xessD3D11Execute = (PFN_xessD3D11Execute) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessD3D11Execute");
 
-            _xessSelectNetworkModelDx11 = (PFN_xessSelectNetworkModel)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSelectNetworkModel");
-            _xessStartDumpDx11 = (PFN_xessStartDump)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessStartDump");
-            _xessGetVersionDx11 = (PFN_xessGetVersion)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetVersion");
-            _xessIsOptimalDriverDx11 = (PFN_xessIsOptimalDriver)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessIsOptimalDriver");
-            _xessSetLoggingCallbackDx11 = (PFN_xessSetLoggingCallback)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetLoggingCallback");
-            _xessGetPropertiesDx11 = (PFN_xessGetProperties)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetProperties");
-            _xessDestroyContextDx11 = (PFN_xessDestroyContext)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessDestroyContext");
-            _xessSetVelocityScaleDx11 = (PFN_xessSetVelocityScale)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetVelocityScale");
-            _xessForceLegacyScaleFactorsDx11 = (PFN_xessForceLegacyScaleFactors)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessForceLegacyScaleFactors");
-            _xessGetExposureMultiplierDx11 = (PFN_xessGetExposureMultiplier)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetExposureMultiplier");
-            _xessGetInputResolutionDx11 = (PFN_xessGetInputResolution)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetInputResolution");
-            _xessGetIntelXeFXVersionDx11 = (PFN_xessGetIntelXeFXVersion)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetIntelXeFXVersion");
-            _xessGetJitterScaleDx11 = (PFN_xessGetJitterScale)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetJitterScale");
-            _xessGetOptimalInputResolutionDx11 = (PFN_xessGetOptimalInputResolution)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetOptimalInputResolution");
-            _xessSetExposureMultiplierDx11 = (PFN_xessSetExposureMultiplier)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetExposureMultiplier");
-            _xessSetJitterScaleDx11 = (PFN_xessSetJitterScale)KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetJitterScale");
+            _xessSelectNetworkModelDx11 =
+                (PFN_xessSelectNetworkModel) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSelectNetworkModel");
+            _xessStartDumpDx11 = (PFN_xessStartDump) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessStartDump");
+            _xessGetVersionDx11 = (PFN_xessGetVersion) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetVersion");
+            _xessIsOptimalDriverDx11 =
+                (PFN_xessIsOptimalDriver) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessIsOptimalDriver");
+            _xessSetLoggingCallbackDx11 =
+                (PFN_xessSetLoggingCallback) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetLoggingCallback");
+            _xessGetPropertiesDx11 =
+                (PFN_xessGetProperties) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetProperties");
+            _xessDestroyContextDx11 =
+                (PFN_xessDestroyContext) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessDestroyContext");
+            _xessSetVelocityScaleDx11 =
+                (PFN_xessSetVelocityScale) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetVelocityScale");
+            _xessForceLegacyScaleFactorsDx11 = (PFN_xessForceLegacyScaleFactors) KernelBaseProxy::GetProcAddress_()(
+                _dlldx11, "xessForceLegacyScaleFactors");
+            _xessGetExposureMultiplierDx11 = (PFN_xessGetExposureMultiplier) KernelBaseProxy::GetProcAddress_()(
+                _dlldx11, "xessGetExposureMultiplier");
+            _xessGetInputResolutionDx11 =
+                (PFN_xessGetInputResolution) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetInputResolution");
+            _xessGetIntelXeFXVersionDx11 =
+                (PFN_xessGetIntelXeFXVersion) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetIntelXeFXVersion");
+            _xessGetJitterScaleDx11 =
+                (PFN_xessGetJitterScale) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessGetJitterScale");
+            _xessGetOptimalInputResolutionDx11 = (PFN_xessGetOptimalInputResolution) KernelBaseProxy::GetProcAddress_()(
+                _dlldx11, "xessGetOptimalInputResolution");
+            _xessSetExposureMultiplierDx11 = (PFN_xessSetExposureMultiplier) KernelBaseProxy::GetProcAddress_()(
+                _dlldx11, "xessSetExposureMultiplier");
+            _xessSetJitterScaleDx11 =
+                (PFN_xessSetJitterScale) KernelBaseProxy::GetProcAddress_()(_dlldx11, "xessSetJitterScale");
         }
 
         if (_xessD3D11CreateContext == nullptr)
         {
-            _xessD3D11CreateContext = (PFN_xessD3D11CreateContext)DetourFindFunction("libxess_dx11.dll", "xessD3D11CreateContext");
-            _xessD3D11Init = (PFN_xessD3D11Init)DetourFindFunction("libxess_dx11.dll", "xessD3D11Init");
-            _xessD3D11GetInitParams = (PFN_xessD3D11GetInitParams)DetourFindFunction("libxess_dx11.dll", "xessD3D11GetInitParams");
-            _xessD3D11Execute = (PFN_xessD3D11Execute)DetourFindFunction("libxess_dx11.dll", "xessD3D11Execute");
+            _xessD3D11CreateContext =
+                (PFN_xessD3D11CreateContext) DetourFindFunction("libxess_dx11.dll", "xessD3D11CreateContext");
+            _xessD3D11Init = (PFN_xessD3D11Init) DetourFindFunction("libxess_dx11.dll", "xessD3D11Init");
+            _xessD3D11GetInitParams =
+                (PFN_xessD3D11GetInitParams) DetourFindFunction("libxess_dx11.dll", "xessD3D11GetInitParams");
+            _xessD3D11Execute = (PFN_xessD3D11Execute) DetourFindFunction("libxess_dx11.dll", "xessD3D11Execute");
 
-            _xessSelectNetworkModelDx11 = (PFN_xessSelectNetworkModel)DetourFindFunction("libxess_dx11.dll", "xessSelectNetworkModel");
-            _xessStartDumpDx11 = (PFN_xessStartDump)DetourFindFunction("libxess_dx11.dll", "xessStartDump");
-            _xessIsOptimalDriverDx11 = (PFN_xessIsOptimalDriver)DetourFindFunction("libxess_dx11.dll", "xessIsOptimalDriver");
-            _xessSetLoggingCallbackDx11 = (PFN_xessSetLoggingCallback)DetourFindFunction("libxess_dx11.dll", "xessSetLoggingCallback");
-            _xessGetPropertiesDx11 = (PFN_xessGetProperties)DetourFindFunction("libxess_dx11.dll", "xessGetProperties");
-            _xessDestroyContextDx11 = (PFN_xessDestroyContext)DetourFindFunction("libxess_dx11.dll", "xessDestroyContext");
-            _xessSetVelocityScaleDx11 = (PFN_xessSetVelocityScale)DetourFindFunction("libxess_dx11.dll", "xessSetVelocityScale");
-            _xessForceLegacyScaleFactorsDx11 = (PFN_xessForceLegacyScaleFactors)DetourFindFunction("libxess_dx11.dll", "xessForceLegacyScaleFactors");
-            _xessGetExposureMultiplierDx11 = (PFN_xessGetExposureMultiplier)DetourFindFunction("libxess_dx11.dll", "xessGetExposureMultiplier");
-            _xessGetInputResolutionDx11 = (PFN_xessGetInputResolution)DetourFindFunction("libxess_dx11.dll", "xessGetInputResolution");
-            _xessGetIntelXeFXVersionDx11 = (PFN_xessGetIntelXeFXVersion)DetourFindFunction("libxess_dx11.dll", "xessGetIntelXeFXVersion");
-            _xessGetJitterScaleDx11 = (PFN_xessGetJitterScale)DetourFindFunction("libxess_dx11.dll", "xessGetJitterScale");
-            _xessGetOptimalInputResolutionDx11 = (PFN_xessGetOptimalInputResolution)DetourFindFunction("libxess_dx11.dll", "xessGetOptimalInputResolution");
-            _xessSetExposureMultiplierDx11 = (PFN_xessSetExposureMultiplier)DetourFindFunction("libxess_dx11.dll", "xessSetExposureMultiplier");
-            _xessSetJitterScaleDx11 = (PFN_xessSetJitterScale)DetourFindFunction("libxess_dx11.dll", "xessSetJitterScale");
+            _xessSelectNetworkModelDx11 =
+                (PFN_xessSelectNetworkModel) DetourFindFunction("libxess_dx11.dll", "xessSelectNetworkModel");
+            _xessStartDumpDx11 = (PFN_xessStartDump) DetourFindFunction("libxess_dx11.dll", "xessStartDump");
+            _xessIsOptimalDriverDx11 =
+                (PFN_xessIsOptimalDriver) DetourFindFunction("libxess_dx11.dll", "xessIsOptimalDriver");
+            _xessSetLoggingCallbackDx11 =
+                (PFN_xessSetLoggingCallback) DetourFindFunction("libxess_dx11.dll", "xessSetLoggingCallback");
+            _xessGetPropertiesDx11 =
+                (PFN_xessGetProperties) DetourFindFunction("libxess_dx11.dll", "xessGetProperties");
+            _xessDestroyContextDx11 =
+                (PFN_xessDestroyContext) DetourFindFunction("libxess_dx11.dll", "xessDestroyContext");
+            _xessSetVelocityScaleDx11 =
+                (PFN_xessSetVelocityScale) DetourFindFunction("libxess_dx11.dll", "xessSetVelocityScale");
+            _xessForceLegacyScaleFactorsDx11 =
+                (PFN_xessForceLegacyScaleFactors) DetourFindFunction("libxess_dx11.dll", "xessForceLegacyScaleFactors");
+            _xessGetExposureMultiplierDx11 =
+                (PFN_xessGetExposureMultiplier) DetourFindFunction("libxess_dx11.dll", "xessGetExposureMultiplier");
+            _xessGetInputResolutionDx11 =
+                (PFN_xessGetInputResolution) DetourFindFunction("libxess_dx11.dll", "xessGetInputResolution");
+            _xessGetIntelXeFXVersionDx11 =
+                (PFN_xessGetIntelXeFXVersion) DetourFindFunction("libxess_dx11.dll", "xessGetIntelXeFXVersion");
+            _xessGetJitterScaleDx11 =
+                (PFN_xessGetJitterScale) DetourFindFunction("libxess_dx11.dll", "xessGetJitterScale");
+            _xessGetOptimalInputResolutionDx11 = (PFN_xessGetOptimalInputResolution) DetourFindFunction(
+                "libxess_dx11.dll", "xessGetOptimalInputResolution");
+            _xessSetExposureMultiplierDx11 =
+                (PFN_xessSetExposureMultiplier) DetourFindFunction("libxess_dx11.dll", "xessSetExposureMultiplier");
+            _xessSetJitterScaleDx11 =
+                (PFN_xessSetJitterScale) DetourFindFunction("libxess_dx11.dll", "xessSetJitterScale");
         }
 
         State::Instance().skipDxgiLoadChecks = true;
 
         if (_xessD3D11CreateContext != nullptr)
         {
-            // read version from file because 
+            // read version from file because
             // xessGetVersion cause access violation errors
             HMODULE moduleHandle = nullptr;
             moduleHandle = GetModuleHandle(L"libxess_dx11.dll");
@@ -635,97 +740,97 @@ public:
             DetourUpdateThread(GetCurrentThread());
 
             if (_xessD3D12CreateContext != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12CreateContext, hk_xessD3D12CreateContext);
+                DetourAttach(&(PVOID&) _xessD3D12CreateContext, hk_xessD3D12CreateContext);
 
             if (_xessD3D12BuildPipelines != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12BuildPipelines, hk_xessD3D12BuildPipelines);
+                DetourAttach(&(PVOID&) _xessD3D12BuildPipelines, hk_xessD3D12BuildPipelines);
 
             if (_xessD3D12Init != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12Init, hk_xessD3D12Init);
+                DetourAttach(&(PVOID&) _xessD3D12Init, hk_xessD3D12Init);
 
             if (_xessGetVersion != nullptr)
-                DetourAttach(&(PVOID&)_xessGetVersion, hk_xessGetVersion);
+                DetourAttach(&(PVOID&) _xessGetVersion, hk_xessGetVersion);
 
             if (_xessD3D12Execute != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12Execute, hk_xessD3D12Execute);
+                DetourAttach(&(PVOID&) _xessD3D12Execute, hk_xessD3D12Execute);
 
             if (_xessSelectNetworkModel != nullptr)
-                DetourAttach(&(PVOID&)_xessSelectNetworkModel, hk_xessSelectNetworkModel);
+                DetourAttach(&(PVOID&) _xessSelectNetworkModel, hk_xessSelectNetworkModel);
 
             if (_xessStartDump != nullptr)
-                DetourAttach(&(PVOID&)_xessStartDump, hk_xessStartDump);
+                DetourAttach(&(PVOID&) _xessStartDump, hk_xessStartDump);
 
             if (_xessIsOptimalDriver != nullptr)
-                DetourAttach(&(PVOID&)_xessIsOptimalDriver, hk_xessIsOptimalDriver);
+                DetourAttach(&(PVOID&) _xessIsOptimalDriver, hk_xessIsOptimalDriver);
 
             if (_xessSetLoggingCallback != nullptr)
-                DetourAttach(&(PVOID&)_xessSetLoggingCallback, hk_xessSetLoggingCallback);
+                DetourAttach(&(PVOID&) _xessSetLoggingCallback, hk_xessSetLoggingCallback);
 
             if (_xessGetProperties != nullptr)
-                DetourAttach(&(PVOID&)_xessGetProperties, hk_xessGetProperties);
+                DetourAttach(&(PVOID&) _xessGetProperties, hk_xessGetProperties);
 
             if (_xessDestroyContext != nullptr)
-                DetourAttach(&(PVOID&)_xessDestroyContext, hk_xessDestroyContext);
+                DetourAttach(&(PVOID&) _xessDestroyContext, hk_xessDestroyContext);
 
             if (_xessSetVelocityScale != nullptr)
-                DetourAttach(&(PVOID&)_xessSetVelocityScale, hk_xessSetVelocityScale);
+                DetourAttach(&(PVOID&) _xessSetVelocityScale, hk_xessSetVelocityScale);
 
             if (_xessD3D12GetInitParams != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetInitParams, hk_xessD3D12GetInitParams);
+                DetourAttach(&(PVOID&) _xessD3D12GetInitParams, hk_xessD3D12GetInitParams);
 
             if (_xessForceLegacyScaleFactors != nullptr)
-                DetourAttach(&(PVOID&)_xessForceLegacyScaleFactors, hk_xessForceLegacyScaleFactors);
+                DetourAttach(&(PVOID&) _xessForceLegacyScaleFactors, hk_xessForceLegacyScaleFactors);
 
             if (_xessGetExposureMultiplier != nullptr)
-                DetourAttach(&(PVOID&)_xessGetExposureMultiplier, hk_xessGetExposureMultiplier);
+                DetourAttach(&(PVOID&) _xessGetExposureMultiplier, hk_xessGetExposureMultiplier);
 
             if (_xessGetInputResolution != nullptr)
-                DetourAttach(&(PVOID&)_xessGetInputResolution, hk_xessGetInputResolution);
+                DetourAttach(&(PVOID&) _xessGetInputResolution, hk_xessGetInputResolution);
 
             if (_xessGetIntelXeFXVersion != nullptr)
-                DetourAttach(&(PVOID&)_xessGetIntelXeFXVersion, hk_xessGetIntelXeFXVersion);
+                DetourAttach(&(PVOID&) _xessGetIntelXeFXVersion, hk_xessGetIntelXeFXVersion);
 
             if (_xessGetJitterScale != nullptr)
-                DetourAttach(&(PVOID&)_xessGetJitterScale, hk_xessGetJitterScale);
+                DetourAttach(&(PVOID&) _xessGetJitterScale, hk_xessGetJitterScale);
 
             if (_xessGetOptimalInputResolution != nullptr)
-                DetourAttach(&(PVOID&)_xessGetOptimalInputResolution, hk_xessGetOptimalInputResolution);
+                DetourAttach(&(PVOID&) _xessGetOptimalInputResolution, hk_xessGetOptimalInputResolution);
 
             if (_xessSetExposureMultiplier != nullptr)
-                DetourAttach(&(PVOID&)_xessSetExposureMultiplier, hk_xessSetExposureMultiplier);
+                DetourAttach(&(PVOID&) _xessSetExposureMultiplier, hk_xessSetExposureMultiplier);
 
             if (_xessSetJitterScale != nullptr)
-                DetourAttach(&(PVOID&)_xessSetJitterScale, hk_xessSetJitterScale);
+                DetourAttach(&(PVOID&) _xessSetJitterScale, hk_xessSetJitterScale);
 
             if (_xessD3D12GetResourcesToDump != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetResourcesToDump, hk_xessD3D12GetResourcesToDump);
+                DetourAttach(&(PVOID&) _xessD3D12GetResourcesToDump, hk_xessD3D12GetResourcesToDump);
 
             if (_xessD3D12GetProfilingData != nullptr)
-                DetourAttach(&(PVOID&)_xessD3D12GetProfilingData, hk_xessD3D12GetProfilingData);
+                DetourAttach(&(PVOID&) _xessD3D12GetProfilingData, hk_xessD3D12GetProfilingData);
 
             if (_xessSetContextParameterF != nullptr)
-                DetourAttach(&(PVOID&)_xessSetContextParameterF, hk_xessSetContextParameterF);
+                DetourAttach(&(PVOID&) _xessSetContextParameterF, hk_xessSetContextParameterF);
 
             if (_xessVKCreateContext != nullptr)
-                DetourAttach(&(PVOID&)_xessVKCreateContext, hk_xessVKCreateContext);
+                DetourAttach(&(PVOID&) _xessVKCreateContext, hk_xessVKCreateContext);
 
             if (_xessVKBuildPipelines != nullptr)
-                DetourAttach(&(PVOID&)_xessVKBuildPipelines, hk_xessVKBuildPipelines);
+                DetourAttach(&(PVOID&) _xessVKBuildPipelines, hk_xessVKBuildPipelines);
 
             if (_xessVKInit != nullptr)
-                DetourAttach(&(PVOID&)_xessVKInit, hk_xessVKInit);
+                DetourAttach(&(PVOID&) _xessVKInit, hk_xessVKInit);
 
             if (_xessVKGetInitParams != nullptr)
-                DetourAttach(&(PVOID&)_xessVKGetInitParams, hk_xessVKGetInitParams);
+                DetourAttach(&(PVOID&) _xessVKGetInitParams, hk_xessVKGetInitParams);
 
             if (_xessVKExecute != nullptr)
-                DetourAttach(&(PVOID&)_xessVKExecute, hk_xessVKExecute);
+                DetourAttach(&(PVOID&) _xessVKExecute, hk_xessVKExecute);
 
             if (_xessVKGetResourcesToDump != nullptr)
-                DetourAttach(&(PVOID&)_xessVKGetResourcesToDump, hk_xessVKGetResourcesToDump);
+                DetourAttach(&(PVOID&) _xessVKGetResourcesToDump, hk_xessVKGetResourcesToDump);
 
             if (_xessGetPipelineBuildStatus != nullptr)
-                DetourAttach(&(PVOID&)_xessGetPipelineBuildStatus, hk_xessGetPipelineBuildStatus);
+                DetourAttach(&(PVOID&) _xessGetPipelineBuildStatus, hk_xessGetPipelineBuildStatus);
 
             DetourTransactionCommit();
         }
@@ -794,9 +899,18 @@ public:
     static PFN_xessD3D12GetProfilingData D3D12GetProfilingData() { return _xessD3D12GetProfilingData; }
     static PFN_xessSetContextParameterF SetContextParameterF() { return _xessSetContextParameterF; }
 
-    static PFN_xessVKGetRequiredInstanceExtensions VKGetRequiredInstanceExtensions() { return _xessVKGetRequiredInstanceExtensions; }
-    static PFN_xessVKGetRequiredDeviceExtensions VKGetRequiredDeviceExtensions() { return _xessVKGetRequiredDeviceExtensions; }
-    static PFN_xessVKGetRequiredDeviceFeatures VKGetRequiredDeviceFeatures() { return _xessVKGetRequiredDeviceFeatures; }
+    static PFN_xessVKGetRequiredInstanceExtensions VKGetRequiredInstanceExtensions()
+    {
+        return _xessVKGetRequiredInstanceExtensions;
+    }
+    static PFN_xessVKGetRequiredDeviceExtensions VKGetRequiredDeviceExtensions()
+    {
+        return _xessVKGetRequiredDeviceExtensions;
+    }
+    static PFN_xessVKGetRequiredDeviceFeatures VKGetRequiredDeviceFeatures()
+    {
+        return _xessVKGetRequiredDeviceFeatures;
+    }
     static PFN_xessVKCreateContext VKCreateContext() { return _xessVKCreateContext; }
     static PFN_xessVKBuildPipelines VKBuildPipelines() { return _xessVKBuildPipelines; }
     static PFN_xessVKInit VKInit() { return _xessVKInit; }
@@ -821,7 +935,10 @@ public:
     static PFN_xessGetInputResolution D3D11GetInputResolution() { return _xessGetInputResolutionDx11; }
     static PFN_xessGetIntelXeFXVersion D3D11GetIntelXeFXVersion() { return _xessGetIntelXeFXVersionDx11; }
     static PFN_xessGetJitterScale D3D11GetJitterScale() { return _xessGetJitterScaleDx11; }
-    static PFN_xessGetOptimalInputResolution D3D11GetOptimalInputResolution() { return _xessGetOptimalInputResolutionDx11; }
+    static PFN_xessGetOptimalInputResolution D3D11GetOptimalInputResolution()
+    {
+        return _xessGetOptimalInputResolutionDx11;
+    }
     static PFN_xessSetExposureMultiplier D3D11SetExposureMultiplier() { return _xessSetExposureMultiplierDx11; }
     static PFN_xessSetJitterScale D3D11SetJitterScale() { return _xessSetJitterScaleDx11; }
 };

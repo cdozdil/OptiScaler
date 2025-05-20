@@ -7,7 +7,7 @@
 #include <proxies/KernelBase_Proxy.h>
 
 // Removed
-// ImageNtHeader = _ImageNtHeader 
+// ImageNtHeader = _ImageNtHeader
 // from Source.def to prevent Forza Horizon 5 crash
 // Might cause crashes while using dbghelp.dll
 // but Cp77 and Streamline Demo were ok
@@ -262,7 +262,7 @@ struct dbghelp_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
-        
+
         dbghelpvc7fpo = KernelBaseProxy::GetProcAddress_()(dll, "vc7fpo");
         dbghelpsymsrv = KernelBaseProxy::GetProcAddress_()(dll, "symsrv");
         dbghelpsym = KernelBaseProxy::GetProcAddress_()(dll, "sym");
@@ -320,8 +320,10 @@ struct dbghelp_dll
         dbghelpSymSetContext = KernelBaseProxy::GetProcAddress_()(dll, "SymSetContext");
         dbghelpSymSearchW = KernelBaseProxy::GetProcAddress_()(dll, "SymSearchW");
         dbghelpSymSearch = KernelBaseProxy::GetProcAddress_()(dll, "SymSearch");
-        dbghelpSymRegisterFunctionEntryCallback64 = KernelBaseProxy::GetProcAddress_()(dll, "SymRegisterFunctionEntryCallback64");
-        dbghelpSymRegisterFunctionEntryCallback = KernelBaseProxy::GetProcAddress_()(dll, "SymRegisterFunctionEntryCallback");
+        dbghelpSymRegisterFunctionEntryCallback64 =
+            KernelBaseProxy::GetProcAddress_()(dll, "SymRegisterFunctionEntryCallback64");
+        dbghelpSymRegisterFunctionEntryCallback =
+            KernelBaseProxy::GetProcAddress_()(dll, "SymRegisterFunctionEntryCallback");
         dbghelpSymRegisterCallbackW64 = KernelBaseProxy::GetProcAddress_()(dll, "SymRegisterCallbackW64");
         dbghelpSymRegisterCallback64 = KernelBaseProxy::GetProcAddress_()(dll, "SymRegisterCallback64");
         dbghelpSymRegisterCallback = KernelBaseProxy::GetProcAddress_()(dll, "SymRegisterCallback");
@@ -403,7 +405,8 @@ struct dbghelp_dll
         dbghelpSymGetFileLineOffsets64 = KernelBaseProxy::GetProcAddress_()(dll, "SymGetFileLineOffsets64");
         dbghelpSymGetExtendedOption = KernelBaseProxy::GetProcAddress_()(dll, "SymGetExtendedOption");
         dbghelpSymGetDiaSession = KernelBaseProxy::GetProcAddress_()(dll, "SymGetDiaSession");
-        dbghelpSymFunctionTableAccess64AccessRoutines = KernelBaseProxy::GetProcAddress_()(dll, "SymFunctionTableAccess64AccessRoutines");
+        dbghelpSymFunctionTableAccess64AccessRoutines =
+            KernelBaseProxy::GetProcAddress_()(dll, "SymFunctionTableAccess64AccessRoutines");
         dbghelpSymFunctionTableAccess64 = KernelBaseProxy::GetProcAddress_()(dll, "SymFunctionTableAccess64");
         dbghelpSymFunctionTableAccess = KernelBaseProxy::GetProcAddress_()(dll, "SymFunctionTableAccess");
         dbghelpSymFromTokenW = KernelBaseProxy::GetProcAddress_()(dll, "SymFromTokenW");
@@ -506,7 +509,6 @@ struct dbghelp_dll
         dbghelpDbgHelpCreateUserDumpW = KernelBaseProxy::GetProcAddress_()(dll, "DbgHelpCreateUserDumpW");
     }
 } dbghelp;
-
 
 void _vc7fpo() { dbghelp.dbghelpvc7fpo(); }
 void _symsrv() { dbghelp.dbghelpsymsrv(); }

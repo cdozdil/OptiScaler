@@ -25,14 +25,16 @@ static VkRenderPass _vkRenderPass = VK_NULL_HANDLE;
 static uint32_t _scImageCount;
 static ULONG64 _frameCount;
 
-
-static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance instance, HWND hwnd, const VkSwapchainCreateInfoKHR* pCreateInfo, VkSwapchainKHR* pSwapchain)
+static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance instance, HWND hwnd,
+                                const VkSwapchainCreateInfoKHR* pCreateInfo, VkSwapchainKHR* pSwapchain)
 {
     LOG_FUNC();
 
     if (device == VK_NULL_HANDLE || pCreateInfo == nullptr || *pSwapchain == VK_NULL_HANDLE)
     {
-        LOG_WARN("device({0:X}) == VK_NULL_HANDLE || pCreateInfo({1:X}) == nullptr || *pSwapchain({2:X}) == VK_NULL_HANDLE", (UINT64)device, (UINT64)pCreateInfo, (UINT64)*pSwapchain);
+        LOG_WARN(
+            "device({0:X}) == VK_NULL_HANDLE || pCreateInfo({1:X}) == nullptr || *pSwapchain({2:X}) == VK_NULL_HANDLE",
+            (UINT64) device, (UINT64) pCreateInfo, (UINT64) *pSwapchain);
         return;
     }
 
@@ -48,7 +50,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         _vulkanObjectsCreated = false;
     }
 
-    // Initialize ImGui 
+    // Initialize ImGui
     if (!MenuOverlayBase::IsInited() || MenuOverlayBase::Handle() != hwnd)
     {
         if (MenuOverlayBase::IsInited())
@@ -68,7 +70,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     result = vkGetSwapchainImagesKHR(device, *pSwapchain, &_scImageCount, NULL);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("vkGetSwapchainImagesKHR error: {0:X}", (UINT)result);
+        LOG_ERROR("vkGetSwapchainImagesKHR error: {0:X}", (UINT) result);
         return;
     }
 
@@ -76,7 +78,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     result = vkGetSwapchainImagesKHR(device, *pSwapchain, &_scImageCount, images);
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("vkGetSwapchainImagesKHR error: {0:X}", (UINT)result);
+        LOG_ERROR("vkGetSwapchainImagesKHR error: {0:X}", (UINT) result);
         return;
     }
 
@@ -84,8 +86,8 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     // For convenience, I am using ImGui_ImplVulkanH_Frame in imgui_impl_vulkan.h
     if (!_vulkanObjectsCreated)
     {
-        _ImVulkan_Frames = (ImGui_ImplVulkanH_Frame*)IM_ALLOC(sizeof(ImGui_ImplVulkanH_Frame) * _scImageCount);
-        _ImVulkan_Semaphores = (VkSemaphore*)IM_ALLOC(sizeof(VkSemaphore) * _scImageCount);
+        _ImVulkan_Frames = (ImGui_ImplVulkanH_Frame*) IM_ALLOC(sizeof(ImGui_ImplVulkanH_Frame) * _scImageCount);
+        _ImVulkan_Semaphores = (VkSemaphore*) IM_ALLOC(sizeof(VkSemaphore) * _scImageCount);
     }
 
     // Select queue family.
@@ -100,7 +102,6 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         {
             VkQueueFamilyProperties queues[8];
             vkGetPhysicalDeviceQueueFamilyProperties(pd, &count, queues);
-
 
             // find graphic queue
             for (uint32_t i = 0; i < count; i++)
@@ -126,10 +127,10 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     // Create the render pool
     VkDescriptorPool pool = VK_NULL_HANDLE;
     {
-        VkDescriptorPoolSize sampler_pool_size = { };
+        VkDescriptorPoolSize sampler_pool_size = {};
         sampler_pool_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         sampler_pool_size.descriptorCount = 1;
-        VkDescriptorPoolCreateInfo desc_pool_info = { };
+        VkDescriptorPoolCreateInfo desc_pool_info = {};
         desc_pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         desc_pool_info.maxSets = 1;
         desc_pool_info.poolSizeCount = 1;
@@ -137,14 +138,14 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         result = vkCreateDescriptorPool(device, &desc_pool_info, NULL, &pool);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("vkCreateDescriptorPool error: {0:X}", (UINT)result);
+            LOG_ERROR("vkCreateDescriptorPool error: {0:X}", (UINT) result);
             return;
         }
     }
 
     // Create the render pass
     {
-        VkAttachmentDescription attachment_desc = { };
+        VkAttachmentDescription attachment_desc = {};
 
         attachment_desc.format = pCreateInfo->imageFormat;
         attachment_desc.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -155,16 +156,16 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         attachment_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         attachment_desc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-        VkAttachmentReference color_attachment = { };
+        VkAttachmentReference color_attachment = {};
         color_attachment.attachment = 0;
         color_attachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        VkSubpassDescription subpass = { };
+        VkSubpassDescription subpass = {};
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         subpass.colorAttachmentCount = 1;
         subpass.pColorAttachments = &color_attachment;
 
-        VkSubpassDependency dependency = { };
+        VkSubpassDependency dependency = {};
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
         dependency.dstSubpass = 0;
         dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -172,7 +173,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         dependency.srcAccessMask = 0;
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-        VkRenderPassCreateInfo render_pass_info = { };
+        VkRenderPassCreateInfo render_pass_info = {};
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         render_pass_info.attachmentCount = 1;
         render_pass_info.pAttachments = &attachment_desc;
@@ -184,14 +185,14 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         result = vkCreateRenderPass(device, &render_pass_info, NULL, &_vkRenderPass);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("vkCreateRenderPass error: {0:X}", (UINT)result);
+            LOG_ERROR("vkCreateRenderPass error: {0:X}", (UINT) result);
             return;
         }
     }
 
     // Create The Image Views
     {
-        VkImageViewCreateInfo info = { };
+        VkImageViewCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 
@@ -201,7 +202,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         info.components.b = VK_COMPONENT_SWIZZLE_B;
         info.components.a = VK_COMPONENT_SWIZZLE_A;
 
-        VkImageSubresourceRange image_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+        VkImageSubresourceRange image_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         info.subresourceRange = image_range;
 
         for (uint32_t i = 0; i < _scImageCount; i++)
@@ -213,7 +214,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             result = vkCreateImageView(device, &info, NULL, &fd->BackbufferView);
             if (result != VK_SUCCESS)
             {
-                LOG_ERROR("vkCreateImageView error: {0:X}", (UINT)result);
+                LOG_ERROR("vkCreateImageView error: {0:X}", (UINT) result);
                 return;
             }
         }
@@ -222,7 +223,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     // Create frame Buffer
     {
         VkImageView attachment[1];
-        VkFramebufferCreateInfo info = { };
+        VkFramebufferCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         info.renderPass = _vkRenderPass;
         info.attachmentCount = 1;
@@ -240,7 +241,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             result = vkCreateFramebuffer(device, &info, NULL, &fd->Framebuffer);
             if (result != VK_SUCCESS)
             {
-                LOG_ERROR("vkCreateFramebuffer error: {0:X}", (UINT)result);
+                LOG_ERROR("vkCreateFramebuffer error: {0:X}", (UINT) result);
                 return;
             }
         }
@@ -252,20 +253,20 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[i];
         VkSemaphore* fsd = &_ImVulkan_Semaphores[i];
         {
-            VkCommandPoolCreateInfo info = { };
+            VkCommandPoolCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
             info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             info.queueFamilyIndex = queueFamily;
             result = vkCreateCommandPool(device, &info, NULL, &fd->CommandPool);
             if (result != VK_SUCCESS)
             {
-                LOG_ERROR("vkCreateCommandPool error: {0:X}", (UINT)result);
+                LOG_ERROR("vkCreateCommandPool error: {0:X}", (UINT) result);
                 return;
             }
         }
 
         {
-            VkCommandBufferAllocateInfo info = { };
+            VkCommandBufferAllocateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
             info.commandPool = fd->CommandPool;
             info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -273,35 +274,34 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             result = vkAllocateCommandBuffers(device, &info, &fd->CommandBuffer);
             if (result != VK_SUCCESS)
             {
-                LOG_ERROR("vkAllocateCommandBuffers error: {0:X}", (UINT)result);
+                LOG_ERROR("vkAllocateCommandBuffers error: {0:X}", (UINT) result);
                 return;
             }
         }
 
         {
-            VkFenceCreateInfo info = { };
+            VkFenceCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
             result = vkCreateFence(device, &info, NULL, &fd->Fence);
             if (result != VK_SUCCESS)
             {
-                LOG_ERROR("vkCreateFence error: {0:X}", (UINT)result);
+                LOG_ERROR("vkCreateFence error: {0:X}", (UINT) result);
                 return;
             }
         }
 
         {
-            VkSemaphoreCreateInfo info = { };
+            VkSemaphoreCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
             result = vkCreateSemaphore(device, &info, NULL, fsd);
             if (result != VK_SUCCESS)
             {
-                LOG_ERROR("vkCreateSemaphore error: {0:X}", (UINT)result);
+                LOG_ERROR("vkCreateSemaphore error: {0:X}", (UINT) result);
                 return;
             }
         }
     }
-
 
     // Initialize ImGui and upload fonts
     {
@@ -330,24 +330,24 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         result = vkResetCommandPool(device, command_pool, 0);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("vkBeginCommandBuffer error: {0:X}", (UINT)result);
+            LOG_ERROR("vkBeginCommandBuffer error: {0:X}", (UINT) result);
             return;
         }
 
-        VkCommandBufferBeginInfo begin_info = { };
+        VkCommandBufferBeginInfo begin_info = {};
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         result = vkBeginCommandBuffer(command_buffer, &begin_info);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("vkBeginCommandBuffer error: {0:X}", (UINT)result);
+            LOG_ERROR("vkBeginCommandBuffer error: {0:X}", (UINT) result);
             return;
         }
 
         initResult = ImGui_ImplVulkan_UpdateFontsTexture();
         LOG_DEBUG("ImGui_ImplVulkan_UpdateFontsTexture result: {}", initResult);
 
-        VkSubmitInfo end_info = { };
+        VkSubmitInfo end_info = {};
         end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         end_info.commandBufferCount = 1;
         end_info.pCommandBuffers = &command_buffer;
@@ -355,21 +355,21 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         result = vkEndCommandBuffer(command_buffer);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("vkEndCommandBuffer error: {0:X}", (UINT)result);
+            LOG_ERROR("vkEndCommandBuffer error: {0:X}", (UINT) result);
             return;
         }
 
         result = vkQueueSubmit(queue, 1, &end_info, VK_NULL_HANDLE);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)result);
+            LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT) result);
             return;
         }
 
         result = vkDeviceWaitIdle(device);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("vkDeviceWaitIdle error: {0:X}", (UINT)result);
+            LOG_ERROR("vkDeviceWaitIdle error: {0:X}", (UINT) result);
             return;
         }
     }
@@ -390,7 +390,7 @@ void MenuOverlayVk::DestroyVulkanObjects(bool shutdown)
 
     auto result = vkDeviceWaitIdle(_ImVulkan_Info.Device);
     if (result != VK_SUCCESS && !shutdown)
-        LOG_WARN("vkDeviceWaitIdle error: {0:X}", (UINT)result);
+        LOG_WARN("vkDeviceWaitIdle error: {0:X}", (UINT) result);
 
     if (shutdown)
     {
@@ -460,10 +460,11 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     if (pPresentInfo->swapchainCount == 0)
         return false;
 
-    //std::lock_guard<std::mutex> lock(_vkPresentMutex);
+    // std::lock_guard<std::mutex> lock(_vkPresentMutex);
     LOG_DEBUG("rendering menu, swapchain count: {0}", pPresentInfo->swapchainCount);
 
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
+    (void) io;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
     MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
@@ -487,14 +488,14 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 
             {
                 vkResetCommandPool(_ImVulkan_Info.Device, fd->CommandPool, 0);
-                VkCommandBufferBeginInfo info = { };
+                VkCommandBufferBeginInfo info = {};
                 info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
                 info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
                 vkBeginCommandBuffer(fd->CommandBuffer, &info);
             }
 
             {
-                VkRenderPassBeginInfo info = { };
+                VkRenderPassBeginInfo info = {};
                 info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
                 info.renderPass = _vkRenderPass;
                 info.framebuffer = fd->Framebuffer;
@@ -511,15 +512,15 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
             auto ecbResult = vkEndCommandBuffer(fd->CommandBuffer);
             if (ecbResult != VK_SUCCESS)
             {
-                LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)ecbResult);
+                LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT) ecbResult);
                 return false;
             }
 
             // Submit queue and semaphores
             LOG_DEBUG("waitSemaphoreCount: {0}", pPresentInfo->waitSemaphoreCount);
-            VkPipelineStageFlags waitStages[8] = { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
+            VkPipelineStageFlags waitStages[8] = {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
 
-            VkSubmitInfo submit_info = { };
+            VkSubmitInfo submit_info = {};
             submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
             submit_info.commandBufferCount = 1;
             submit_info.pCommandBuffers = &fd->CommandBuffer;
@@ -532,7 +533,7 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
             auto qResult = vkQueueSubmit(_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence);
             if (qResult != VK_SUCCESS)
             {
-                LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT)qResult);
+                LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT) qResult);
                 return false;
             }
 
@@ -541,17 +542,17 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
         }
     }
 
-    //if (!errorWhenRenderingMenu)
-    //    LOG_DEBUG("rendering done without errors");
-    //else
-    //    LOG_ERROR("rendering done with errors");
+    // if (!errorWhenRenderingMenu)
+    //     LOG_DEBUG("rendering done without errors");
+    // else
+    //     LOG_ERROR("rendering done with errors");
 
-    //if (!errorWhenRenderingMenu)
+    // if (!errorWhenRenderingMenu)
     //{
-        // already waited original calls semaphores when running commands
-        // set menu draw signal semaphores as wait semaphores for present
+    //  already waited original calls semaphores when running commands
+    //  set menu draw signal semaphores as wait semaphores for present
     //}
-    //else
+    // else
     //{
     //    // if there are errors when rendering try to recreate swapchain
     //    //_vkPresentMutex.unlock();
@@ -562,7 +563,9 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     return true;
 }
 
-void MenuOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkInstance instance, HWND hwnd, const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
+void MenuOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkInstance instance, HWND hwnd,
+                                    const VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator,
+                                    VkSwapchainKHR* pSwapchain)
 {
     LOG_FUNC();
 
@@ -576,7 +579,7 @@ void MenuOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkInst
             MenuOverlayBase::Shutdown();
         }
 
-        LOG_DEBUG("MenuOverlayBase::Init({0:X})", (UINT64)hwnd);
+        LOG_DEBUG("MenuOverlayBase::Init({0:X})", (UINT64) hwnd);
         MenuOverlayBase::Init(hwnd, false);
     }
 

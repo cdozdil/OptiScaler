@@ -28,12 +28,14 @@ bool DLSSDFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
             if (!_dlssdInited)
                 return false;
 
-            _moduleLoaded = (NVNGXProxy::D3D11_Init_ProjectID() != nullptr || NVNGXProxy::D3D11_Init_Ext() != nullptr) &&
+            _moduleLoaded =
+                (NVNGXProxy::D3D11_Init_ProjectID() != nullptr || NVNGXProxy::D3D11_Init_Ext() != nullptr) &&
                 (NVNGXProxy::D3D11_Shutdown() != nullptr || NVNGXProxy::D3D11_Shutdown1() != nullptr) &&
-                (NVNGXProxy::D3D11_GetParameters() != nullptr || NVNGXProxy::D3D11_AllocateParameters() != nullptr) && NVNGXProxy::D3D11_DestroyParameters() != nullptr &&
-                NVNGXProxy::D3D11_CreateFeature() != nullptr && NVNGXProxy::D3D11_ReleaseFeature() != nullptr && NVNGXProxy::D3D11_EvaluateFeature() != nullptr;
+                (NVNGXProxy::D3D11_GetParameters() != nullptr || NVNGXProxy::D3D11_AllocateParameters() != nullptr) &&
+                NVNGXProxy::D3D11_DestroyParameters() != nullptr && NVNGXProxy::D3D11_CreateFeature() != nullptr &&
+                NVNGXProxy::D3D11_ReleaseFeature() != nullptr && NVNGXProxy::D3D11_EvaluateFeature() != nullptr;
 
-            //delay between init and create feature
+            // delay between init and create feature
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
 
@@ -44,11 +46,12 @@ bool DLSSDFeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
             ProcessInitParams(InParameters);
 
             _p_dlssdHandle = &_dlssdHandle;
-            nvResult = NVNGXProxy::D3D11_CreateFeature()(InContext, NVSDK_NGX_Feature_RayReconstruction, InParameters, &_p_dlssdHandle);
+            nvResult = NVNGXProxy::D3D11_CreateFeature()(InContext, NVSDK_NGX_Feature_RayReconstruction, InParameters,
+                                                         &_p_dlssdHandle);
 
             if (nvResult != NVSDK_NGX_Result_Success)
             {
-                LOG_ERROR("_CreateFeature result: {0:X}", (unsigned int)nvResult);
+                LOG_ERROR("_CreateFeature result: {0:X}", (unsigned int) nvResult);
                 break;
             }
             else
@@ -94,7 +97,8 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 
     bool rcasEnabled = true;
 
-    if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) && (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
+    if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
+        (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
         Config::Instance()->RcasEnabled.set_volatile_value(false);
 
     if (!OutputScaler->IsInit())
@@ -132,7 +136,6 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
             InDeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
         }
 
-
         ProcessEvaluateParams(InParameters);
 
         ID3D11Resource* paramOutput = nullptr;
@@ -161,7 +164,8 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
         _sharpness = GetSharpness(InParameters);
 
         if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() &&
+                                   Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
             RCAS->IsInit() && RCAS->CreateBufferResource(Device, setBuffer))
         {
             // Disable DLSS sharpness
@@ -175,7 +179,7 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 
         if (nvResult != NVSDK_NGX_Result_Success)
         {
-            LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int)nvResult);
+            LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int) nvResult);
             return false;
         }
 
@@ -183,7 +187,8 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 
         // Apply CAS
         if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() && Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() &&
+                                   Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
             RCAS->CanRender())
         {
             RcasConstants rcasConstants{};
@@ -199,7 +204,8 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 
             if (useSS)
             {
-                if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*)setBuffer, (ID3D11Texture2D*)paramMotion, rcasConstants, OutputScaler->Buffer()))
+                if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*) setBuffer,
+                                    (ID3D11Texture2D*) paramMotion, rcasConstants, OutputScaler->Buffer()))
                 {
                     Config::Instance()->RcasEnabled.set_volatile_value(false);
                     return true;
@@ -207,7 +213,8 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
             }
             else
             {
-                if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*)setBuffer, (ID3D11Texture2D*)paramMotion, rcasConstants, (ID3D11Texture2D*)paramOutput))
+                if (!RCAS->Dispatch(Device, InDeviceContext, (ID3D11Texture2D*) setBuffer,
+                                    (ID3D11Texture2D*) paramMotion, rcasConstants, (ID3D11Texture2D*) paramOutput))
                 {
                     Config::Instance()->RcasEnabled.set_volatile_value(false);
                     return true;
@@ -220,7 +227,8 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
         {
             LOG_DEBUG("downscaling output...");
 
-            if (!OutputScaler->Dispatch(Device, InDeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
+            if (!OutputScaler->Dispatch(Device, InDeviceContext, OutputScaler->Buffer(),
+                                        (ID3D11Texture2D*) paramOutput))
             {
                 Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
                 State::Instance().changeBackend[Handle()->Id] = true;
@@ -286,11 +294,11 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
     return true;
 }
 
-void DLSSDFeatureDx11::Shutdown(ID3D11Device* InDevice)
-{
-}
+void DLSSDFeatureDx11::Shutdown(ID3D11Device* InDevice) {}
 
-DLSSDFeatureDx11::DLSSDFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), DLSSDFeature(InHandleId, InParameters)
+DLSSDFeatureDx11::DLSSDFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
+    : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters),
+      DLSSDFeature(InHandleId, InParameters)
 {
     if (NVNGXProxy::NVNGXModule() == nullptr)
     {

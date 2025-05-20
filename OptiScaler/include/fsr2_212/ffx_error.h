@@ -26,39 +26,47 @@
 namespace Fsr212
 {
 
+/// Typedef for error codes returned from functions in the FidelityFX SDK.
+typedef int32_t FfxErrorCode;
 
-    /// Typedef for error codes returned from functions in the FidelityFX SDK.
-    typedef int32_t FfxErrorCode;
+static const FfxErrorCode FFX_OK = 0;                             ///< The operation completed successfully.
+static const FfxErrorCode FFX_ERROR_INVALID_POINTER = 0x80000000; ///< The operation failed due to an invalid pointer.
+static const FfxErrorCode FFX_ERROR_INVALID_ALIGNMENT =
+    0x80000001;                                                ///< The operation failed due to an invalid alignment.
+static const FfxErrorCode FFX_ERROR_INVALID_SIZE = 0x80000002; ///< The operation failed due to an invalid size.
+static const FfxErrorCode FFX_EOF = 0x80000003;                ///< The end of the file was encountered.
+static const FfxErrorCode FFX_ERROR_INVALID_PATH =
+    0x80000004;                                       ///< The operation failed because the specified path was invalid.
+static const FfxErrorCode FFX_ERROR_EOF = 0x80000005; ///< The operation failed because end of file was reached.
+static const FfxErrorCode FFX_ERROR_MALFORMED_DATA =
+    0x80000006; ///< The operation failed because of some malformed data.
+static const FfxErrorCode FFX_ERROR_OUT_OF_MEMORY = 0x80000007; ///< The operation failed because it ran out memory.
+static const FfxErrorCode FFX_ERROR_INCOMPLETE_INTERFACE =
+    0x80000008; ///< The operation failed because the interface was not fully configured.
+static const FfxErrorCode FFX_ERROR_INVALID_ENUM =
+    0x80000009; ///< The operation failed because of an invalid enumeration value.
+static const FfxErrorCode FFX_ERROR_INVALID_ARGUMENT =
+    0x8000000a; ///< The operation failed because an argument was invalid.
+static const FfxErrorCode FFX_ERROR_OUT_OF_RANGE =
+    0x8000000b; ///< The operation failed because a value was out of range.
+static const FfxErrorCode FFX_ERROR_NULL_DEVICE = 0x8000000c; ///< The operation failed because a device was null.
+static const FfxErrorCode FFX_ERROR_BACKEND_API_ERROR =
+    0x8000000d; ///< The operation failed because the backend API returned an error code.
+static const FfxErrorCode FFX_ERROR_INSUFFICIENT_MEMORY =
+    0x8000000e; ///< The operation failed because there was not enough memory.
 
-    static const FfxErrorCode FFX_OK = 0;           ///< The operation completed successfully.
-    static const FfxErrorCode FFX_ERROR_INVALID_POINTER = 0x80000000;  ///< The operation failed due to an invalid pointer.
-    static const FfxErrorCode FFX_ERROR_INVALID_ALIGNMENT = 0x80000001;  ///< The operation failed due to an invalid alignment.
-    static const FfxErrorCode FFX_ERROR_INVALID_SIZE = 0x80000002;  ///< The operation failed due to an invalid size.
-    static const FfxErrorCode FFX_EOF = 0x80000003;  ///< The end of the file was encountered.
-    static const FfxErrorCode FFX_ERROR_INVALID_PATH = 0x80000004;  ///< The operation failed because the specified path was invalid.
-    static const FfxErrorCode FFX_ERROR_EOF = 0x80000005;  ///< The operation failed because end of file was reached.
-    static const FfxErrorCode FFX_ERROR_MALFORMED_DATA = 0x80000006;  ///< The operation failed because of some malformed data.
-    static const FfxErrorCode FFX_ERROR_OUT_OF_MEMORY = 0x80000007;  ///< The operation failed because it ran out memory.
-    static const FfxErrorCode FFX_ERROR_INCOMPLETE_INTERFACE = 0x80000008;  ///< The operation failed because the interface was not fully configured.
-    static const FfxErrorCode FFX_ERROR_INVALID_ENUM = 0x80000009;  ///< The operation failed because of an invalid enumeration value.
-    static const FfxErrorCode FFX_ERROR_INVALID_ARGUMENT = 0x8000000a;  ///< The operation failed because an argument was invalid.
-    static const FfxErrorCode FFX_ERROR_OUT_OF_RANGE = 0x8000000b;  ///< The operation failed because a value was out of range.
-    static const FfxErrorCode FFX_ERROR_NULL_DEVICE = 0x8000000c;  ///< The operation failed because a device was null.
-    static const FfxErrorCode FFX_ERROR_BACKEND_API_ERROR = 0x8000000d;  ///< The operation failed because the backend API returned an error code.
-    static const FfxErrorCode FFX_ERROR_INSUFFICIENT_MEMORY = 0x8000000e;  ///< The operation failed because there was not enough memory.
-
-    /// Helper macro to return error code y from a function when a specific condition, x, is not met.
-#define FFX_RETURN_ON_ERROR(x, y)                   \
-    if (!(x))                                       \
-    {                                               \
-        return (y);                                 \
+/// Helper macro to return error code y from a function when a specific condition, x, is not met.
+#define FFX_RETURN_ON_ERROR(x, y)                                                                                      \
+    if (!(x))                                                                                                          \
+    {                                                                                                                  \
+        return (y);                                                                                                    \
     }
 
 /// Helper macro to return error code x from a function when it is not FFX_OK.
-#define FFX_VALIDATE(x)                             \
-    {                                               \
-        FfxErrorCode ret = x;                       \
-        FFX_RETURN_ON_ERROR(ret == FFX_OK, ret);    \
+#define FFX_VALIDATE(x)                                                                                                \
+    {                                                                                                                  \
+        FfxErrorCode ret = x;                                                                                          \
+        FFX_RETURN_ON_ERROR(ret == FFX_OK, ret);                                                                       \
     }
 
-}
+} // namespace Fsr212

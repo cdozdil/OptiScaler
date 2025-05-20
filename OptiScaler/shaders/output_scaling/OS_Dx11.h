@@ -7,38 +7,39 @@
 
 class OS_Dx11
 {
-private:
-	std::string _name = "";
-	bool _init = false;
-	int _counter = 0;
-	bool _upsample = false;
+  private:
+    std::string _name = "";
+    bool _init = false;
+    int _counter = 0;
+    bool _upsample = false;
 
-	ID3D11Device* _device = nullptr;
-	
-	ID3D11ComputeShader* _computeShader = nullptr;
-	ID3D11Buffer* _constantBuffer = nullptr;
-	ID3D11Texture2D* _buffer = nullptr;
-	ID3D11ShaderResourceView* _srvInput = nullptr;
-	ID3D11UnorderedAccessView* _uavOutput = nullptr;
+    ID3D11Device* _device = nullptr;
 
-	ID3D11Texture2D* _currentInResource = nullptr;
-	ID3D11Texture2D* _currentOutResource = nullptr;
+    ID3D11ComputeShader* _computeShader = nullptr;
+    ID3D11Buffer* _constantBuffer = nullptr;
+    ID3D11Texture2D* _buffer = nullptr;
+    ID3D11ShaderResourceView* _srvInput = nullptr;
+    ID3D11UnorderedAccessView* _uavOutput = nullptr;
 
-	uint32_t InNumThreadsX = 16;
-	uint32_t InNumThreadsY = 16;
-						
-	bool InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource);
+    ID3D11Texture2D* _currentInResource = nullptr;
+    ID3D11Texture2D* _currentOutResource = nullptr;
 
-public:
-	bool CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InSource, uint32_t InWidth, uint32_t InHeight);
-	bool Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource);
+    uint32_t InNumThreadsX = 16;
+    uint32_t InNumThreadsY = 16;
 
-	ID3D11Texture2D* Buffer() { return _buffer; }
-	bool IsInit() const { return _init; }
-	bool IsUpsampling() { return _upsample; }
-	bool CanRender() const { return _init && _buffer != nullptr; }
+    bool InitializeViews(ID3D11Texture2D* InResource, ID3D11Texture2D* OutResource);
 
-	OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample);
+  public:
+    bool CreateBufferResource(ID3D11Device* InDevice, ID3D11Resource* InSource, uint32_t InWidth, uint32_t InHeight);
+    bool Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, ID3D11Texture2D* InResource,
+                  ID3D11Texture2D* OutResource);
 
-	~OS_Dx11();
+    ID3D11Texture2D* Buffer() { return _buffer; }
+    bool IsInit() const { return _init; }
+    bool IsUpsampling() { return _upsample; }
+    bool CanRender() const { return _init && _buffer != nullptr; }
+
+    OS_Dx11(std::string InName, ID3D11Device* InDevice, bool InUpsample);
+
+    ~OS_Dx11();
 };

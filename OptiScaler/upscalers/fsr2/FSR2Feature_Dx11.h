@@ -9,39 +9,39 @@
 
 class FSR2FeatureDx11 : public FSR2Feature, public IFeature_Dx11
 {
-private:
-	using D3D11_TEXTURE2D_DESC_C = struct D3D11_TEXTURE2D_DESC_C
-	{
-		UINT Width;
-		UINT Height;
-		DXGI_FORMAT Format;
-		UINT BindFlags;
-	};
+  private:
+    using D3D11_TEXTURE2D_DESC_C = struct D3D11_TEXTURE2D_DESC_C
+    {
+        UINT Width;
+        UINT Height;
+        DXGI_FORMAT Format;
+        UINT BindFlags;
+    };
 
-	using D3D11_TEXTURE2D_RESOURCE_C = struct D3D11_TEXTURE2D_RESOURCE_C
-	{
-		D3D11_TEXTURE2D_DESC_C Desc = {};
-		ID3D11Texture2D* Texture = nullptr;
-		bool usingOriginal = false;
-	};
+    using D3D11_TEXTURE2D_RESOURCE_C = struct D3D11_TEXTURE2D_RESOURCE_C
+    {
+        D3D11_TEXTURE2D_DESC_C Desc = {};
+        ID3D11Texture2D* Texture = nullptr;
+        bool usingOriginal = false;
+    };
 
-	D3D11_TEXTURE2D_RESOURCE_C bufferColor = {};
-	D3D11_TEXTURE2D_RESOURCE_C bufferDepth = {};
-	D3D11_TEXTURE2D_RESOURCE_C bufferVelocity = {};
+    D3D11_TEXTURE2D_RESOURCE_C bufferColor = {};
+    D3D11_TEXTURE2D_RESOURCE_C bufferDepth = {};
+    D3D11_TEXTURE2D_RESOURCE_C bufferVelocity = {};
 
-	bool CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutTextureDesc, UINT bindFlags, bool InCopy);
-	void ReleaseResources();
+    bool CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutTextureDesc, UINT bindFlags,
+                     bool InCopy);
+    void ReleaseResources();
 
-protected:
-	bool InitFSR2(const NVSDK_NGX_Parameter* InParameters) override;
+  protected:
+    bool InitFSR2(const NVSDK_NGX_Parameter* InParameters) override;
 
-public:
-	FSR2FeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);
+  public:
+    FSR2FeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);
 
+    // Inherited via IFeature_Dx11
+    bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters) override;
+    bool Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Parameter* InParameters) override;
 
-	// Inherited via IFeature_Dx11
-	bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters) override;
-	bool Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Parameter* InParameters) override;
-
-	~FSR2FeatureDx11();
+    ~FSR2FeatureDx11();
 };

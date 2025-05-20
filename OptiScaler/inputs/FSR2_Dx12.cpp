@@ -77,17 +77,23 @@ typedef struct FfxFsr2TinyDispatchDescription
 } FfxFsr2TinyDispatchDescription;
 
 // FSR2
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextCreate)(void* context, const void* contextDescription);
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDispatch)(void* context, const void* dispatchDescription);
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2ContextDestroy)(void* context);
-typedef float(*PFN_ffxFsr2GetUpscaleRatioFromQualityMode)(Fsr212::FfxFsr2QualityMode qualityMode);
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetRenderResolutionFromQualityMode)(uint32_t* renderWidth, uint32_t* renderHeight, uint32_t displayWidth, uint32_t displayHeight, Fsr212::FfxFsr2QualityMode qualityMode);
+typedef Fsr212::FfxErrorCode (*PFN_ffxFsr2ContextCreate)(void* context, const void* contextDescription);
+typedef Fsr212::FfxErrorCode (*PFN_ffxFsr2ContextDispatch)(void* context, const void* dispatchDescription);
+typedef Fsr212::FfxErrorCode (*PFN_ffxFsr2ContextDestroy)(void* context);
+typedef float (*PFN_ffxFsr2GetUpscaleRatioFromQualityMode)(Fsr212::FfxFsr2QualityMode qualityMode);
+typedef Fsr212::FfxErrorCode (*PFN_ffxFsr2GetRenderResolutionFromQualityMode)(uint32_t* renderWidth,
+                                                                              uint32_t* renderHeight,
+                                                                              uint32_t displayWidth,
+                                                                              uint32_t displayHeight,
+                                                                              Fsr212::FfxFsr2QualityMode qualityMode);
 
 // Tiny Tina's Wonderland
-typedef FfxResourceTiny(*PFN_ffxGetResourceFromDX12Resource_Dx12)(ID3D12Resource* resource);
+typedef FfxResourceTiny (*PFN_ffxGetResourceFromDX12Resource_Dx12)(ID3D12Resource* resource);
 
 // DX12
-typedef Fsr212::FfxErrorCode(*PFN_ffxFsr2GetInterfaceDX12)(Fsr212::FfxFsr2Interface212* fsr2Interface, ID3D12Device* device, void* scratchBuffer, size_t scratchBufferSize);
+typedef Fsr212::FfxErrorCode (*PFN_ffxFsr2GetInterfaceDX12)(Fsr212::FfxFsr2Interface212* fsr2Interface,
+                                                            ID3D12Device* device, void* scratchBuffer,
+                                                            size_t scratchBufferSize);
 
 static PFN_ffxFsr2ContextCreate o_ffxFsr2ContextCreate_Dx12 = nullptr;
 static PFN_ffxFsr2ContextCreate o_ffxFsr2ContextCreate_Pattern_Dx12 = nullptr;
@@ -111,7 +117,7 @@ static bool _nvnxgInited = false;
 static bool _skipCreate = false;
 static bool _skipDispatch = false;
 static bool _skipDestroy = false;
-static float qualityRatios[] = { 1.0, 1.5, 1.7, 2.0, 3.0 };
+static float qualityRatios[] = {1.0, 1.5, 1.7, 2.0, 3.0};
 
 static bool CreateDLSSContext(Fsr212::FfxFsr2Context* handle, const Fsr212::FfxFsr2DispatchDescription* pExecParams)
 {
@@ -123,7 +129,7 @@ static bool CreateDLSSContext(Fsr212::FfxFsr2Context* handle, const Fsr212::FfxF
     NVSDK_NGX_Handle* nvHandle = nullptr;
     auto params = _nvParams[handle];
     auto initParams = &_initParams[handle];
-    auto commandList = (ID3D12GraphicsCommandList*)pExecParams->commandList;
+    auto commandList = (ID3D12GraphicsCommandList*) pExecParams->commandList;
 
     UINT initFlags = 0;
 
@@ -149,7 +155,7 @@ static bool CreateDLSSContext(Fsr212::FfxFsr2Context* handle, const Fsr212::FfxF
     params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->displaySize.width);
     params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->displaySize.height);
 
-    auto ratio = (float)initParams->displaySize.width / (float)pExecParams->renderSize.width;
+    auto ratio = (float) initParams->displaySize.width / (float) pExecParams->renderSize.width;
 
     if (ratio <= 3.0)
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
@@ -164,7 +170,8 @@ static bool CreateDLSSContext(Fsr212::FfxFsr2Context* handle, const Fsr212::FfxF
     else
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
 
-    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) !=
+        NVSDK_NGX_Result_Success)
         return false;
 
     _contexts[handle] = nvHandle;
@@ -182,7 +189,7 @@ static bool CreateDLSSContext20(Fsr212::FfxFsr2Context* handle, const FfxFsr20Di
     NVSDK_NGX_Handle* nvHandle = nullptr;
     auto params = _nvParams[handle];
     auto initParams = &_initParams[handle];
-    auto commandList = (ID3D12GraphicsCommandList*)pExecParams->commandList;
+    auto commandList = (ID3D12GraphicsCommandList*) pExecParams->commandList;
 
     UINT initFlags = 0;
 
@@ -208,7 +215,7 @@ static bool CreateDLSSContext20(Fsr212::FfxFsr2Context* handle, const FfxFsr20Di
     params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->displaySize.width);
     params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->displaySize.height);
 
-    auto ratio = (float)initParams->displaySize.width / (float)pExecParams->renderSize.width;
+    auto ratio = (float) initParams->displaySize.width / (float) pExecParams->renderSize.width;
 
     if (ratio <= 3.0)
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
@@ -223,7 +230,8 @@ static bool CreateDLSSContext20(Fsr212::FfxFsr2Context* handle, const FfxFsr20Di
     else
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
 
-    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) !=
+        NVSDK_NGX_Result_Success)
         return false;
 
     _contexts[handle] = nvHandle;
@@ -242,7 +250,7 @@ static bool CreateDLSSContextTiny(Fsr212::FfxFsr2Context* handle, const FfxFsr2T
     NVSDK_NGX_Handle* nvHandle = nullptr;
     auto params = _nvParams[handle];
     auto initParams = &_initParams[handle];
-    auto commandList = (ID3D12GraphicsCommandList*)pExecParams->commandList;
+    auto commandList = (ID3D12GraphicsCommandList*) pExecParams->commandList;
 
     UINT initFlags = 0;
 
@@ -268,7 +276,7 @@ static bool CreateDLSSContextTiny(Fsr212::FfxFsr2Context* handle, const FfxFsr2T
     params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->displaySize.width);
     params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->displaySize.height);
 
-    auto ratio = (float)initParams->displaySize.width / (float)pExecParams->renderSize.width;
+    auto ratio = (float) initParams->displaySize.width / (float) pExecParams->renderSize.width;
 
     if (ratio <= 3.0)
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_UltraPerformance);
@@ -283,7 +291,8 @@ static bool CreateDLSSContextTiny(Fsr212::FfxFsr2Context* handle, const FfxFsr2T
     else
         params->Set(NVSDK_NGX_Parameter_PerfQualityValue, NVSDK_NGX_PerfQuality_Value_DLAA);
 
-    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) != NVSDK_NGX_Result_Success)
+    if (NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle) !=
+        NVSDK_NGX_Result_Success)
         return false;
 
     _contexts[handle] = nvHandle;
@@ -294,7 +303,7 @@ static bool CreateDLSSContextTiny(Fsr212::FfxFsr2Context* handle, const FfxFsr2T
 static std::optional<float> GetQualityOverrideRatioFfx(const Fsr212::FfxFsr2QualityMode input)
 {
     LOG_DEBUG("");
-    
+
     std::optional<float> output;
 
     auto sliderLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f;
@@ -304,7 +313,7 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr212::FfxFsr2Qual
     {
         output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
 
-        return  output;
+        return output;
     }
 
     if (!Config::Instance()->QualityRatioOverrideEnabled.value_or_default())
@@ -312,40 +321,41 @@ static std::optional<float> GetQualityOverrideRatioFfx(const Fsr212::FfxFsr2Qual
 
     switch (input)
     {
-        case Fsr212::FFX_FSR2_QUALITY_MODE_ULTRA_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
+    case Fsr212::FFX_FSR2_QUALITY_MODE_ULTRA_PERFORMANCE:
+        if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
 
-            break;
+        break;
 
-        case Fsr212::FFX_FSR2_QUALITY_MODE_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Performance.value_or_default();
+    case Fsr212::FFX_FSR2_QUALITY_MODE_PERFORMANCE:
+        if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Performance.value_or_default();
 
-            break;
+        break;
 
-        case Fsr212::FFX_FSR2_QUALITY_MODE_BALANCED:
-            if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Balanced.value_or_default();
+    case Fsr212::FFX_FSR2_QUALITY_MODE_BALANCED:
+        if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Balanced.value_or_default();
 
-            break;
+        break;
 
-        case Fsr212::FFX_FSR2_QUALITY_MODE_QUALITY:
-            if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Quality.value_or_default();
+    case Fsr212::FFX_FSR2_QUALITY_MODE_QUALITY:
+        if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Quality.value_or_default();
 
-            break;
+        break;
 
-        default:
-            LOG_WARN("Unknown quality: {0}", (int)input);
-            break;
+    default:
+        LOG_WARN("Unknown quality: {0}", (int) input);
+        break;
     }
 
     return output;
 }
 
 // FSR2 Upscaler
-static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* context, Fsr212::FfxFsr2ContextDescription* contextDescription)
+static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* context,
+                                                      Fsr212::FfxFsr2ContextDescription* contextDescription)
 {
     LOG_DEBUG("");
 
@@ -358,7 +368,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
 
     if (ccResult != Fsr212::FFX_OK)
     {
-        LOG_ERROR("ccResult: {:X}", (UINT)ccResult);
+        LOG_ERROR("ccResult: {:X}", (UINT) ccResult);
         return ccResult;
     }
 
@@ -366,7 +376,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
     // to prevent crashes when game is using custom interface and
     if (_d3d12Device == nullptr)
     {
-        auto bDevice = (ID3D12Device*)contextDescription->device;
+        auto bDevice = (ID3D12Device*) contextDescription->device;
 
         for (size_t i = 0; i < State::Instance().d3d12Devices.size(); i++)
         {
@@ -415,17 +425,18 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
             pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
 
         // Build pointer array
-        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        wchar_t const** paths = new const wchar_t*[pathStorage.size()];
         for (size_t i = 0; i < pathStorage.size(); ++i)
         {
             paths[i] = pathStorage[i].c_str();
         }
 
         fcInfo.PathListInfo.Path = paths;
-        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+        fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
-        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            _d3d12Device, &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
+            "OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(), _d3d12Device,
+            &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
@@ -446,12 +457,13 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
     ccd.displaySize = contextDescription->displaySize;
     _initParams[context] = ccd;
 
-    LOG_INFO("context created: {:X}", (size_t)context);
+    LOG_INFO("context created: {:X}", (size_t) context);
 
     return Fsr212::FFX_OK;
 }
 
-static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Context* context, Fsr212::FfxFsr2ContextDescription* contextDescription)
+static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Context* context,
+                                                              Fsr212::FfxFsr2ContextDescription* contextDescription)
 {
     LOG_DEBUG("");
 
@@ -465,7 +477,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
 
     if (ccResult != Fsr212::FFX_OK)
     {
-        LOG_ERROR("ccResult: {:X}", (UINT)ccResult);
+        LOG_ERROR("ccResult: {:X}", (UINT) ccResult);
         return ccResult;
     }
 
@@ -473,7 +485,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
     // to prevent crashes when game is using custom interface and
     if (_d3d12Device == nullptr)
     {
-        auto bDevice = (ID3D12Device*)contextDescription->device;
+        auto bDevice = (ID3D12Device*) contextDescription->device;
 
         for (size_t i = 0; i < State::Instance().d3d12Devices.size(); i++)
         {
@@ -522,17 +534,18 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
             pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
 
         // Build pointer array
-        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        wchar_t const** paths = new const wchar_t*[pathStorage.size()];
         for (size_t i = 0; i < pathStorage.size(); ++i)
         {
             paths[i] = pathStorage[i].c_str();
         }
 
         fcInfo.PathListInfo.Path = paths;
-        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+        fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
-        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            _d3d12Device, &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
+            "OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(), _d3d12Device,
+            &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
@@ -553,23 +566,25 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
     ccd.displaySize = contextDescription->displaySize;
     _initParams[context] = ccd;
 
-    LOG_INFO("context created: {:X}", (size_t)context);
+    LOG_INFO("context created: {:X}", (size_t) context);
 
     return Fsr212::FFX_OK;
 }
 
 // forward declare
-static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription);
+static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context,
+                                                         const FfxFsr20DispatchDescription* dispatchDescription);
 
 // FSR2.1
-static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
+static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context,
+                                                        const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
     LOG_DEBUG("");
 
     // HACK, try to detected when we hooked FSR 2.0 call as FSR2.1/2.2
     if (std::labs(dispatchDescription->renderSize.width) > 20000)
     {
-        return ffxFsr20ContextDispatch_Dx12(context, (FfxFsr20DispatchDescription*)dispatchDescription);
+        return ffxFsr20ContextDispatch_Dx12(context, (FfxFsr20DispatchDescription*) dispatchDescription);
     }
 
     // Skip OptiScaler stuff
@@ -585,7 +600,8 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     // If not in contexts list create and add context
-    if (!_contexts.contains(context) && _initParams.contains(context) && !CreateDLSSContext(context, dispatchDescription))
+    if (!_contexts.contains(context) && _initParams.contains(context) &&
+        !CreateDLSSContext(context, dispatchDescription))
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     NVSDK_NGX_Parameter* params = _nvParams[context];
@@ -616,20 +632,24 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
     params->Set("FSR.reactive", dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDescription->sharpness);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width,
+              dispatchDescription->renderSize.height);
 
     State::Instance().setInputApiName = "FSR2.X-DX12";
 
-    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
+    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*) dispatchDescription->commandList,
+                                                      handle, params, nullptr);
 
     if (evalResult == NVSDK_NGX_Result_Success)
         return Fsr212::FFX_OK;
 
-    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
+    LOG_ERROR("evalResult: {:X}", (UINT) evalResult);
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
 }
 
-static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context, const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
+static Fsr212::FfxErrorCode
+ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context,
+                                    const Fsr212::FfxFsr2DispatchDescription* dispatchDescription)
 {
     LOG_DEBUG("");
 
@@ -641,7 +661,8 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2C
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     // If not in contexts list create and add context
-    if (!_contexts.contains(context) && _initParams.contains(context) && !CreateDLSSContext(context, dispatchDescription))
+    if (!_contexts.contains(context) && _initParams.contains(context) &&
+        !CreateDLSSContext(context, dispatchDescription))
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     NVSDK_NGX_Parameter* params = _nvParams[context];
@@ -672,21 +693,24 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2C
     params->Set("FSR.reactive", dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDescription->sharpness);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width,
+              dispatchDescription->renderSize.height);
 
     State::Instance().setInputApiName = "FSR2.X-DX12";
 
-    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
+    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*) dispatchDescription->commandList,
+                                                      handle, params, nullptr);
 
     if (evalResult == NVSDK_NGX_Result_Success)
         return Fsr212::FFX_OK;
 
-    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
+    LOG_ERROR("evalResult: {:X}", (UINT) evalResult);
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
 }
 
 // FSR2.0
-static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
+static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context* context,
+                                                         const FfxFsr20DispatchDescription* dispatchDescription)
 {
     LOG_DEBUG("");
 
@@ -703,7 +727,8 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     // If not in contexts list create and add context
-    if (!_contexts.contains(context) && _initParams.contains(context) && !CreateDLSSContext20(context, dispatchDescription))
+    if (!_contexts.contains(context) && _initParams.contains(context) &&
+        !CreateDLSSContext20(context, dispatchDescription))
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     NVSDK_NGX_Parameter* params = _nvParams[context];
@@ -734,11 +759,13 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
     params->Set("FSR.reactive", dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDescription->sharpness);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width,
+              dispatchDescription->renderSize.height);
 
     State::Instance().setInputApiName = "FSR2.0-DX12";
 
-    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
+    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*) dispatchDescription->commandList,
+                                                      handle, params, nullptr);
 
     if (evalResult == NVSDK_NGX_Result_Success)
         return Fsr212::FFX_OK;
@@ -747,12 +774,13 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
     if (evalResult == NVSDK_NGX_Result_Fail && State::Instance().currentFeature->Name() == "DLSS")
         State::Instance().changeBackend[handle->Id] = true;
 
-    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
+    LOG_ERROR("evalResult: {:X}", (UINT) evalResult);
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
 }
 
 // FSR2.0 Pattern
-static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr20DispatchDescription* dispatchDescription)
+static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context,
+                                                                 const FfxFsr20DispatchDescription* dispatchDescription)
 {
     LOG_DEBUG("");
 
@@ -764,7 +792,8 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     // If not in contexts list create and add context
-    if (!_contexts.contains(context) && _initParams.contains(context) && !CreateDLSSContext20(context, dispatchDescription))
+    if (!_contexts.contains(context) && _initParams.contains(context) &&
+        !CreateDLSSContext20(context, dispatchDescription))
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     NVSDK_NGX_Parameter* params = _nvParams[context];
@@ -795,21 +824,24 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2
     params->Set("FSR.reactive", dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDescription->sharpness);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width,
+              dispatchDescription->renderSize.height);
 
     State::Instance().setInputApiName = "FSR2.0-DX12";
 
-    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
+    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*) dispatchDescription->commandList,
+                                                      handle, params, nullptr);
 
     if (evalResult == NVSDK_NGX_Result_Success)
         return Fsr212::FFX_OK;
 
-    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
+    LOG_ERROR("evalResult: {:X}", (UINT) evalResult);
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
 }
 
 // Tiny Tina's Wonderland
-static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Context* context, const FfxFsr2TinyDispatchDescription* dispatchDescription)
+static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Context* context,
+                                                            const FfxFsr2TinyDispatchDescription* dispatchDescription)
 {
     LOG_DEBUG("");
 
@@ -821,7 +853,8 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     // If not in contexts list create and add context
-    if (!_contexts.contains(context) && _initParams.contains(context) && !CreateDLSSContextTiny(context, dispatchDescription))
+    if (!_contexts.contains(context) && _initParams.contains(context) &&
+        !CreateDLSSContextTiny(context, dispatchDescription))
         return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 
     NVSDK_NGX_Parameter* params = _nvParams[context];
@@ -852,16 +885,18 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
     params->Set("FSR.reactive", dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDescription->sharpness);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width, dispatchDescription->renderSize.height);
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width,
+              dispatchDescription->renderSize.height);
 
     State::Instance().setInputApiName = "FSR2.TT-DX12";
 
-    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDescription->commandList, handle, params, nullptr);
+    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*) dispatchDescription->commandList,
+                                                      handle, params, nullptr);
 
     if (evalResult == NVSDK_NGX_Result_Success)
         return Fsr212::FFX_OK;
 
-    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
+    LOG_ERROR("evalResult: {:X}", (UINT) evalResult);
     return Fsr212::FFX_ERROR_BACKEND_API_ERROR;
 }
 
@@ -883,7 +918,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDestroy_Dx12(Fsr212::FfxFsr2Context* c
     auto cdResult = o_ffxFsr2ContextDestroy_Dx12(context);
     _skipDestroy = false;
 
-    LOG_INFO("result: {:X}", (UINT)cdResult);
+    LOG_INFO("result: {:X}", (UINT) cdResult);
 
     return Fsr212::FFX_OK;
 }
@@ -901,7 +936,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDestroy_Pattern_Dx12(Fsr212::FfxFsr2Co
     _initParams.erase(context);
 
     auto cdResult = o_ffxFsr2ContextDestroy_Pattern_Dx12(context);
-    LOG_INFO("result: {:X}", (UINT)cdResult);
+    LOG_INFO("result: {:X}", (UINT) cdResult);
 
     return Fsr212::FFX_OK;
 }
@@ -910,31 +945,32 @@ static float ffxFsr2GetUpscaleRatioFromQualityMode_Dx12(Fsr212::FfxFsr2QualityMo
 {
     LOG_DEBUG("");
 
-    auto ratio = GetQualityOverrideRatioFfx(qualityMode).value_or(qualityRatios[(UINT)qualityMode]);
-    LOG_DEBUG("Quality mode: {}, Upscale ratio: {}", (UINT)qualityMode, ratio);
+    auto ratio = GetQualityOverrideRatioFfx(qualityMode).value_or(qualityRatios[(UINT) qualityMode]);
+    LOG_DEBUG("Quality mode: {}, Upscale ratio: {}", (UINT) qualityMode, ratio);
     return ratio;
 }
 
-static Fsr212::FfxErrorCode ffxFsr2GetRenderResolutionFromQualityMode_Dx12(uint32_t* renderWidth, uint32_t* renderHeight,
-                                                                           uint32_t displayWidth, uint32_t displayHeight, Fsr212::FfxFsr2QualityMode qualityMode)
+static Fsr212::FfxErrorCode
+ffxFsr2GetRenderResolutionFromQualityMode_Dx12(uint32_t* renderWidth, uint32_t* renderHeight, uint32_t displayWidth,
+                                               uint32_t displayHeight, Fsr212::FfxFsr2QualityMode qualityMode)
 {
     LOG_DEBUG("");
 
-    auto ratio = GetQualityOverrideRatioFfx(qualityMode).value_or(qualityRatios[(UINT)qualityMode]);
+    auto ratio = GetQualityOverrideRatioFfx(qualityMode).value_or(qualityRatios[(UINT) qualityMode]);
 
     if (renderHeight != nullptr)
-        *renderHeight = (uint32_t)((float)displayHeight / ratio);
+        *renderHeight = (uint32_t) ((float) displayHeight / ratio);
 
     if (renderWidth != nullptr)
-        *renderWidth = (uint32_t)((float)displayWidth / ratio);
+        *renderWidth = (uint32_t) ((float) displayWidth / ratio);
 
     if (renderWidth != nullptr && renderHeight != nullptr)
     {
-        LOG_DEBUG("Quality mode: {}, Render resolution: {}x{}", (UINT)qualityMode, *renderWidth, *renderHeight);
+        LOG_DEBUG("Quality mode: {}, Render resolution: {}x{}", (UINT) qualityMode, *renderWidth, *renderHeight);
         return Fsr212::FFX_OK;
     }
 
-    LOG_WARN("Quality mode: {}, pOutRenderWidth or pOutRenderHeight is null!", (UINT)qualityMode);
+    LOG_WARN("Quality mode: {}, pOutRenderWidth or pOutRenderHeight is null!", (UINT) qualityMode);
     return Fsr212::FFX_ERROR_INVALID_ARGUMENT;
 }
 
@@ -968,95 +1004,117 @@ void HookFSR2ExeInputs()
     // ffxFsr2ContextCreate
     if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
     {
-        o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextCreate");
+        o_ffxFsr2ContextCreate_Dx12 =
+            (PFN_ffxFsr2ContextCreate) KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextCreate");
         if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
-            o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
+            o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate) KernelBaseProxy::GetProcAddress_()(
+                exeModule, "?ffxFsr2ContextCreate@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2ContextDescription@@@Z");
 
         if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
+            DetourAttach(&(PVOID&) o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
 
-        LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
+        LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t) o_ffxFsr2ContextCreate_Dx12);
     }
 
-    //ffxFsr2ContextDispatch 2.X
+    // ffxFsr2ContextDispatch 2.X
     if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
     {
-        o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextDispatch");
+        o_ffxFsr2ContextDispatch_Dx12 =
+            (PFN_ffxFsr2ContextDispatch) KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextDispatch");
 
         if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
+            DetourAttach(&(PVOID&) o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
 
-        LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
+        LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t) o_ffxFsr2ContextDispatch_Dx12);
     }
 
-    //ffxFsr2ContextDispatch FSR2.0
+    // ffxFsr2ContextDispatch FSR2.0
     if (o_ffxFsr20ContextDispatch_Dx12 == nullptr)
     {
-        o_ffxFsr20ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchDescription@@@Z");
+        o_ffxFsr20ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch) KernelBaseProxy::GetProcAddress_()(
+            exeModule, "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchDescription@@@Z");
 
         if (o_ffxFsr20ContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Dx12, ffxFsr20ContextDispatch_Dx12);
+            DetourAttach(&(PVOID&) o_ffxFsr20ContextDispatch_Dx12, ffxFsr20ContextDispatch_Dx12);
 
-        LOG_DEBUG("ffxFsr20ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Dx12);
+        LOG_DEBUG("ffxFsr20ContextDispatch_Dx12: {:X}", (size_t) o_ffxFsr20ContextDispatch_Dx12);
     }
 
-    //ffxFsr2ContextDispatch Tiny Tina
+    // ffxFsr2ContextDispatch Tiny Tina
     if (o_ffxFsr2TinyContextDispatch_Dx12 == nullptr)
     {
-        o_ffxFsr2TinyContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchParams@@@Z");
+        o_ffxFsr2TinyContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch) KernelBaseProxy::GetProcAddress_()(
+            exeModule, "?ffxFsr2ContextDispatch@@YAHPEAUFfxFsr2Context@@PEBUFfxFsr2DispatchParams@@@Z");
 
         if (o_ffxFsr2TinyContextDispatch_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2TinyContextDispatch_Dx12, ffxFsr2TinyContextDispatch_Dx12);
+            DetourAttach(&(PVOID&) o_ffxFsr2TinyContextDispatch_Dx12, ffxFsr2TinyContextDispatch_Dx12);
 
-        LOG_DEBUG("ffxFsr2TinyContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2TinyContextDispatch_Dx12);
+        LOG_DEBUG("ffxFsr2TinyContextDispatch_Dx12: {:X}", (size_t) o_ffxFsr2TinyContextDispatch_Dx12);
     }
 
-    //ffxFsr2ContextDestroy
+    // ffxFsr2ContextDestroy
     if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
     {
-        o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextDestroy");
+        o_ffxFsr2ContextDestroy_Dx12 =
+            (PFN_ffxFsr2ContextDestroy) KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2ContextDestroy");
         if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
-            o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2ContextDestroy@@YAHPEAUFfxFsr2Context@@@Z");
+            o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy) KernelBaseProxy::GetProcAddress_()(
+                exeModule, "?ffxFsr2ContextDestroy@@YAHPEAUFfxFsr2Context@@@Z");
 
         if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
+            DetourAttach(&(PVOID&) o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
 
-        LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
+        LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t) o_ffxFsr2ContextDestroy_Dx12);
     }
 
-    //ffxFsr2GetUpscaleRatioFromQualityMode
+    // ffxFsr2GetUpscaleRatioFromQualityMode
     if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
     {
-        o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2GetUpscaleRatioFromQualityMode");
+        o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 =
+            (PFN_ffxFsr2GetUpscaleRatioFromQualityMode) KernelBaseProxy::GetProcAddress_()(
+                exeModule, "ffxFsr2GetUpscaleRatioFromQualityMode");
         if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
-            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2GetUpscaleRatioFromQualityMode@@YAMW4FfxFsr2QualityMode@@@Z");
+            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 =
+                (PFN_ffxFsr2GetUpscaleRatioFromQualityMode) KernelBaseProxy::GetProcAddress_()(
+                    exeModule, "?ffxFsr2GetUpscaleRatioFromQualityMode@@YAMW4FfxFsr2QualityMode@@@Z");
 
         if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12, ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+            DetourAttach(&(PVOID&) o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12,
+                         ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
 
-        LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+        LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}",
+                  (size_t) o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
     }
 
-    //ffxFsr2GetRenderResolutionFromQualityMode
+    // ffxFsr2GetRenderResolutionFromQualityMode
     if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
     {
-        o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2GetRenderResolutionFromQualityMode");
+        o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 =
+            (PFN_ffxFsr2GetRenderResolutionFromQualityMode) KernelBaseProxy::GetProcAddress_()(
+                exeModule, "ffxFsr2GetRenderResolutionFromQualityMode");
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
-            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
+            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 =
+                (PFN_ffxFsr2GetRenderResolutionFromQualityMode) KernelBaseProxy::GetProcAddress_()(
+                    exeModule, "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAI0IIW4FfxFsr2QualityMode@@@Z");
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
-            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
+            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 =
+                (PFN_ffxFsr2GetRenderResolutionFromQualityMode) KernelBaseProxy::GetProcAddress_()(
+                    exeModule, "?ffxFsr2GetRenderResolutionFromQualityMode@@YAHPEAH0HHW4FfxFsr2QualityMode@@@Z");
 
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+            DetourAttach(&(PVOID&) o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12,
+                         ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 
-        LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+        LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}",
+                  (size_t) o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
     }
 
-    //ffxFsr2GetInterfaceDX12
-    //o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxFsr2GetInterfaceDX12");
-    //if (o_ffxFsr2GetInterfaceDX12 == nullptr)
+    // ffxFsr2GetInterfaceDX12
+    // o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(exeModule,
+    // "ffxFsr2GetInterfaceDX12"); if (o_ffxFsr2GetInterfaceDX12 == nullptr)
     //{
-    //    o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(exeModule, "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
+    //     o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(exeModule,
+    //     "?ffxFsr2GetInterfaceDX12@@YAHPEAUFfxFsr2Interface@@PEAUID3D12Device@@PEAX_K@Z");
 
     //    if (o_ffxFsr2GetInterfaceDX12 != nullptr)
     //        DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
@@ -1073,37 +1131,44 @@ void HookFSR2ExeInputs()
         {
             // Create
             LOG_DEBUG("Checking createPattern");
-            std::string_view createPattern("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9 E8");
-            o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPattern, 0);
+            std::string_view createPattern("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? "
+                                           "48 33 C4 48 89 85 ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9 E8");
+            o_ffxFsr2ContextCreate_Pattern_Dx12 =
+                (PFN_ffxFsr2ContextCreate) scanner::GetAddress(exeNameV, createPattern, 0);
 
-            // Witchfire 
-            //if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
+            // Witchfire
+            // if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
             //{
             //    LOG_DEBUG("Checking createPatternWF");
-            //    std::string_view createPatternWF("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9");
-            //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPatternWF, 0);
+            //    std::string_view createPatternWF("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ?
+            //    ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9");
+            //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV,
+            //    createPatternWF, 0);
             //}
 
             // Ronin
-            //if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
+            // if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
             //{
             //    LOG_DEBUG("Checking createPatternRonin");
-            //    std::string_view createPatternRonin("40 55 57 41 55 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B EA 41 B8 ? ? ? ? 33 D2 48 8B F9");
-            //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPatternRonin, 0);
+            //    std::string_view createPatternRonin("40 55 57 41 55 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B
+            //    05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 4C 8B EA 41 B8 ? ? ? ? 33 D2 48 8B F9");
+            //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV,
+            //    createPatternRonin, 0);
             //}
 
-            // AW2 
+            // AW2
             // Custom implementation
-            //if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
+            // if (o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
             //{
-            //    std::string_view createPatternAW2("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 4C 8B F2 41 B8 ? ? ? ? 33 D2 48 8B F9");
-            //    o_ffxFsr2ContextCreate_Pattern_Dx12 = (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPatternAW2, 0);
+            //    std::string_view createPatternAW2("40 55 57 41 54 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 4C 8B F2
+            //    41 B8 ? ? ? ? 33 D2 48 8B F9"); o_ffxFsr2ContextCreate_Pattern_Dx12 =
+            //    (PFN_ffxFsr2ContextCreate)scanner::GetAddress(exeNameV, createPatternAW2, 0);
             //}
 
             if (o_ffxFsr2ContextCreate_Pattern_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Pattern_Dx12, ffxFsr2ContextCreate_Pattern_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr2ContextCreate_Pattern_Dx12, ffxFsr2ContextCreate_Pattern_Dx12);
 
-            LOG_DEBUG("ffxFsr2ContextCreate_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
+            LOG_DEBUG("ffxFsr2ContextCreate_Pattern_Dx12: {:X}", (size_t) o_ffxFsr2ContextCreate_Pattern_Dx12);
 
             if (o_ffxFsr2ContextCreate_Dx12 == nullptr && o_ffxFsr2ContextCreate_Pattern_Dx12 == nullptr)
             {
@@ -1113,13 +1178,15 @@ void HookFSR2ExeInputs()
 
             // Destroy
             LOG_DEBUG("Checking destroyPattern");
-            std::string_view destroyPattern("40 53 48 83 EC 20 48 8B D9 48 85 C9 75 ? B8 00 00 00 80 48 83 C4 20 5B C3");
-            o_ffxFsr2ContextDestroy_Pattern_Dx12 = (PFN_ffxFsr2ContextDestroy)scanner::GetAddress(exeNameV, destroyPattern, 0, (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
+            std::string_view destroyPattern(
+                "40 53 48 83 EC 20 48 8B D9 48 85 C9 75 ? B8 00 00 00 80 48 83 C4 20 5B C3");
+            o_ffxFsr2ContextDestroy_Pattern_Dx12 = (PFN_ffxFsr2ContextDestroy) scanner::GetAddress(
+                exeNameV, destroyPattern, 0, (size_t) o_ffxFsr2ContextCreate_Pattern_Dx12);
 
             if (o_ffxFsr2ContextDestroy_Pattern_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Pattern_Dx12, ffxFsr2ContextDestroy_Pattern_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr2ContextDestroy_Pattern_Dx12, ffxFsr2ContextDestroy_Pattern_Dx12);
 
-            LOG_DEBUG("ffxFsr2ContextDestroy_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Pattern_Dx12);
+            LOG_DEBUG("ffxFsr2ContextDestroy_Pattern_Dx12: {:X}", (size_t) o_ffxFsr2ContextDestroy_Pattern_Dx12);
 
             if (o_ffxFsr2ContextDestroy_Dx12 == nullptr && o_ffxFsr2ContextDestroy_Pattern_Dx12)
             {
@@ -1131,68 +1198,82 @@ void HookFSR2ExeInputs()
             // Not receiving calls
             // Assumed FSR2.0
             LOG_DEBUG("Checking dispatchPattern20");
-            std::string_view dispatchPattern20("40 55 56 41 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? 00 4C 8B FA 48 8B 02 48 8B F1");
-            o_ffxFsr20ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPattern20, 0, (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
+            std::string_view dispatchPattern20("40 55 56 41 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 "
+                                               "B9 ? ? ? ? 00 4C 8B FA 48 8B 02 48 8B F1");
+            o_ffxFsr20ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch) scanner::GetAddress(
+                exeNameV, dispatchPattern20, 0, (size_t) o_ffxFsr2ContextCreate_Pattern_Dx12);
 
             if (o_ffxFsr20ContextDispatch_Pattern_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr20ContextDispatch_Pattern_Dx12, ffxFsr20ContextDispatch_Pattern_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr20ContextDispatch_Pattern_Dx12, ffxFsr20ContextDispatch_Pattern_Dx12);
 
-            LOG_DEBUG("ffxFsr20ContextDispatch_Pattern_Dx12: {:X}", (size_t)o_ffxFsr20ContextDispatch_Pattern_Dx12);
+            LOG_DEBUG("ffxFsr20ContextDispatch_Pattern_Dx12: {:X}", (size_t) o_ffxFsr20ContextDispatch_Pattern_Dx12);
 
             // Lies of P
             LOG_DEBUG("Checking dispatchPattern");
-            std::string_view dispatchPattern("40 55 53 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? 00 48 8B DA 48 8B 02 48 8B F9");
-            o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPattern, 0, (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
+            std::string_view dispatchPattern("40 55 53 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? "
+                                             "? ? 00 48 8B DA 48 8B 02 48 8B F9");
+            o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch) scanner::GetAddress(
+                exeNameV, dispatchPattern, 0, (size_t) o_ffxFsr2ContextCreate_Pattern_Dx12);
 
             // Alone in the Dark - Game is using FSR1
             // Deliver Us Mars
             if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
             {
                 LOG_DEBUG("Checking dispatchPatternAITD");
-                std::string_view dispatchPatternAITD("40 55 57 41 56 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 80 B9 ? ? ? ? ? 4C 8B F2 48 8B 02 48 8B F9");
-                o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternAITD, 0, (size_t)o_ffxFsr2ContextCreate_Pattern_Dx12);
+                std::string_view dispatchPatternAITD("40 55 57 41 56 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B "
+                                                     "E0 80 B9 ? ? ? ? ? 4C 8B F2 48 8B 02 48 8B F9");
+                o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch) scanner::GetAddress(
+                    exeNameV, dispatchPatternAITD, 0, (size_t) o_ffxFsr2ContextCreate_Pattern_Dx12);
             }
 
             // Witchfire
             // Game uses FSR1 as FSR2
-            //if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
+            // if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
             //{
             //    LOG_DEBUG("Checking dispatchPatternWF");
-            //    std::string_view dispatchPatternWF("40 55 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? F7 01 ? ? ? ? 48 8B F2 48 8B F9");
-            //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternWF, 0);
+            //    std::string_view dispatchPatternWF("40 55 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 48
+            //    8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? F7 01 ? ? ? ? 48 8B F2 48 8B F9");
+            //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV,
+            //    dispatchPatternWF, 0);
             //}
 
             // Ronin
-            //if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
+            // if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
             //{
             //    LOG_DEBUG("Checking dispatchPatternRonin");
-            //    std::string_view dispatchPatternRonin("40 55 41 56 41 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 F7 01 00 01 00 00 4C 8B FA 4C 8B F1 74 05 E8 ");
-            //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternRonin, 0);
+            //    std::string_view dispatchPatternRonin("40 55 41 56 41 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48
+            //    2B E0 F7 01 00 01 00 00 4C 8B FA 4C 8B F1 74 05 E8 "); o_ffxFsr2ContextDispatch_Pattern_Dx12 =
+            //    (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternRonin, 0);
             //}
 
             // Banishers
             // RHI implementation, needs r.FidelityFX.FSR2.UseNativeDX12=1
             if (o_ffxFsr2ContextDispatch_Pattern_Dx12 == nullptr)
             {
-                std::string_view dispatchPatternBanish("40 55 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? F7 01 ? ? ? ? 48 8B F2 48 8B F9");
-                o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternBanish, 0);
+                std::string_view dispatchPatternBanish(
+                    "40 55 56 57 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 "
+                    "? ? ? ? F7 01 ? ? ? ? 48 8B F2 48 8B F9");
+                o_ffxFsr2ContextDispatch_Pattern_Dx12 =
+                    (PFN_ffxFsr2ContextDispatch) scanner::GetAddress(exeNameV, dispatchPatternBanish, 0);
             }
 
-            // AW2 
+            // AW2
             // Custom implementation
             //{
-            //    std::string_view dispatchPatternAW2("40 55 56 41 56 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0 F7 01 ? ? ? ? 4C 8B F2 48 8B F1");
-            //    o_ffxFsr2ContextDispatch_Pattern_Dx12 = (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternAW2, 0);
+            //    std::string_view dispatchPatternAW2("40 55 56 41 56 48 8D AC 24 ? ? ? ? B8 ? ? ? ? E8 ? ? ? ? 48 2B E0
+            //    F7 01 ? ? ? ? 4C 8B F2 48 8B F1"); o_ffxFsr2ContextDispatch_Pattern_Dx12 =
+            //    (PFN_ffxFsr2ContextDispatch)scanner::GetAddress(exeNameV, dispatchPatternAW2, 0);
             //}
 
             if (o_ffxFsr2ContextDispatch_Pattern_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Pattern_Dx12, ffxFsr2ContextDispatch_Pattern_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr2ContextDispatch_Pattern_Dx12, ffxFsr2ContextDispatch_Pattern_Dx12);
 
-            LOG_DEBUG("ffxFsr2ContextDispatch_Pattern_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Pattern_Dx12);
+            LOG_DEBUG("ffxFsr2ContextDispatch_Pattern_Dx12: {:X}", (size_t) o_ffxFsr2ContextDispatch_Pattern_Dx12);
         } while (false);
     }
 
-    State::Instance().fsrHooks = o_ffxFsr2ContextCreate_Dx12 != nullptr || o_ffxFsr2ContextCreate_Pattern_Dx12 != nullptr;
+    State::Instance().fsrHooks =
+        o_ffxFsr2ContextCreate_Dx12 != nullptr || o_ffxFsr2ContextCreate_Pattern_Dx12 != nullptr;
 
     DetourTransactionCommit();
 }
@@ -1208,52 +1289,63 @@ void HookFSR2Inputs(HMODULE module)
 
         if (o_ffxFsr2ContextCreate_Dx12 == nullptr)
         {
-            o_ffxFsr2ContextCreate_Dx12 = (PFN_ffxFsr2ContextCreate)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextCreate");
+            o_ffxFsr2ContextCreate_Dx12 =
+                (PFN_ffxFsr2ContextCreate) KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextCreate");
 
             if (o_ffxFsr2ContextCreate_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr2ContextCreate_Dx12, ffxFsr2ContextCreate_Dx12);
 
-            LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t)o_ffxFsr2ContextCreate_Dx12);
+            LOG_DEBUG("ffxFsr2ContextCreate_Dx12: {:X}", (size_t) o_ffxFsr2ContextCreate_Dx12);
         }
 
         if (o_ffxFsr2ContextDispatch_Dx12 == nullptr)
         {
-            o_ffxFsr2ContextDispatch_Dx12 = (PFN_ffxFsr2ContextDispatch)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextDispatch");
+            o_ffxFsr2ContextDispatch_Dx12 =
+                (PFN_ffxFsr2ContextDispatch) KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextDispatch");
 
             if (o_ffxFsr2ContextDispatch_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr2ContextDispatch_Dx12, ffxFsr2ContextDispatch_Dx12);
 
-            LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t)o_ffxFsr2ContextDispatch_Dx12);
+            LOG_DEBUG("ffxFsr2ContextDispatch_Dx12: {:X}", (size_t) o_ffxFsr2ContextDispatch_Dx12);
         }
 
         if (o_ffxFsr2ContextDestroy_Dx12 == nullptr)
         {
-            o_ffxFsr2ContextDestroy_Dx12 = (PFN_ffxFsr2ContextDestroy)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextDestroy");
+            o_ffxFsr2ContextDestroy_Dx12 =
+                (PFN_ffxFsr2ContextDestroy) KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2ContextDestroy");
 
             if (o_ffxFsr2ContextDestroy_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr2ContextDestroy_Dx12, ffxFsr2ContextDestroy_Dx12);
 
-            LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t)o_ffxFsr2ContextDestroy_Dx12);
+            LOG_DEBUG("ffxFsr2ContextDestroy_Dx12: {:X}", (size_t) o_ffxFsr2ContextDestroy_Dx12);
         }
 
         if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 == nullptr)
         {
-            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 = (PFN_ffxFsr2GetUpscaleRatioFromQualityMode)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2GetUpscaleRatioFromQualityMode");
+            o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 =
+                (PFN_ffxFsr2GetUpscaleRatioFromQualityMode) KernelBaseProxy::GetProcAddress_()(
+                    module, "ffxFsr2GetUpscaleRatioFromQualityMode");
 
             if (o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12, ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12,
+                             ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
 
-            LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
+            LOG_DEBUG("ffxFsr2GetUpscaleRatioFromQualityMode_Dx12: {:X}",
+                      (size_t) o_ffxFsr2GetUpscaleRatioFromQualityMode_Dx12);
         }
 
         if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 == nullptr)
         {
-            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 = (PFN_ffxFsr2GetRenderResolutionFromQualityMode)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2GetRenderResolutionFromQualityMode");
+            o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 =
+                (PFN_ffxFsr2GetRenderResolutionFromQualityMode) KernelBaseProxy::GetProcAddress_()(
+                    module, "ffxFsr2GetRenderResolutionFromQualityMode");
 
             if (o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12 != nullptr)
-                DetourAttach(&(PVOID&)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12, ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+                DetourAttach(&(PVOID&) o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12,
+                             ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
 
-            LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}", (size_t)o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
+            LOG_DEBUG("ffxFsr2GetRenderResolutionFromQualityMode_Dx12: {:X}",
+                      (size_t) o_ffxFsr2GetRenderResolutionFromQualityMode_Dx12);
         }
 
         State::Instance().fsrHooks = o_ffxFsr2ContextCreate_Dx12 != nullptr;
@@ -1274,7 +1366,8 @@ void HookFSR2Dx12Inputs(HMODULE module)
     if (module != nullptr)
     {
         if (o_ffxFsr2GetInterfaceDX12 == nullptr)
-            o_ffxFsr2GetInterfaceDX12 = (PFN_ffxFsr2GetInterfaceDX12)KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2GetInterfaceDX12");
+            o_ffxFsr2GetInterfaceDX12 =
+                (PFN_ffxFsr2GetInterfaceDX12) KernelBaseProxy::GetProcAddress_()(module, "ffxFsr2GetInterfaceDX12");
     }
 
     if (o_ffxFsr2GetInterfaceDX12 != nullptr)
@@ -1285,10 +1378,10 @@ void HookFSR2Dx12Inputs(HMODULE module)
         DetourUpdateThread(GetCurrentThread());
 
         if (o_ffxFsr2GetInterfaceDX12 != nullptr)
-            DetourAttach(&(PVOID&)o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
+            DetourAttach(&(PVOID&) o_ffxFsr2GetInterfaceDX12, hk_ffxFsr2GetInterfaceDX12);
 
         DetourTransactionCommit();
     }
 
-    LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t)o_ffxFsr2GetInterfaceDX12);
+    LOG_DEBUG("ffxFsr2GetInterfaceDX12: {:X}", (size_t) o_ffxFsr2GetInterfaceDX12);
 }

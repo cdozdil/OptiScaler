@@ -206,7 +206,7 @@ struct winmm_dll
     {
         dll = module;
         shared.LoadOriginalLibrary(dll);
-        
+
         CloseDriver = KernelBaseProxy::GetProcAddress_()(dll, "CloseDriver");
         DefDriverProc = KernelBaseProxy::GetProcAddress_()(dll, "DefDriverProc");
         DriverCallback = KernelBaseProxy::GetProcAddress_()(dll, "DriverCallback");
@@ -400,7 +400,7 @@ struct winmm_dll
         wid32Message = KernelBaseProxy::GetProcAddress_()(dll, "wid32Message");
         wod32Message = KernelBaseProxy::GetProcAddress_()(dll, "wod32Message");
     }
-} winmm; 
+} winmm;
 
 void _CloseDriver() { winmm.CloseDriver(); }
 void _DefDriverProc() { winmm.DefDriverProc(); }
