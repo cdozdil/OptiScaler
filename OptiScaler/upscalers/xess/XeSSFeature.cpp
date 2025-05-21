@@ -11,7 +11,7 @@
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
     auto logLevel = (int) Level + 1;
-    spdlog::log((spdlog::level::level_enum)logLevel, "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
+    spdlog::log((spdlog::level::level_enum) logLevel, "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
 bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
