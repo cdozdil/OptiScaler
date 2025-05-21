@@ -215,7 +215,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
             HooksDx::dx12UpscaleTrig = false;
         }
 
-        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() && fg->ReadyForDispatch())
+        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() &&
+            fg->ReadyForDispatch())
         {
             LOG_DEBUG("Dispatch fg");
             State::Instance().fgTrigSource = "Present";

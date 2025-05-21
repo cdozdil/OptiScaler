@@ -372,16 +372,17 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         dfgPrepare.viewSpaceToMetersFactor = _meterFactor;
 
         retCode = FfxApiProxy::D3D12_Dispatch()(&_fgContext, &dfgPrepare.header);
-        LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount, fIndex, (size_t)dfgPrepare.commandList);
+        LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount,
+                  fIndex, (size_t) dfgPrepare.commandList);
 
         if (retCode == FFX_API_RETURN_OK && !Config::Instance()->FGExecuteAfterCallback.value_or_default())
         {
             auto result = _commandList[fIndex]->Close();
-            LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+            LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
 
             if (result == S_OK)
             {
-                ID3D12CommandList* cl[] = { cl[0] = _commandList[fIndex] };
+                ID3D12CommandList* cl[] = {cl[0] = _commandList[fIndex]};
                 _gameCommandQueue->ExecuteCommandLists(1, cl);
             }
         }
@@ -464,12 +465,12 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
     if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGExecuteAfterCallback.value_or_default())
     {
         result = _commandList[fIndex]->Close();
-        LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT)result);
+        LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
 
         // if there is command list error return ERROR
         if (result == S_OK)
         {
-            ID3D12CommandList* cl[] = { _commandList[fIndex] };
+            ID3D12CommandList* cl[] = {_commandList[fIndex]};
             _gameCommandQueue->ExecuteCommandLists(1, cl);
         }
         else

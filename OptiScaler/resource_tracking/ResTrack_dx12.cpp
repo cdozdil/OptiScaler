@@ -1001,7 +1001,7 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
     {
         for (size_t i = 0; i < NumCommandLists; i++)
         {
-            LOG_DEBUG_ONLY("cmdlist[{}]: {:X}", i, (size_t)ppCommandLists[i]);
+            LOG_DEBUG_ONLY("cmdlist[{}]: {:X}", i, (size_t) ppCommandLists[i]);
 
             if (_commandList != nullptr && ppCommandLists[i] == _commandList)
             {
@@ -1018,7 +1018,7 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
             }
         }
 
-        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() && 
+        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() &&
             fg->ReadyForDispatch() && Config::Instance()->FGImmediatelyExecute.value_or_default())
         {
             LOG_DEBUG("Immediate dispatch fg");
@@ -1028,7 +1028,8 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
     }
     else if (Config::Instance()->FGWaitForNextExecute.value_or_default())
     {
-        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() && fg->ReadyForDispatch())
+        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() &&
+            fg->ReadyForDispatch())
         {
             LOG_DEBUG("Next execute dispatch fg");
             State::Instance().fgTrigSource = "Next";

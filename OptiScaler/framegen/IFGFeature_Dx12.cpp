@@ -93,7 +93,7 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
     LOG_TRACE("Setting velocity, index: {}", index);
 
     _paramVelocity[index] = velocity;
-    
+
     if (cmdList == nullptr)
         return;
 
@@ -109,9 +109,11 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
 
         if (_mvFlip->IsInit())
         {
-            ResourceBarrier(cmdList, _paramVelocityCopy[index], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            ResourceBarrier(cmdList, _paramVelocityCopy[index], D3D12_RESOURCE_STATE_COPY_DEST,
+                            D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             auto result = _mvFlip->Dispatch(_device, cmdList, velocity, _paramVelocityCopy[index]);
-            ResourceBarrier(cmdList, _paramVelocityCopy[index], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
+            ResourceBarrier(cmdList, _paramVelocityCopy[index], D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                            D3D12_RESOURCE_STATE_COPY_DEST);
 
             if (result)
                 _paramVelocity[index] = _paramVelocityCopy[index];
@@ -120,7 +122,8 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
         return;
     }
 
-    if (Config::Instance()->FGMakeMVCopy.value_or_default() && CopyResource(cmdList, velocity, &_paramVelocityCopy[index], state))
+    if (Config::Instance()->FGMakeMVCopy.value_or_default() &&
+        CopyResource(cmdList, velocity, &_paramVelocityCopy[index], state))
     {
         _paramVelocity[index] = _paramVelocityCopy[index];
         return;
@@ -135,7 +138,7 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
     LOG_TRACE("Setting depth, index: {}", index);
 
     _paramDepth[index] = depth;
-    
+
     if (cmdList == nullptr)
         return;
 
@@ -150,9 +153,11 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
 
         if (_depthFlip->IsInit())
         {
-            ResourceBarrier(cmdList, _paramDepthCopy[index], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            ResourceBarrier(cmdList, _paramDepthCopy[index], D3D12_RESOURCE_STATE_COPY_DEST,
+                            D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             auto result = _depthFlip->Dispatch(_device, cmdList, depth, _paramDepthCopy[index]);
-            ResourceBarrier(cmdList, _paramDepthCopy[index], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST);
+            ResourceBarrier(cmdList, _paramDepthCopy[index], D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                            D3D12_RESOURCE_STATE_COPY_DEST);
 
             if (result)
                 _paramDepth[index] = _paramDepthCopy[index];
@@ -161,7 +166,8 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
         return;
     }
 
-    if (Config::Instance()->FGMakeDepthCopy.value_or_default() && CopyResource(cmdList, depth, &_paramDepthCopy[index], state))
+    if (Config::Instance()->FGMakeDepthCopy.value_or_default() &&
+        CopyResource(cmdList, depth, &_paramDepthCopy[index], state))
     {
         _paramDepth[index] = _paramDepthCopy[index];
         return;
@@ -291,8 +297,4 @@ void IFGFeature_Dx12::Present()
     DispatchHudless(hudless, State::Instance().lastFrameTime);
 }
 
-bool IFGFeature_Dx12::ReadyForDispatch()
-{
-    return _mvAndDepthReady && _hudlessReady;
-}
-
+bool IFGFeature_Dx12::ReadyForDispatch() { return _mvAndDepthReady && _hudlessReady; }
