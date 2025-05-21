@@ -4,28 +4,43 @@ static std::string ResultToString(xess_result_t result)
 {
     switch (result)
     {
-        case XESS_RESULT_WARNING_NONEXISTING_FOLDER: return "Warning Nonexistent Folder";
-        case XESS_RESULT_WARNING_OLD_DRIVER: return "Warning Old Driver";
-        case XESS_RESULT_SUCCESS: return "Success";
-        case XESS_RESULT_ERROR_UNSUPPORTED_DEVICE: return "Unsupported Device";
-        case XESS_RESULT_ERROR_UNSUPPORTED_DRIVER: return "Unsupported Driver";
-        case XESS_RESULT_ERROR_UNINITIALIZED: return "Uninitialized";
-        case XESS_RESULT_ERROR_INVALID_ARGUMENT: return "Invalid Argument";
-        case XESS_RESULT_ERROR_DEVICE_OUT_OF_MEMORY: return "Device Out of Memory";
-        case XESS_RESULT_ERROR_DEVICE: return "Device Error";
-        case XESS_RESULT_ERROR_NOT_IMPLEMENTED: return "Not Implemented";
-        case XESS_RESULT_ERROR_INVALID_CONTEXT: return "Invalid Context";
-        case XESS_RESULT_ERROR_OPERATION_IN_PROGRESS: return "Operation in Progress";
-        case XESS_RESULT_ERROR_UNSUPPORTED: return "Unsupported";
-        case XESS_RESULT_ERROR_CANT_LOAD_LIBRARY: return "Cannot Load Library";
-        case XESS_RESULT_ERROR_UNKNOWN:
-        default: return "Unknown";
+    case XESS_RESULT_WARNING_NONEXISTING_FOLDER:
+        return "Warning Nonexistent Folder";
+    case XESS_RESULT_WARNING_OLD_DRIVER:
+        return "Warning Old Driver";
+    case XESS_RESULT_SUCCESS:
+        return "Success";
+    case XESS_RESULT_ERROR_UNSUPPORTED_DEVICE:
+        return "Unsupported Device";
+    case XESS_RESULT_ERROR_UNSUPPORTED_DRIVER:
+        return "Unsupported Driver";
+    case XESS_RESULT_ERROR_UNINITIALIZED:
+        return "Uninitialized";
+    case XESS_RESULT_ERROR_INVALID_ARGUMENT:
+        return "Invalid Argument";
+    case XESS_RESULT_ERROR_DEVICE_OUT_OF_MEMORY:
+        return "Device Out of Memory";
+    case XESS_RESULT_ERROR_DEVICE:
+        return "Device Error";
+    case XESS_RESULT_ERROR_NOT_IMPLEMENTED:
+        return "Not Implemented";
+    case XESS_RESULT_ERROR_INVALID_CONTEXT:
+        return "Invalid Context";
+    case XESS_RESULT_ERROR_OPERATION_IN_PROGRESS:
+        return "Operation in Progress";
+    case XESS_RESULT_ERROR_UNSUPPORTED:
+        return "Unsupported";
+    case XESS_RESULT_ERROR_CANT_LOAD_LIBRARY:
+        return "Cannot Load Library";
+    case XESS_RESULT_ERROR_UNKNOWN:
+    default:
+        return "Unknown";
     }
 }
 
 static void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
-    spdlog::log((spdlog::level::level_enum)((int)Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
+    spdlog::log((spdlog::level::level_enum) ((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
 bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
@@ -102,57 +117,58 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
 
     switch (PerfQualityValue())
     {
-        case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+    case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+    case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_Balanced:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+    case NVSDK_NGX_PerfQuality_Value_Balanced:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+    case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+    case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_DLAA:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+    case NVSDK_NGX_PerfQuality_Value_DLAA:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
 
-            break;
+        break;
 
-        default:
-            xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
-            break;
+    default:
+        xessParams.qualitySetting =
+            XESS_QUALITY_SETTING_BALANCED; // Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
+        break;
     }
 
     if (Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV())
@@ -270,7 +286,8 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         dumpParams.frame_count = State::Instance().xessDebugFrames;
         dumpParams.frame_idx = dumpCount;
         dumpParams.path = ".";
-        dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH | XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY;
+        dumpParams.dump_elements_mask = XESS_DUMP_INPUT_COLOR | XESS_DUMP_INPUT_VELOCITY | XESS_DUMP_INPUT_DEPTH |
+                                        XESS_DUMP_OUTPUT | XESS_DUMP_EXECUTION_PARAMETERS | XESS_DUMP_HISTORY;
 
         if (!Config::Instance()->DisableReactiveMask.value_or(true))
             dumpParams.dump_elements_mask |= XESS_DUMP_INPUT_RESPONSIVE_PIXEL_MASK;
@@ -303,7 +320,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     ID3D11Resource* paramColor = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor);
+        InParameters->Get(NVSDK_NGX_Parameter_Color, (void**) &paramColor);
 
     if (paramColor)
     {
@@ -318,7 +335,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     ID3D11Resource* paramVelocity = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramVelocity);
+        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**) &paramVelocity);
 
     if (paramVelocity)
     {
@@ -333,7 +350,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     ID3D11Resource* paramOutput = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput);
+        InParameters->Get(NVSDK_NGX_Parameter_Output, (void**) &paramOutput);
 
     if (paramOutput)
     {
@@ -350,12 +367,13 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             params.pOutputTexture = paramOutput;
 
         if (Config::Instance()->RcasEnabled.value_or(true) &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
-            RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() && RCAS->CreateBufferResource(Device, (ID3D11Texture2D*)params.pOutputTexture))
+            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
+                                   Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+            RCAS != nullptr && RCAS.get() != nullptr && RCAS->IsInit() &&
+            RCAS->CreateBufferResource(Device, (ID3D11Texture2D*) params.pOutputTexture))
         {
             params.pOutputTexture = RCAS->Buffer();
         }
-        
     }
     else
     {
@@ -365,7 +383,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     ID3D11Resource* paramDepth = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**) &paramDepth);
 
     if (paramDepth)
     {
@@ -385,7 +403,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     {
         ID3D11Resource* paramExp = nullptr;
         if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExp);
+            InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**) &paramExp);
 
         if (paramExp)
         {
@@ -408,8 +426,9 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     if (!Config::Instance()->DisableReactiveMask.value_or(true))
     {
         ID3D11Resource* paramReactiveMask = nullptr;
-        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+        if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) !=
+            NVSDK_NGX_Result_Success)
+            InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**) &paramReactiveMask);
 
         if (paramReactiveMask)
         {
@@ -458,8 +477,10 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_MV_SubrectBase_Y, &params.inputMotionVectorBase.y);
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_X, &params.outputColorBase.x);
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Output_Subrect_Base_Y, &params.outputColorBase.y);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X, &params.inputResponsiveMaskBase.x);
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y, &params.inputResponsiveMaskBase.y);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_X,
+                      &params.inputResponsiveMaskBase.x);
+    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_SubrectBase_Y,
+                      &params.inputResponsiveMaskBase.y);
 
     LOG_DEBUG("Executing!!");
     xessResult = XeSSProxy::D3D11Execute()(_xessContext, &params);
@@ -472,7 +493,8 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
     // apply rcas
     if (Config::Instance()->RcasEnabled.value_or(true) &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) && Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
+                               Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
     {
         RcasConstants rcasConstants{};
@@ -488,8 +510,8 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
         if (useSS)
         {
-            if (!RCAS->Dispatch(Device, DeviceContext, (ID3D11Texture2D*)params.pOutputTexture, (ID3D11Texture2D*)params.pVelocityTexture,
-                rcasConstants, OutputScaler->Buffer()))
+            if (!RCAS->Dispatch(Device, DeviceContext, (ID3D11Texture2D*) params.pOutputTexture,
+                                (ID3D11Texture2D*) params.pVelocityTexture, rcasConstants, OutputScaler->Buffer()))
             {
                 Config::Instance()->RcasEnabled = false;
                 return true;
@@ -497,8 +519,9 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         }
         else
         {
-            if (!RCAS->Dispatch(Device, DeviceContext, (ID3D11Texture2D*)params.pOutputTexture, (ID3D11Texture2D*)params.pVelocityTexture,
-                rcasConstants, (ID3D11Texture2D*)paramOutput))
+            if (!RCAS->Dispatch(Device, DeviceContext, (ID3D11Texture2D*) params.pOutputTexture,
+                                (ID3D11Texture2D*) params.pVelocityTexture, rcasConstants,
+                                (ID3D11Texture2D*) paramOutput))
             {
                 Config::Instance()->RcasEnabled = false;
                 return true;
@@ -509,7 +532,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     if (useSS)
     {
         LOG_DEBUG("scaling output...");
-        if (!OutputScaler->Dispatch(Device, DeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*)paramOutput))
+        if (!OutputScaler->Dispatch(Device, DeviceContext, OutputScaler->Buffer(), (ID3D11Texture2D*) paramOutput))
         {
             Config::Instance()->OutputScalingEnabled = false;
             State::Instance().changeBackend[_handle->Id] = true;
@@ -566,7 +589,8 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     return true;
 }
 
-XeSSFeature_Dx11::XeSSFeature_Dx11(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters), IFeature_Dx11(handleId, InParameters)
+XeSSFeature_Dx11::XeSSFeature_Dx11(unsigned int handleId, NVSDK_NGX_Parameter* InParameters)
+    : IFeature(handleId, InParameters), IFeature_Dx11(handleId, InParameters)
 {
     _initParameters = SetInitParameters(InParameters);
 

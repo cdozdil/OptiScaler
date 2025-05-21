@@ -2,10 +2,7 @@
 
 #include <Config.h>
 
-int IFGFeature::GetIndex()
-{
-    return (_frameCount % BUFFER_COUNT);
-}
+int IFGFeature::GetIndex() { return (_frameCount % BUFFER_COUNT); }
 
 bool IFGFeature::CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
 {
@@ -17,7 +14,7 @@ bool IFGFeature::CheckForRealObject(std::string functionName, IUnknown* pObject,
             return false;
     }
 
-    auto qResult = pObject->QueryInterface(streamlineRiid, (void**)ppRealObject);
+    auto qResult = pObject->QueryInterface(streamlineRiid, (void**) ppRealObject);
 
     if (qResult == S_OK && *ppRealObject != nullptr)
     {
@@ -29,10 +26,7 @@ bool IFGFeature::CheckForRealObject(std::string functionName, IUnknown* pObject,
     return false;
 }
 
-bool IFGFeature::IsActive()
-{
-    return _isActive;
-}
+bool IFGFeature::IsActive() { return _isActive; }
 
 void IFGFeature::SetJitter(float x, float y)
 {
@@ -54,15 +48,9 @@ void IFGFeature::SetCameraValues(float nearValue, float farValue, float vFov, fl
     _meterFactor = meterFactor;
 }
 
-void IFGFeature::SetFrameTimeDelta(float delta)
-{
-    _ftDelta = delta;
-}
+void IFGFeature::SetFrameTimeDelta(float delta) { _ftDelta = delta; }
 
-void IFGFeature::SetReset(UINT reset)
-{
-    _reset = reset;
-}
+void IFGFeature::SetReset(UINT reset) { _reset = reset; }
 
 void IFGFeature::ResetCounters()
 {
@@ -76,13 +64,6 @@ void IFGFeature::UpdateTarget()
     LOG_DEBUG("Current frame: {} target frame: {}", _frameCount, _targetFrame);
 }
 
-UINT64 IFGFeature::FrameCount()
-{
-    return _frameCount;
-}
+UINT64 IFGFeature::FrameCount() { return _frameCount; }
 
-UINT64 IFGFeature::TargetFrame()
-{
-    return _targetFrame;
-}
-
+UINT64 IFGFeature::TargetFrame() { return _targetFrame; }

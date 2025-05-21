@@ -9,13 +9,14 @@
 
 #define USE_LOCAL_MUTEX
 
-typedef HRESULT(*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND, bool);
-typedef void(*PFN_SC_Clean)(bool, HWND);
-typedef void(*PFN_SC_Release)(HWND);
+typedef HRESULT (*PFN_SC_Present)(IDXGISwapChain*, UINT, UINT, const DXGI_PRESENT_PARAMETERS*, IUnknown*, HWND, bool);
+typedef void (*PFN_SC_Clean)(bool, HWND);
+typedef void (*PFN_SC_Release)(HWND);
 
 struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapChain4 final : public IDXGISwapChain4
 {
-    WrappedIDXGISwapChain4(IDXGISwapChain * real, IUnknown * pDevice, HWND hWnd, PFN_SC_Present renderTrig, PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig, bool isUWP);
+    WrappedIDXGISwapChain4(IDXGISwapChain* real, IUnknown* pDevice, HWND hWnd, PFN_SC_Present renderTrig,
+                           PFN_SC_Clean clearTrig, PFN_SC_Release releaseTrig, bool isUWP);
     ~WrappedIDXGISwapChain4();
 
     // implement IUnknown
@@ -38,7 +39,8 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     HRESULT STDMETHODCALLTYPE SetFullscreenState(BOOL Fullscreen, IDXGIOutput* pTarget) override;
     HRESULT STDMETHODCALLTYPE GetFullscreenState(BOOL* pFullscreen, IDXGIOutput** ppTarget) override;
     HRESULT STDMETHODCALLTYPE GetDesc(DXGI_SWAP_CHAIN_DESC* pDesc) override;
-    HRESULT STDMETHODCALLTYPE ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags) override;
+    HRESULT STDMETHODCALLTYPE ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat,
+                                            UINT SwapChainFlags) override;
     HRESULT STDMETHODCALLTYPE ResizeTarget(const DXGI_MODE_DESC* pNewTargetParameters) override;
     HRESULT STDMETHODCALLTYPE GetContainingOutput(IDXGIOutput** ppOutput) override;
     HRESULT STDMETHODCALLTYPE GetFrameStatistics(DXGI_FRAME_STATISTICS* pStats) override;
@@ -49,7 +51,8 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
     HRESULT STDMETHODCALLTYPE GetFullscreenDesc(DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pDesc) override;
     HRESULT STDMETHODCALLTYPE GetHwnd(HWND* pHwnd) override;
     HRESULT STDMETHODCALLTYPE GetCoreWindow(REFIID refiid, void** ppUnk) override;
-    HRESULT STDMETHODCALLTYPE Present1(UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters) override;
+    HRESULT STDMETHODCALLTYPE Present1(UINT SyncInterval, UINT PresentFlags,
+                                       const DXGI_PRESENT_PARAMETERS* pPresentParameters) override;
     BOOL STDMETHODCALLTYPE IsTemporaryMonoSupported(void) override;
     HRESULT STDMETHODCALLTYPE GetRestrictToOutput(IDXGIOutput** ppRestrictToOutput) override;
     HRESULT STDMETHODCALLTYPE SetBackgroundColor(const DXGI_RGBA* pColor) override;
@@ -68,10 +71,12 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
     // implement IDXGISwapChain3
     UINT STDMETHODCALLTYPE GetCurrentBackBufferIndex(void) override;
-    HRESULT STDMETHODCALLTYPE CheckColorSpaceSupport(DXGI_COLOR_SPACE_TYPE ColorSpace, UINT* pColorSpaceSupport) override;
+    HRESULT STDMETHODCALLTYPE CheckColorSpaceSupport(DXGI_COLOR_SPACE_TYPE ColorSpace,
+                                                     UINT* pColorSpaceSupport) override;
     HRESULT STDMETHODCALLTYPE SetColorSpace1(DXGI_COLOR_SPACE_TYPE ColorSpace) override;
-    HRESULT STDMETHODCALLTYPE ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format, UINT SwapChainFlags,
-                                             const UINT* pCreationNodeMask, IUnknown* const* ppPresentQueue) override;
+    HRESULT STDMETHODCALLTYPE ResizeBuffers1(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT Format,
+                                             UINT SwapChainFlags, const UINT* pCreationNodeMask,
+                                             IUnknown* const* ppPresentQueue) override;
 
     // implement IDXGISwapChain4
     HRESULT STDMETHODCALLTYPE SetHDRMetaData(DXGI_HDR_METADATA_TYPE Type, UINT Size, void* pMetaData) override;
@@ -94,7 +99,7 @@ struct DECLSPEC_UUID("3af622a3-82d0-49cd-994f-cce05122c222") WrappedIDXGISwapCha
 
 #ifdef USE_LOCAL_MUTEX
     OwnedMutex _localMutex;
-#endif 
+#endif
 
     int id = 0;
     bool UWP = false;

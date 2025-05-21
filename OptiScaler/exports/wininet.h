@@ -452,7 +452,8 @@ struct wininet_dll
         InternetCanonicalizeUrlW = KernelBaseProxy::GetProcAddress_()(dll, "InternetCanonicalizeUrlW");
         InternetCheckConnectionA = KernelBaseProxy::GetProcAddress_()(dll, "InternetCheckConnectionA");
         InternetCheckConnectionW = KernelBaseProxy::GetProcAddress_()(dll, "InternetCheckConnectionW");
-        InternetClearAllPerSiteCookieDecisions = KernelBaseProxy::GetProcAddress_()(dll, "InternetClearAllPerSiteCookieDecisions");
+        InternetClearAllPerSiteCookieDecisions =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetClearAllPerSiteCookieDecisions");
         InternetCloseHandle = KernelBaseProxy::GetProcAddress_()(dll, "InternetCloseHandle");
         InternetCombineUrlA = KernelBaseProxy::GetProcAddress_()(dll, "InternetCombineUrlA");
         InternetCombineUrlW = KernelBaseProxy::GetProcAddress_()(dll, "InternetCombineUrlW");
@@ -461,7 +462,8 @@ struct wininet_dll
         InternetConfirmZoneCrossingW = KernelBaseProxy::GetProcAddress_()(dll, "InternetConfirmZoneCrossingW");
         InternetConnectA = KernelBaseProxy::GetProcAddress_()(dll, "InternetConnectA");
         InternetConnectW = KernelBaseProxy::GetProcAddress_()(dll, "InternetConnectW");
-        InternetConvertUrlFromWireToWideChar = KernelBaseProxy::GetProcAddress_()(dll, "InternetConvertUrlFromWireToWideChar");
+        InternetConvertUrlFromWireToWideChar =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetConvertUrlFromWireToWideChar");
         InternetCrackUrlA = KernelBaseProxy::GetProcAddress_()(dll, "InternetCrackUrlA");
         InternetCrackUrlW = KernelBaseProxy::GetProcAddress_()(dll, "InternetCrackUrlW");
         InternetCreateUrlA = KernelBaseProxy::GetProcAddress_()(dll, "InternetCreateUrlA");
@@ -469,8 +471,10 @@ struct wininet_dll
         InternetDial = KernelBaseProxy::GetProcAddress_()(dll, "InternetDial");
         InternetDialA = KernelBaseProxy::GetProcAddress_()(dll, "InternetDialA");
         InternetDialW = KernelBaseProxy::GetProcAddress_()(dll, "InternetDialW");
-        InternetEnumPerSiteCookieDecisionA = KernelBaseProxy::GetProcAddress_()(dll, "InternetEnumPerSiteCookieDecisionA");
-        InternetEnumPerSiteCookieDecisionW = KernelBaseProxy::GetProcAddress_()(dll, "InternetEnumPerSiteCookieDecisionW");
+        InternetEnumPerSiteCookieDecisionA =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetEnumPerSiteCookieDecisionA");
+        InternetEnumPerSiteCookieDecisionW =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetEnumPerSiteCookieDecisionW");
         InternetErrorDlg = KernelBaseProxy::GetProcAddress_()(dll, "InternetErrorDlg");
         InternetFindNextFileA = KernelBaseProxy::GetProcAddress_()(dll, "InternetFindNextFileA");
         InternetFindNextFileW = KernelBaseProxy::GetProcAddress_()(dll, "InternetFindNextFileW");
@@ -490,8 +494,10 @@ struct wininet_dll
         InternetGetCookieW = KernelBaseProxy::GetProcAddress_()(dll, "InternetGetCookieW");
         InternetGetLastResponseInfoA = KernelBaseProxy::GetProcAddress_()(dll, "InternetGetLastResponseInfoA");
         InternetGetLastResponseInfoW = KernelBaseProxy::GetProcAddress_()(dll, "InternetGetLastResponseInfoW");
-        InternetGetPerSiteCookieDecisionA = KernelBaseProxy::GetProcAddress_()(dll, "InternetGetPerSiteCookieDecisionA");
-        InternetGetPerSiteCookieDecisionW = KernelBaseProxy::GetProcAddress_()(dll, "InternetGetPerSiteCookieDecisionW");
+        InternetGetPerSiteCookieDecisionA =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetGetPerSiteCookieDecisionA");
+        InternetGetPerSiteCookieDecisionW =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetGetPerSiteCookieDecisionW");
         InternetGetProxyForUrl = KernelBaseProxy::GetProcAddress_()(dll, "InternetGetProxyForUrl");
         InternetGetSecurityInfoByURL = KernelBaseProxy::GetProcAddress_()(dll, "InternetGetSecurityInfoByURL");
         InternetGetSecurityInfoByURLA = KernelBaseProxy::GetProcAddress_()(dll, "InternetGetSecurityInfoByURLA");
@@ -513,8 +519,10 @@ struct wininet_dll
         InternetReadFile = KernelBaseProxy::GetProcAddress_()(dll, "InternetReadFile");
         InternetReadFileExA = KernelBaseProxy::GetProcAddress_()(dll, "InternetReadFileExA");
         InternetReadFileExW = KernelBaseProxy::GetProcAddress_()(dll, "InternetReadFileExW");
-        InternetSecurityProtocolToStringA = KernelBaseProxy::GetProcAddress_()(dll, "InternetSecurityProtocolToStringA");
-        InternetSecurityProtocolToStringW = KernelBaseProxy::GetProcAddress_()(dll, "InternetSecurityProtocolToStringW");
+        InternetSecurityProtocolToStringA =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetSecurityProtocolToStringA");
+        InternetSecurityProtocolToStringW =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetSecurityProtocolToStringW");
         InternetSetCookieA = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetCookieA");
         InternetSetCookieEx2 = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetCookieEx2");
         InternetSetCookieExA = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetCookieExA");
@@ -528,8 +536,10 @@ struct wininet_dll
         InternetSetOptionExA = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetOptionExA");
         InternetSetOptionExW = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetOptionExW");
         InternetSetOptionW = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetOptionW");
-        InternetSetPerSiteCookieDecisionA = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetPerSiteCookieDecisionA");
-        InternetSetPerSiteCookieDecisionW = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetPerSiteCookieDecisionW");
+        InternetSetPerSiteCookieDecisionA =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetSetPerSiteCookieDecisionA");
+        InternetSetPerSiteCookieDecisionW =
+            KernelBaseProxy::GetProcAddress_()(dll, "InternetSetPerSiteCookieDecisionW");
         InternetSetStatusCallback = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetStatusCallback");
         InternetSetStatusCallbackA = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetStatusCallbackA");
         InternetSetStatusCallbackW = KernelBaseProxy::GetProcAddress_()(dll, "InternetSetStatusCallbackW");
@@ -550,7 +560,8 @@ struct wininet_dll
         IsUrlCacheEntryExpiredA = KernelBaseProxy::GetProcAddress_()(dll, "IsUrlCacheEntryExpiredA");
         IsUrlCacheEntryExpiredW = KernelBaseProxy::GetProcAddress_()(dll, "IsUrlCacheEntryExpiredW");
         LoadUrlCacheContent = KernelBaseProxy::GetProcAddress_()(dll, "LoadUrlCacheContent");
-        ParseX509EncodedCertificateForListBoxEntry = KernelBaseProxy::GetProcAddress_()(dll, "ParseX509EncodedCertificateForListBoxEntry");
+        ParseX509EncodedCertificateForListBoxEntry =
+            KernelBaseProxy::GetProcAddress_()(dll, "ParseX509EncodedCertificateForListBoxEntry");
         PrivacyGetZonePreferenceW = KernelBaseProxy::GetProcAddress_()(dll, "PrivacyGetZonePreferenceW");
         PrivacySetZonePreferenceW = KernelBaseProxy::GetProcAddress_()(dll, "PrivacySetZonePreferenceW");
         ReadUrlCacheEntryStream = KernelBaseProxy::GetProcAddress_()(dll, "ReadUrlCacheEntryStream");
@@ -583,7 +594,8 @@ struct wininet_dll
         UpdateUrlCacheContentPath = KernelBaseProxy::GetProcAddress_()(dll, "UpdateUrlCacheContentPath");
         UrlCacheCheckEntriesExist = KernelBaseProxy::GetProcAddress_()(dll, "UrlCacheCheckEntriesExist");
         UrlCacheCloseEntryHandle = KernelBaseProxy::GetProcAddress_()(dll, "UrlCacheCloseEntryHandle");
-        UrlCacheContainerSetEntryMaximumAge = KernelBaseProxy::GetProcAddress_()(dll, "UrlCacheContainerSetEntryMaximumAge");
+        UrlCacheContainerSetEntryMaximumAge =
+            KernelBaseProxy::GetProcAddress_()(dll, "UrlCacheContainerSetEntryMaximumAge");
         UrlCacheCreateContainer = KernelBaseProxy::GetProcAddress_()(dll, "UrlCacheCreateContainer");
         UrlCacheFindFirstEntry = KernelBaseProxy::GetProcAddress_()(dll, "UrlCacheFindFirstEntry");
         UrlCacheFindNextEntry = KernelBaseProxy::GetProcAddress_()(dll, "UrlCacheFindNextEntry");
@@ -603,7 +615,6 @@ struct wininet_dll
         UrlZonesDetach = KernelBaseProxy::GetProcAddress_()(dll, "UrlZonesDetach");
     }
 } wininet;
-
 
 void _AppCacheCheckManifest() { wininet.AppCacheCheckManifest(); }
 void _AppCacheCloseHandle() { wininet.AppCacheCloseHandle(); }

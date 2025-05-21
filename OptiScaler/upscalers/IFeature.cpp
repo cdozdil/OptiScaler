@@ -4,7 +4,7 @@
 
 void IFeature::SetHandle(unsigned int InHandleId)
 {
-    _handle = new NVSDK_NGX_Handle{ InHandleId };
+    _handle = new NVSDK_NGX_Handle{InHandleId};
     LOG_INFO("Handle: {0}", _handle->Id);
 }
 
@@ -143,11 +143,10 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
             _renderHeight = height;
         }
 
+        _perfQualityValue = (NVSDK_NGX_PerfQuality_Value) pqValue;
 
-        _perfQualityValue = (NVSDK_NGX_PerfQuality_Value)pqValue;
-
-        LOG_INFO("Render Resolution: {0}x{1}, Display Resolution {2}x{3}, Quality: {4}",
-                 _renderWidth, _renderHeight, _displayWidth, _displayHeight, pqValue);
+        LOG_INFO("Render Resolution: {0}x{1}, Display Resolution {2}x{3}, Quality: {4}", _renderWidth, _renderHeight,
+                 _displayWidth, _displayHeight, pqValue);
 
         return true;
     }
@@ -158,8 +157,10 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
 
 void IFeature::GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight)
 {
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, OutWidth) != NVSDK_NGX_Result_Success ||
-        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, OutHeight) != NVSDK_NGX_Result_Success)
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, OutWidth) !=
+            NVSDK_NGX_Result_Success ||
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, OutHeight) !=
+            NVSDK_NGX_Result_Success)
     {
         LOG_WARN("No subrect dimension info!");
 
@@ -210,13 +211,14 @@ void IFeature::GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned i
     _renderWidth = *OutWidth;
     _renderHeight = *OutHeight;
 
-    //Should not be needed but who knows
-    //if (_renderHeight == _displayHeight && _renderWidth == _displayWidth && _perfQualityValue != NVSDK_NGX_PerfQuality_Value_DLAA)
+    // Should not be needed but who knows
+    // if (_renderHeight == _displayHeight && _renderWidth == _displayWidth && _perfQualityValue !=
+    // NVSDK_NGX_PerfQuality_Value_DLAA)
     //{
     //	InParameters->Set(NVSDK_NGX_Parameter_PerfQualityValue, 5);
     //	InParameters->Set(NVSDK_NGX_Parameter_Scale, 1.0f);
     //	InParameters->Set(NVSDK_NGX_Parameter_SuperSampling_ScaleFactor, 1.0f);
-    //}
+    // }
 }
 
 float IFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
@@ -246,12 +248,19 @@ bool IFeature::UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters)
     InParameters->Get("FSR.upscaleSize.width", &fsrDynamicOutputWidth);
     InParameters->Get("FSR.upscaleSize.height", &fsrDynamicOutputHeight);
 
-    if (Config::Instance()->OutputScalingEnabled.value_or_default()) {
+    if (Config::Instance()->OutputScalingEnabled.value_or_default())
+    {
         if (_targetWidth == fsrDynamicOutputWidth || _targetHeight == fsrDynamicOutputHeight)
             return false;
 
         if (fsrDynamicOutputWidth > 0 && fsrDynamicOutputHeight > 0 &&
-            ((unsigned int)(fsrDynamicOutputWidth * Config::Instance()->OutputScalingMultiplier.value_or_default()) != _targetWidth || fsrDynamicOutputWidth != _displayWidth || (unsigned int)(fsrDynamicOutputHeight * Config::Instance()->OutputScalingMultiplier.value_or_default()) != _targetHeight || fsrDynamicOutputHeight != _displayHeight)) {
+            ((unsigned int) (fsrDynamicOutputWidth * Config::Instance()->OutputScalingMultiplier.value_or_default()) !=
+                 _targetWidth ||
+             fsrDynamicOutputWidth != _displayWidth ||
+             (unsigned int) (fsrDynamicOutputHeight * Config::Instance()->OutputScalingMultiplier.value_or_default()) !=
+                 _targetHeight ||
+             fsrDynamicOutputHeight != _displayHeight))
+        {
             _targetWidth = fsrDynamicOutputWidth * Config::Instance()->OutputScalingMultiplier.value_or_default();
             _displayWidth = fsrDynamicOutputWidth;
             _targetHeight = fsrDynamicOutputHeight * Config::Instance()->OutputScalingMultiplier.value_or_default();
@@ -263,7 +272,9 @@ bool IFeature::UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters)
     else
     {
         if (fsrDynamicOutputWidth > 0 && fsrDynamicOutputHeight > 0 &&
-            (fsrDynamicOutputWidth != _targetWidth || fsrDynamicOutputWidth != _displayWidth || fsrDynamicOutputHeight != _targetHeight || fsrDynamicOutputHeight != _displayHeight)) {
+            (fsrDynamicOutputWidth != _targetWidth || fsrDynamicOutputWidth != _displayWidth ||
+             fsrDynamicOutputHeight != _targetHeight || fsrDynamicOutputHeight != _displayHeight))
+        {
             _targetWidth = fsrDynamicOutputWidth;
             _displayWidth = fsrDynamicOutputWidth;
             _targetHeight = fsrDynamicOutputHeight;
@@ -281,7 +292,8 @@ void IFeature::GetDynamicOutputResolution(NVSDK_NGX_Parameter* InParameters, uns
     // FSR 3.1 uses upscaleSize for this, max size should stay the same
     int supportsUpscaleSize = 0;
     InParameters->Get("OptiScaler.SupportsUpscaleSize", &supportsUpscaleSize);
-    if (supportsUpscaleSize) {
+    if (supportsUpscaleSize)
+    {
         InParameters->Set("OptiScaler.SupportsUpscaleSize", 0);
         return;
     }
@@ -293,7 +305,8 @@ void IFeature::GetDynamicOutputResolution(NVSDK_NGX_Parameter* InParameters, uns
     InParameters->Get("FSR.upscaleSize.width", &fsrDynamicOutputWidth);
     InParameters->Get("FSR.upscaleSize.height", &fsrDynamicOutputHeight);
 
-    if (fsrDynamicOutputWidth > 0 && fsrDynamicOutputHeight > 0) {
+    if (fsrDynamicOutputWidth > 0 && fsrDynamicOutputHeight > 0)
+    {
         *width = fsrDynamicOutputWidth;
         *height = fsrDynamicOutputHeight;
     }

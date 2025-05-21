@@ -2,18 +2,25 @@
 
 #include <Config.h>
 
-#define ASSIGN_DESC(dest, src) dest.Width = src.Width; dest.Height = src.Height; dest.Format = src.Format; dest.BindFlags = src.BindFlags; dest.MiscFlags = src.MiscFlags; 
+#define ASSIGN_DESC(dest, src)                                                                                         \
+    dest.Width = src.Width;                                                                                            \
+    dest.Height = src.Height;                                                                                          \
+    dest.Format = src.Format;                                                                                          \
+    dest.BindFlags = src.BindFlags;                                                                                    \
+    dest.MiscFlags = src.MiscFlags;
 
-#define SAFE_RELEASE(p)		\
-do {						\
-	if(p && p != nullptr)	\
-	{						\
-		(p)->Release();		\
-		(p) = nullptr;		\
-	}						\
-} while((void)0, 0)	
+#define SAFE_RELEASE(p)                                                                                                \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (p && p != nullptr)                                                                                         \
+        {                                                                                                              \
+            (p)->Release();                                                                                            \
+            (p) = nullptr;                                                                                             \
+        }                                                                                                              \
+    } while ((void) 0, 0)
 
-void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
+void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource,
+                                         D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 {
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -24,7 +31,8 @@ void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList,
     commandList->ResourceBarrier(1, &barrier);
 }
 
-bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource, bool InCopy, bool InDontUseNTShared)
+bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutResource,
+                                               bool InCopy, bool InDontUseNTShared)
 {
     ID3D11Texture2D* originalTexture = nullptr;
     D3D11_TEXTURE2D_DESC desc{};
@@ -37,17 +45,20 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
     originalTexture->GetDesc(&desc);
 
     // check shared nt handle usage later
-    if (!(desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) && !(desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE) && !InDontUseNTShared)
+    if (!(desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) && !(desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE) &&
+        !InDontUseNTShared)
     {
         if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
             desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
-            OutResource->SharedTexture == nullptr || !(OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
+            OutResource->SharedTexture == nullptr ||
+            !(OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
         {
             if (OutResource->SharedTexture != nullptr)
             {
                 OutResource->SharedTexture->Release();
 
-                if (OutResource->Dx12Handle != NULL && (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
+                if (OutResource->Dx12Handle != NULL &&
+                    (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
                     CloseHandle(OutResource->Dx12Handle);
 
                 OutResource->Dx11Handle = NULL;
@@ -134,13 +145,15 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
         {
             if (desc.Width != OutResource->Desc.Width || desc.Height != OutResource->Desc.Height ||
                 desc.Format != OutResource->Desc.Format || desc.BindFlags != OutResource->Desc.BindFlags ||
-                OutResource->SharedTexture == nullptr || (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
+                OutResource->SharedTexture == nullptr ||
+                (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
             {
                 if (OutResource->SharedTexture != nullptr)
                 {
                     OutResource->SharedTexture->Release();
 
-                    if (OutResource->Dx12Handle != NULL && (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
+                    if (OutResource->Dx12Handle != NULL &&
+                        (OutResource->Desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE))
                         CloseHandle(OutResource->Dx12Handle);
 
                     OutResource->Dx11Handle = NULL;
@@ -196,7 +209,8 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
             }
 
             // Get shared handle
-            if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) != 0 && (desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE) != 0)
+            if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) != 0 &&
+                (desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE) != 0)
             {
                 DWORD access = DXGI_SHARED_RESOURCE_READ;
 
@@ -218,7 +232,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
 
             resource->Release();
 
-            OutResource->SharedTexture = (ID3D11Texture2D*)InResource;
+            OutResource->SharedTexture = (ID3D11Texture2D*) InResource;
         }
     }
 
@@ -271,7 +285,8 @@ void IFeature_Dx11wDx12::ReleaseSyncResources()
     }
 }
 
-void IFeature_Dx11wDx12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
+void IFeature_Dx11wDx12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter,
+                                            D3D_FEATURE_LEVEL InFeatureLevel, bool InRequestHighPerformanceAdapter)
 {
     LOG_FUNC();
 
@@ -282,13 +297,13 @@ void IFeature_Dx11wDx12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapt
     IDXGIFactory6* factory6;
     if (SUCCEEDED(InFactory->QueryInterface(IID_PPV_ARGS(&factory6))))
     {
-        for (
-            UINT adapterIndex = 0;
-            DXGI_ERROR_NOT_FOUND != factory6->EnumAdapterByGpuPreference(
-            adapterIndex,
-            InRequestHighPerformanceAdapter == true ? DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE : DXGI_GPU_PREFERENCE_UNSPECIFIED,
-            IID_PPV_ARGS(&adapter));
-            ++adapterIndex)
+        for (UINT adapterIndex = 0;
+             DXGI_ERROR_NOT_FOUND != factory6->EnumAdapterByGpuPreference(adapterIndex,
+                                                                          InRequestHighPerformanceAdapter == true
+                                                                              ? DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE
+                                                                              : DXGI_GPU_PREFERENCE_UNSPECIFIED,
+                                                                          IID_PPV_ARGS(&adapter));
+             ++adapterIndex)
         {
             DXGI_ADAPTER_DESC1 desc;
             adapter->GetDesc1(&desc);
@@ -314,7 +329,8 @@ void IFeature_Dx11wDx12::GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapt
     }
     else
     {
-        for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != InFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
+        for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != InFactory->EnumAdapters1(adapterIndex, &adapter);
+             ++adapterIndex)
         {
             DXGI_ADAPTER_DESC1 desc;
             adapter->GetDesc1(&desc);
@@ -404,7 +420,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
     if (Dx12CommandAllocator[0] == nullptr)
     {
-        result = Dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator[0]));
+        result =
+            Dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator[0]));
 
         if (result != S_OK)
         {
@@ -417,7 +434,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
 
     if (Dx12CommandAllocator[1] == nullptr)
     {
-        result = Dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator[1]));
+        result =
+            Dx12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&Dx12CommandAllocator[1]));
 
         if (result != S_OK)
         {
@@ -431,7 +449,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
     if (Dx12CommandList[0] == nullptr)
     {
         // CreateCommandList
-        result = Dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator[0], nullptr, IID_PPV_ARGS(&Dx12CommandList[0]));
+        result = Dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator[0], nullptr,
+                                               IID_PPV_ARGS(&Dx12CommandList[0]));
 
         if (result != S_OK)
         {
@@ -445,7 +464,8 @@ HRESULT IFeature_Dx11wDx12::CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel)
     if (Dx12CommandList[1] == nullptr)
     {
         // CreateCommandList
-        result = Dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator[1], nullptr, IID_PPV_ARGS(&Dx12CommandList[1]));
+        result = Dx12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, Dx12CommandAllocator[1], nullptr,
+                                               IID_PPV_ARGS(&Dx12CommandList[1]));
 
         if (result != S_OK)
         {
@@ -506,7 +526,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
     ID3D11Resource* paramColor;
     if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Color, (void**)&paramColor);
+        InParameters->Get(NVSDK_NGX_Parameter_Color, (void**) &paramColor);
 
     if (paramColor)
     {
@@ -522,7 +542,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
     ID3D11Resource* paramMv;
     if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramMv) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**)&paramMv);
+        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**) &paramMv);
 
     if (paramMv)
     {
@@ -537,12 +557,13 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     }
 
     if (InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput[_frameCount % 2]) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Output, (void**)&paramOutput[_frameCount % 2]);
+        InParameters->Get(NVSDK_NGX_Parameter_Output, (void**) &paramOutput[_frameCount % 2]);
 
     if (paramOutput[_frameCount % 2])
     {
         LOG_DEBUG("Output exist..");
-        if (CopyTextureFrom11To12(paramOutput[_frameCount % 2], &dx11Out, false, Config::Instance()->DontUseNTShared.value_or(true)) == false)
+        if (CopyTextureFrom11To12(paramOutput[_frameCount % 2], &dx11Out, false,
+                                  Config::Instance()->DontUseNTShared.value_or(true)) == false)
             return false;
     }
     else
@@ -553,7 +574,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
     ID3D11Resource* paramDepth;
     if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**)&paramDepth);
+        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**) &paramDepth);
 
     if (paramDepth)
     {
@@ -573,7 +594,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     else
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExposure) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**)&paramExposure);
+            InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**) &paramExposure);
 
         if (paramExposure)
         {
@@ -591,8 +612,9 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
     }
 
     ID3D11Resource* paramReactiveMask = nullptr;
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**)&paramReactiveMask);
+    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask) !=
+        NVSDK_NGX_Result_Success)
+        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**) &paramReactiveMask);
 
     if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr))
     {
@@ -761,7 +783,8 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         dx11Exp.Dx12Handle = dx11Exp.Dx11Handle;
     }
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(false) && paramReactiveMask && dx11Reactive.Dx12Handle != dx11Reactive.Dx11Handle)
+    if (!Config::Instance()->DisableReactiveMask.value_or(false) && paramReactiveMask &&
+        dx11Reactive.Dx12Handle != dx11Reactive.Dx11Handle)
     {
         if (dx11Reactive.Dx12Handle != NULL)
             CloseHandle(dx11Reactive.Dx12Handle);
@@ -784,7 +807,7 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
 
 bool IFeature_Dx11wDx12::CopyBackOutput()
 {
-    //Fence ones
+    // Fence ones
     {
         // wait for fsr on dx12
         Dx11DeviceContext->Wait(dx11FenceTextureCopy, _fenceValue);
@@ -797,7 +820,8 @@ bool IFeature_Dx11wDx12::CopyBackOutput()
     return true;
 }
 
-bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
+bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* InContext,
+                                  NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
 
@@ -846,7 +870,8 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
     return true;
 }
 
-IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters)
+IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
+    : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters)
 {
 }
 
@@ -856,8 +881,6 @@ IFeature_Dx11wDx12::~IFeature_Dx11wDx12()
         return;
 
     ReleaseSharedResources();
-
-    
 
     if (Imgui != nullptr && Imgui.get() != nullptr)
     {

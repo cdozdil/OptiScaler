@@ -8,10 +8,9 @@
 #include <include/detours/detours.h>
 #include <include/d3dx/d3dx12.h>
 
-
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
-    spdlog::log((spdlog::level::level_enum)((int)Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
+    spdlog::log((spdlog::level::level_enum) ((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
 bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
@@ -78,57 +77,58 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     switch (PerfQualityValue())
     {
-        case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+    case NVSDK_NGX_PerfQuality_Value_UltraPerformance:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_MaxPerf:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
+    case NVSDK_NGX_PerfQuality_Value_MaxPerf:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_PERFORMANCE;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_Balanced:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
+    case NVSDK_NGX_PerfQuality_Value_Balanced:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_MaxQuality:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
+    case NVSDK_NGX_PerfQuality_Value_MaxQuality:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_QUALITY;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_UltraQuality:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+    case NVSDK_NGX_PerfQuality_Value_UltraQuality:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY_PLUS;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
 
-            break;
+        break;
 
-        case NVSDK_NGX_PerfQuality_Value_DLAA:
-            if (Version().major >= 1 && Version().minor >= 3)
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
-            else
-                xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
+    case NVSDK_NGX_PerfQuality_Value_DLAA:
+        if (Version().major >= 1 && Version().minor >= 3)
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_AA;
+        else
+            xessParams.qualitySetting = XESS_QUALITY_SETTING_ULTRA_QUALITY;
 
-            break;
+        break;
 
-        default:
-            xessParams.qualitySetting = XESS_QUALITY_SETTING_BALANCED; //Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
-            break;
+    default:
+        xessParams.qualitySetting =
+            XESS_QUALITY_SETTING_BALANCED; // Set out-of-range value for non-existing XESS_QUALITY_SETTING_BALANCED mode
+        break;
     }
 
     if (Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV())
@@ -187,9 +187,11 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
             if (SUCCEEDED(hr))
             {
-                D3D12_HEAP_DESC textureHeapDesc{ xessProps.tempTextureHeapSize,
+                D3D12_HEAP_DESC textureHeapDesc{
+                    xessProps.tempTextureHeapSize,
                     {D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0},
-                    0, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES };
+                    0,
+                    D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES};
 
                 State::Instance().skipHeapCapture = true;
                 hr = device->CreateHeap(&textureHeapDesc, IID_PPV_ARGS(&_localTextureHeap));
@@ -209,14 +211,13 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
                 else
                 {
                     _localBufferHeap->Release();
-                    LOG_ERROR("CreateHeap textureHeapDesc failed {0:x}!", (UINT)hr);
+                    LOG_ERROR("CreateHeap textureHeapDesc failed {0:x}!", (UINT) hr);
                 }
             }
             else
             {
-                LOG_ERROR("CreateHeap bufferHeapDesc failed {0:x}!", (UINT)hr);
+                LOG_ERROR("CreateHeap bufferHeapDesc failed {0:x}!", (UINT) hr);
             }
-
         }
         else
         {
@@ -242,7 +243,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
             if (FAILED(hr) || !_localPipeline)
             {
-                LOG_ERROR("CreatePipelineLibrary failed {0:x}!", (UINT)hr);
+                LOG_ERROR("CreatePipelineLibrary failed {0:x}!", (UINT) hr);
                 ret = XeSSProxy::D3D12BuildPipelines()(_xessContext, NULL, false, xessParams.initFlags);
             }
             else
@@ -276,9 +277,11 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
     LOG_DEBUG("xessD3D12Init!");
 
-    if (Config::Instance()->NetworkModel.has_value() && Config::Instance()->NetworkModel.value() >= 0 && Config::Instance()->NetworkModel.value() <= 5)
+    if (Config::Instance()->NetworkModel.has_value() && Config::Instance()->NetworkModel.value() >= 0 &&
+        Config::Instance()->NetworkModel.value() <= 5)
     {
-        ret = XeSSProxy::SelectNetworkModel()(_xessContext, (xess_network_model_t)Config::Instance()->NetworkModel.value());
+        ret = XeSSProxy::SelectNetworkModel()(_xessContext,
+                                              (xess_network_model_t) Config::Instance()->NetworkModel.value());
         LOG_ERROR("xessSelectNetworkModel result: {0}", ResultToString(ret));
     }
 
@@ -333,5 +336,3 @@ XeSSFeature::~XeSSFeature()
         _localTextureHeap = nullptr;
     }
 }
-
-

@@ -5,23 +5,23 @@ inline static DXGI_FORMAT GetDepthFormat(DXGI_FORMAT InFormat)
 {
     switch (InFormat)
     {
-        case DXGI_FORMAT_R24G8_TYPELESS:
-            return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+    case DXGI_FORMAT_R24G8_TYPELESS:
+        return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
 
-        case DXGI_FORMAT_R32G8X24_TYPELESS:
-            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+    case DXGI_FORMAT_R32G8X24_TYPELESS:
+        return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
 
-        case DXGI_FORMAT_R32_TYPELESS:
-            return DXGI_FORMAT_R32_FLOAT;
+    case DXGI_FORMAT_R32_TYPELESS:
+        return DXGI_FORMAT_R32_FLOAT;
 
-        case DXGI_FORMAT_R16_TYPELESS:
-            return DXGI_FORMAT_R16_FLOAT;
+    case DXGI_FORMAT_R16_TYPELESS:
+        return DXGI_FORMAT_R16_FLOAT;
 
-        case DXGI_FORMAT_R16G16_TYPELESS:
-            return DXGI_FORMAT_R16G16_FLOAT;
+    case DXGI_FORMAT_R16G16_TYPELESS:
+        return DXGI_FORMAT_R16G16_FLOAT;
 
-        default:
-            break;
+    default:
+        break;
     }
 
     return InFormat;
@@ -31,36 +31,36 @@ inline static DXGI_FORMAT GetStencilFormat(DXGI_FORMAT InFormat)
 {
     switch (InFormat)
     {
-        case DXGI_FORMAT_R24G8_TYPELESS:
-            return DXGI_FORMAT_D24_UNORM_S8_UINT;
+    case DXGI_FORMAT_R24G8_TYPELESS:
+        return DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-        case DXGI_FORMAT_R32G8X24_TYPELESS:
-            return DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
+    case DXGI_FORMAT_R32G8X24_TYPELESS:
+        return DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
 
-        case DXGI_FORMAT_R32_TYPELESS:
-            return DXGI_FORMAT_R32_FLOAT;
+    case DXGI_FORMAT_R32_TYPELESS:
+        return DXGI_FORMAT_R32_FLOAT;
 
-        case DXGI_FORMAT_R16G16_TYPELESS:
-            return DXGI_FORMAT_R16G16_FLOAT;
+    case DXGI_FORMAT_R16G16_TYPELESS:
+        return DXGI_FORMAT_R16G16_FLOAT;
 
-        case DXGI_FORMAT_R16_TYPELESS:
-            return DXGI_FORMAT_R16_FLOAT;
+    case DXGI_FORMAT_R16_TYPELESS:
+        return DXGI_FORMAT_R16_FLOAT;
 
-        case DXGI_FORMAT_R8G8_TYPELESS:
-            return DXGI_FORMAT_R8G8_UINT;
+    case DXGI_FORMAT_R8G8_TYPELESS:
+        return DXGI_FORMAT_R8G8_UINT;
 
-        case DXGI_FORMAT_R8_TYPELESS:
-            return DXGI_FORMAT_R8_UINT;
+    case DXGI_FORMAT_R8_TYPELESS:
+        return DXGI_FORMAT_R8_UINT;
 
-
-        default:
-            break;
+    default:
+        break;
     }
 
     return InFormat;
 }
 
-inline static ID3D12DescriptorHeap* CreateDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT numDescriptors)
+inline static ID3D12DescriptorHeap* CreateDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type,
+                                                         UINT numDescriptors)
 {
     D3D12_DESCRIPTOR_HEAP_DESC desc = {};
     desc.NumDescriptors = numDescriptors;
@@ -72,9 +72,10 @@ inline static ID3D12DescriptorHeap* CreateDescriptorHeap(ID3D12Device* device, D
     return descriptorHeap;
 }
 
-inline static bool CreateReferencedResource(ID3D12Device* InDevice, ID3D12Resource* InResource, const wchar_t* InName, ID3D12Resource** OutResource, D3D12_RESOURCE_STATES InState,
-                                            DXGI_FORMAT InFormat = DXGI_FORMAT_UNKNOWN, UINT64 InWidth = 0, UINT InHeight = 0,
-                                            D3D12_RESOURCE_FLAGS InFlags = D3D12_RESOURCE_FLAG_NONE)
+inline static bool CreateReferencedResource(ID3D12Device* InDevice, ID3D12Resource* InResource, const wchar_t* InName,
+                                            ID3D12Resource** OutResource, D3D12_RESOURCE_STATES InState,
+                                            DXGI_FORMAT InFormat = DXGI_FORMAT_UNKNOWN, UINT64 InWidth = 0,
+                                            UINT InHeight = 0, D3D12_RESOURCE_FLAGS InFlags = D3D12_RESOURCE_FLAG_NONE)
 {
     if (InDevice == nullptr || InResource == nullptr)
         return false;
@@ -84,7 +85,7 @@ inline static bool CreateReferencedResource(ID3D12Device* InDevice, ID3D12Resour
     if (InFormat != DXGI_FORMAT_UNKNOWN)
         texDesc.Format = InFormat;
 
-    //texDesc.Format = GetTypelessFormat(texDesc.Format);
+    // texDesc.Format = GetTypelessFormat(texDesc.Format);
 
     if (InWidth != 0 && InHeight != 0)
     {
@@ -96,7 +97,8 @@ inline static bool CreateReferencedResource(ID3D12Device* InDevice, ID3D12Resour
     {
         auto bufDesc = (*OutResource)->GetDesc();
 
-        if (bufDesc.Width != (UINT64)(texDesc.Width) || bufDesc.Height != (UINT)(texDesc.Height) || bufDesc.Format != texDesc.Format)
+        if (bufDesc.Width != (UINT64) (texDesc.Width) || bufDesc.Height != (UINT) (texDesc.Height) ||
+            bufDesc.Format != texDesc.Format)
         {
             (*OutResource)->Release();
             *OutResource = nullptr;
@@ -119,7 +121,8 @@ inline static bool CreateReferencedResource(ID3D12Device* InDevice, ID3D12Resour
 
     texDesc.Flags = InFlags;
 
-    hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(OutResource));
+    hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr,
+                                           IID_PPV_ARGS(OutResource));
 
     if (hr != S_OK)
     {
@@ -132,7 +135,8 @@ inline static bool CreateReferencedResource(ID3D12Device* InDevice, ID3D12Resour
     return true;
 }
 
-inline static void SetResourceState(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource, D3D12_RESOURCE_STATES InCurrentState, D3D12_RESOURCE_STATES InNewState)
+inline static void SetResourceState(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                    D3D12_RESOURCE_STATES InCurrentState, D3D12_RESOURCE_STATES InNewState)
 {
     if (InCurrentState == InNewState)
         return;
@@ -146,9 +150,8 @@ inline static void SetResourceState(ID3D12GraphicsCommandList* InCommandList, ID
     InCommandList->ResourceBarrier(1, &barrier);
 }
 
-bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList,
-                        ID3D12Resource* InColor, ID3D12Resource* InDepth, ID3D12Resource* InMotionVectors,
-                        DirectX::XMFLOAT2 InJitter)
+bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InColor,
+                        ID3D12Resource* InDepth, ID3D12Resource* InMotionVectors, DirectX::XMFLOAT2 InJitter)
 {
     if (!_init || InDevice == nullptr || InCmdList == nullptr || InColor == nullptr || InDepth == nullptr ||
         InMotionVectors == nullptr || InMotionVectors == nullptr)
@@ -165,21 +168,26 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
 
     // Create Depth History
     if (_historyDepth == nullptr)
-        CreateReferencedResource(InDevice, InDepth, L"PAG_HistoryDepth", &_historyDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        CreateReferencedResource(InDevice, InDepth, L"PAG_HistoryDepth", &_historyDepth,
+                                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
     // Create Output Motion Vectors
     if (_motionVector == nullptr)
-        CreateReferencedResource(InDevice, InDepth, L"PAG_MotionVector", &_motionVector, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                                 DXGI_FORMAT_R16G16_FLOAT, inColorDesc.Width, inColorDesc.Height, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        CreateReferencedResource(InDevice, InDepth, L"PAG_MotionVector", &_motionVector,
+                                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS, DXGI_FORMAT_R16G16_FLOAT, inColorDesc.Width,
+                                 inColorDesc.Height, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     else
-        SetResourceState(InCmdList, _motionVector, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        SetResourceState(InCmdList, _motionVector, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                         D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     // Create Output Rective Mask
     if (_reactiveMask == nullptr)
-        CreateReferencedResource(InDevice, InColor, L"PAG_ReactiveMask", &_reactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                                 DXGI_FORMAT_R8_UNORM, 0, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        CreateReferencedResource(InDevice, InColor, L"PAG_ReactiveMask", &_reactiveMask,
+                                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS, DXGI_FORMAT_R8_UNORM, 0, 0,
+                                 D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     else
-        SetResourceState(InCmdList, _reactiveMask, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        SetResourceState(InCmdList, _reactiveMask, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                         D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     // Create Debug Output
     if (_debug == nullptr)
@@ -201,7 +209,6 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
         _gpuCbvHandle[_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
     }
 
-
     // SRV
     for (size_t i = 0; i < 6; i++)
     {
@@ -213,7 +220,8 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
             else
                 _cpuSrvHandle[i][_counter] = _cpuSrvHandle[i - 1][_counter];
 
-            _cpuSrvHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            _cpuSrvHandle[i][_counter].ptr +=
+                InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
 
         // GPU
@@ -224,7 +232,8 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
             else
                 _gpuSrvHandle[i][_counter] = _gpuSrvHandle[i - 1][_counter];
 
-            _gpuSrvHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            _gpuSrvHandle[i][_counter].ptr +=
+                InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
     }
 
@@ -239,7 +248,8 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
             else
                 _cpuUavHandle[i][_counter] = _cpuUavHandle[i - 1][_counter];
 
-            _cpuUavHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            _cpuUavHandle[i][_counter].ptr +=
+                InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
 
         // GPU
@@ -250,14 +260,19 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
             else
                 _gpuUavHandle[i][_counter] = _gpuUavHandle[i - 1][_counter];
 
-            _gpuUavHandle[i][_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            _gpuUavHandle[i][_counter].ptr +=
+                InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
     }
 
     // RVs for SRVs
-    ID3D12Resource* srvResources[6] = { InColor, InDepth, InDepth, InMotionVectors, nullptr, _historyDepth };
-    DXGI_FORMAT srvResourceFmts[6] = { inColorDesc.Format, GetDepthFormat(inDepthDesc.Format), GetStencilFormat(inDepthDesc.Format),
-        inMvDesc.Format, DXGI_FORMAT_R16_FLOAT, GetStencilFormat(_histDepthDesc.Format) };
+    ID3D12Resource* srvResources[6] = {InColor, InDepth, InDepth, InMotionVectors, nullptr, _historyDepth};
+    DXGI_FORMAT srvResourceFmts[6] = {inColorDesc.Format,
+                                      GetDepthFormat(inDepthDesc.Format),
+                                      GetStencilFormat(inDepthDesc.Format),
+                                      inMvDesc.Format,
+                                      DXGI_FORMAT_R16_FLOAT,
+                                      GetStencilFormat(_histDepthDesc.Format)};
 
     for (size_t i = 0; i < 6; i++)
     {
@@ -269,15 +284,16 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
         srvDesc.Texture2D.MipLevels = 1;
 
         // Stencil ones
-        if ((i == 2 || i == 5) && (srvResourceFmts[i] == DXGI_FORMAT_X32_TYPELESS_G8X24_UINT || srvResourceFmts[i] == DXGI_FORMAT_D24_UNORM_S8_UINT))
+        if ((i == 2 || i == 5) && (srvResourceFmts[i] == DXGI_FORMAT_X32_TYPELESS_G8X24_UINT ||
+                                   srvResourceFmts[i] == DXGI_FORMAT_D24_UNORM_S8_UINT))
             srvDesc.Texture2D.PlaneSlice = 1;
 
         InDevice->CreateShaderResourceView(srvResources[i], &srvDesc, _cpuSrvHandle[i][_counter]);
     }
 
     // RVs for UAVs
-    ID3D12Resource* uavResources[3] = { _reactiveMask, _motionVector, _debug };
-    D3D12_RESOURCE_DESC* uavResourceDescs[3] = { &_rMaskhDesc, &_mvhDesc, &_debugDesc };
+    ID3D12Resource* uavResources[3] = {_reactiveMask, _motionVector, _debug};
+    D3D12_RESOURCE_DESC* uavResourceDescs[3] = {&_rMaskhDesc, &_mvhDesc, &_debugDesc};
 
     for (size_t i = 0; i < 3; i++)
     {
@@ -291,20 +307,20 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
 
     // CBV's for CB's
     InternalJitterBuff constants{};
-    constants.Scale = { 1, 1, 0, INFINITY };
-    constants.MoreData = { 0, 0, 0, 0 };
-    constants.Jitter = { InJitter.x, InJitter.y };
+    constants.Scale = {1, 1, 0, INFINITY};
+    constants.MoreData = {0, 0, 0, 0};
+    constants.Jitter = {InJitter.x, InJitter.y};
     constants.VelocityScaler = 0;
     constants.JitterMotion = 0;
 
     // Copy the updated constant buffer data to the constant buffer resource
     BYTE* pCBDataBegin;
-    CD3DX12_RANGE readRange(0, 0);  // We do not intend to read from this resource on the CPU
+    CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU
     auto result = _constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pCBDataBegin));
 
     if (result != S_OK)
     {
-        spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] _constantBuffer->Map error {1:x}", _name, (unsigned int)result);
+        spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] _constantBuffer->Map error {1:x}", _name, (unsigned int) result);
         return false;
     }
 
@@ -323,7 +339,7 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     cbvDesc.SizeInBytes = sizeof(constants);
     InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
-    ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
+    ID3D12DescriptorHeap* heaps[] = {_srvHeap[_counter]};
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     // Signature & PSO
@@ -339,7 +355,6 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     // GPU UAV Handles
     InCmdList->SetComputeRootDescriptorTable(2, _gpuUavHandle[0][_counter]);
 
-
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
@@ -350,15 +365,21 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
 
     InDepth->SetName(L"DLSS_DepthInput");
     SetResourceState(InCmdList, InDepth, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE);
-    SetResourceState(InCmdList, _historyDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-    SetResourceState(InCmdList, _debug, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    SetResourceState(InCmdList, _historyDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                     D3D12_RESOURCE_STATE_COPY_DEST);
+    SetResourceState(InCmdList, _debug, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+                     D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     InCmdList->CopyResource(_historyDepth, InDepth);
 
-    SetResourceState(InCmdList, _historyDepth, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-    SetResourceState(InCmdList, InDepth, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-    SetResourceState(InCmdList, _motionVector, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-    SetResourceState(InCmdList, _reactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    SetResourceState(InCmdList, _historyDepth, D3D12_RESOURCE_STATE_COPY_DEST,
+                     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    SetResourceState(InCmdList, InDepth, D3D12_RESOURCE_STATE_COPY_SOURCE,
+                     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    SetResourceState(InCmdList, _motionVector, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    SetResourceState(InCmdList, _reactiveMask, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
     return true;
 }
@@ -377,11 +398,13 @@ PAG_Dx12::PAG_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), 
     D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(InternalJitterBuff));
     auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 
-    auto result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_constantBuffer));
+    auto result =
+        InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ,
+                                          nullptr, IID_PPV_ARGS(&_constantBuffer));
 
     if (result != S_OK)
     {
-        spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] CreateCommittedResource error {1:x}", _name, (unsigned int)result);
+        spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] CreateCommittedResource error {1:x}", _name, (unsigned int) result);
         return;
     }
 
@@ -413,26 +436,30 @@ PAG_Dx12::PAG_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), 
     samplers[1].ShaderRegister = 1;
 
     CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    rootSignatureDesc.Init(_countof(rootParameters), rootParameters, _countof(samplers), samplers, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+    rootSignatureDesc.Init(_countof(rootParameters), rootParameters, _countof(samplers), samplers,
+                           D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
     ID3DBlob* errorBlob = nullptr;
     ID3DBlob* signatureBlob = nullptr;
 
     do
     {
-        auto hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+        auto hr =
+            D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
 
         if (FAILED(hr))
         {
-            spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] D3D12SerializeRootSignature error {1:x}: {2}", _name, (unsigned int)hr, static_cast<const char*>(errorBlob->GetBufferPointer()));
+            spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] D3D12SerializeRootSignature error {1:x}: {2}", _name,
+                          (unsigned int) hr, static_cast<const char*>(errorBlob->GetBufferPointer()));
             break;
         }
 
-        hr = InDevice->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
+        hr = InDevice->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
+                                           IID_PPV_ARGS(&_rootSignature));
 
         if (FAILED(hr))
         {
-            spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] CreateRootSignature error {1:x}", _name, (unsigned int)hr);
+            spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] CreateRootSignature error {1:x}", _name, (unsigned int) hr);
             break;
         }
 
@@ -461,7 +488,8 @@ PAG_Dx12::PAG_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), 
     computePsoDesc.pRootSignature = _rootSignature;
     computePsoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
     computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(pag_shader), pag_shader_size);
-    auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**)&_pipelineState);
+    auto hr =
+        InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**) &_pipelineState);
 
     if (FAILED(hr))
     {
@@ -478,7 +506,7 @@ PAG_Dx12::PAG_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), 
 
     if (FAILED(hr))
     {
-        spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] CreateDescriptorHeap[0] error {1:x}", _name, (unsigned int)hr);
+        spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] CreateDescriptorHeap[0] error {1:x}", _name, (unsigned int) hr);
         return;
     }
 
@@ -486,7 +514,7 @@ PAG_Dx12::PAG_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), 
 
     if (FAILED(hr))
     {
-        spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] CreateDescriptorHeap[1] error {1:x}", _name, (unsigned int)hr);
+        spdlog::error("PAG_Dx12::PAG_Dx12 [{0}] CreateDescriptorHeap[1] error {1:x}", _name, (unsigned int) hr);
         return;
     }
 

@@ -7,7 +7,7 @@
 
 class IFGFeature
 {
-protected:
+  protected:
     float _jitterX = 0.0;
     float _jitterY = 0.0;
     float _mvScaleX = 0.0;
@@ -28,10 +28,8 @@ protected:
     IID streamlineRiid{};
 
     bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject);
-    
 
-public:
-
+  public:
     OwnedMutex Mutex;
     std::mutex CallbackMutex;
 
@@ -60,7 +58,7 @@ public:
 
     void ResetCounters();
     void UpdateTarget();
-    
+
     UINT64 FrameCount();
     UINT64 TargetFrame();
 

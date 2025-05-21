@@ -54,7 +54,6 @@ static bool InitializeConsole()
     return true;
 }
 
-
 void WaitForEnter()
 {
     if (Config::Instance()->DebugWait.value_or_default())
@@ -71,7 +70,8 @@ void PrepareLogger()
         if (spdlog::default_logger() != nullptr)
             spdlog::default_logger().reset();
 
-        if (Config::Instance()->LogToConsole.value_or_default() || Config::Instance()->LogToFile.value_or_default() || Config::Instance()->LogToNGX.value_or_default())
+        if (Config::Instance()->LogToConsole.value_or_default() || Config::Instance()->LogToFile.value_or_default() ||
+            Config::Instance()->LogToNGX.value_or_default())
         {
             if (Config::Instance()->OpenConsole.value_or_default())
                 InitializeConsole();
@@ -81,7 +81,7 @@ void PrepareLogger()
             if (Config::Instance()->LogAsync.value_or_default())
             {
                 // Set the queue size for asynchronous logging
-                spdlog::init_thread_pool(8192, Config::Instance()->LogAsyncThreads.value_or_default()); 
+                spdlog::init_thread_pool(8192, Config::Instance()->LogAsyncThreads.value_or_default());
             }
 
             std::vector<spdlog::sink_ptr> sinks;
@@ -97,7 +97,8 @@ void PrepareLogger()
 
             if (Config::Instance()->LogToFile.value_or_default())
             {
-                auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(Config::Instance()->LogFileName.value_or_default(), true);
+                auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+                    Config::Instance()->LogFileName.value_or_default(), true);
                 file_sink->set_level(spdlog::level::level_enum::trace);
 #ifdef LOG_ASYNC
                 file_sink->set_pattern("%H:%M:%S.%f\t%L\t%v");
@@ -108,17 +109,20 @@ void PrepareLogger()
                 sinks.push_back(file_sink);
             }
 
-            auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg)
-                                                                                   {
-                                                                                       if (Config::Instance()->LogToNGX.value_or_default() &&
-                                                                                           State::Instance().NVNGX_Logger.LoggingCallback != nullptr &&
-                                                                                           State::Instance().NVNGX_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
-                                                                                           (State::Instance().NVNGX_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE || msg.level >= spdlog::level::info))
-                                                                                       {
-                                                                                           auto message = (char*)msg.payload.data();
-                                                                                           State::Instance().NVNGX_Logger.LoggingCallback(message, NVSDK_NGX_LOGGING_LEVEL_ON, NVSDK_NGX_Feature_SuperSampling);
-                                                                                       }
-                                                                                   });
+            auto callback_sink = std::make_shared<spdlog::sinks::callback_sink_mt>(
+                [](const spdlog::details::log_msg& msg)
+                {
+                    if (Config::Instance()->LogToNGX.value_or_default() &&
+                        State::Instance().NVNGX_Logger.LoggingCallback != nullptr &&
+                        State::Instance().NVNGX_Logger.MinimumLoggingLevel != NVSDK_NGX_LOGGING_LEVEL_OFF &&
+                        (State::Instance().NVNGX_Logger.MinimumLoggingLevel == NVSDK_NGX_LOGGING_LEVEL_VERBOSE ||
+                         msg.level >= spdlog::level::info))
+                    {
+                        auto message = (char*) msg.payload.data();
+                        State::Instance().NVNGX_Logger.LoggingCallback(message, NVSDK_NGX_LOGGING_LEVEL_ON,
+                                                                       NVSDK_NGX_Feature_SuperSampling);
+                    }
+                });
 
             callback_sink->set_level(spdlog::level::level_enum::trace);
             callback_sink->set_pattern("[%H:%M:%S.%f] [%L] %v");
@@ -127,7 +131,9 @@ void PrepareLogger()
 
             if (Config::Instance()->LogAsync.value_or_default())
             {
-                shared_logger = std::make_shared<spdlog::async_logger>("multi_sink_logger", sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
+                shared_logger =
+                    std::make_shared<spdlog::async_logger>("multi_sink_logger", sinks.begin(), sinks.end(),
+                                                           spdlog::thread_pool(), spdlog::async_overflow_policy::block);
             }
             else
             {
@@ -135,7 +141,7 @@ void PrepareLogger()
                 shared_logger = std::make_shared<spdlog::logger>(logger);
             }
 
-            shared_logger->set_level((spdlog::level::level_enum)Config::Instance()->LogLevel.value_or_default());
+            shared_logger->set_level((spdlog::level::level_enum) Config::Instance()->LogLevel.value_or_default());
             shared_logger->flush_on(spdlog::level::trace);
 
             spdlog::set_default_logger(shared_logger);
@@ -147,7 +153,7 @@ void PrepareLogger()
 
         auto logger = spdlog::stdout_color_mt("xess");
         logger->set_pattern("[%H:%M:%S.%f] [%L] %v");
-        logger->set_level((spdlog::level::level_enum)2);
+        logger->set_level((spdlog::level::level_enum) 2);
         spdlog::set_default_logger(logger);
     }
 }
@@ -157,4 +163,3 @@ void CloseLogger()
     spdlog::default_logger()->flush();
     spdlog::shutdown();
 }
-

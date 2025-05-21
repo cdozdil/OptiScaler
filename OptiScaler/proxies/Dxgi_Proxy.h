@@ -12,12 +12,12 @@
 
 class DxgiProxy
 {
-public:
-    typedef HRESULT(*PFN_CreateDxgiFactory)(REFIID riid, IDXGIFactory** ppFactory);
-    typedef HRESULT(*PFN_CreateDxgiFactory1)(REFIID riid, IDXGIFactory1** ppFactory);
-    typedef HRESULT(*PFN_CreateDxgiFactory2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
-    typedef HRESULT(*PFN_DeclareAdepterRemovalSupport)();
-    typedef HRESULT(*PFN_GetDebugInterface)(UINT Flags, REFIID riid, void** ppDebug);
+  public:
+    typedef HRESULT (*PFN_CreateDxgiFactory)(REFIID riid, IDXGIFactory** ppFactory);
+    typedef HRESULT (*PFN_CreateDxgiFactory1)(REFIID riid, IDXGIFactory1** ppFactory);
+    typedef HRESULT (*PFN_CreateDxgiFactory2)(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
+    typedef HRESULT (*PFN_DeclareAdepterRemovalSupport)();
+    typedef HRESULT (*PFN_GetDebugInterface)(UINT Flags, REFIID riid, void** ppDebug);
 
     static void Init(HMODULE module = nullptr)
     {
@@ -30,7 +30,6 @@ public:
 
             if (_dll == nullptr)
                 _dll = KernelBaseProxy::LoadLibraryExW_()(L"dxgi.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-
         }
         else
         {
@@ -40,11 +39,12 @@ public:
         if (_dll == nullptr)
             return;
 
-        _CreateDxgiFactory = (PFN_CreateDxgiFactory)KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory");
-        _CreateDxgiFactory1 = (PFN_CreateDxgiFactory1)KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory1");
-        _CreateDxgiFactory2 = (PFN_CreateDxgiFactory2)KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory2");
-        _DeclareAdepterRemovalSupport = (PFN_DeclareAdepterRemovalSupport)KernelBaseProxy::GetProcAddress_()(_dll, "DXGIDeclareAdapterRemovalSupport");
-        _GetDebugInterface = (PFN_GetDebugInterface)KernelBaseProxy::GetProcAddress_()(_dll, "DXGIGetDebugInterface1");
+        _CreateDxgiFactory = (PFN_CreateDxgiFactory) KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory");
+        _CreateDxgiFactory1 = (PFN_CreateDxgiFactory1) KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory1");
+        _CreateDxgiFactory2 = (PFN_CreateDxgiFactory2) KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory2");
+        _DeclareAdepterRemovalSupport = (PFN_DeclareAdepterRemovalSupport) KernelBaseProxy::GetProcAddress_()(
+            _dll, "DXGIDeclareAdapterRemovalSupport");
+        _GetDebugInterface = (PFN_GetDebugInterface) KernelBaseProxy::GetProcAddress_()(_dll, "DXGIGetDebugInterface1");
     }
 
     static HMODULE Module() { return _dll; }
@@ -55,19 +55,35 @@ public:
     static PFN_DeclareAdepterRemovalSupport DeclareAdepterRemovalSupport_() { return _DeclareAdepterRemovalSupport; }
     static PFN_GetDebugInterface GetDebugInterface_() { return _GetDebugInterface; }
 
-    static PFN_CreateDxgiFactory CreateDxgiFactory_Hooked() { return (PFN_CreateDxgiFactory)KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory"); }
-    static PFN_CreateDxgiFactory1 CreateDxgiFactory1_Hooked() { return (PFN_CreateDxgiFactory1)KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory1"); }
-    static PFN_CreateDxgiFactory2 CreateDxgiFactory2_Hooked() { return (PFN_CreateDxgiFactory2)KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory2"); }
-    static PFN_DeclareAdepterRemovalSupport DeclareAdepterRemovalSupport_Hooked() { return (PFN_DeclareAdepterRemovalSupport)KernelBaseProxy::GetProcAddress_()(_dll, "DXGIDeclareAdepterRemovalSupport"); }
-    static PFN_GetDebugInterface GetDebugInterface_Hooked() { return (PFN_GetDebugInterface)KernelBaseProxy::GetProcAddress_()(_dll, "DXGIGetDebugInterface1"); }
+    static PFN_CreateDxgiFactory CreateDxgiFactory_Hooked()
+    {
+        return (PFN_CreateDxgiFactory) KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory");
+    }
+    static PFN_CreateDxgiFactory1 CreateDxgiFactory1_Hooked()
+    {
+        return (PFN_CreateDxgiFactory1) KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory1");
+    }
+    static PFN_CreateDxgiFactory2 CreateDxgiFactory2_Hooked()
+    {
+        return (PFN_CreateDxgiFactory2) KernelBaseProxy::GetProcAddress_()(_dll, "CreateDXGIFactory2");
+    }
+    static PFN_DeclareAdepterRemovalSupport DeclareAdepterRemovalSupport_Hooked()
+    {
+        return (PFN_DeclareAdepterRemovalSupport) KernelBaseProxy::GetProcAddress_()(
+            _dll, "DXGIDeclareAdepterRemovalSupport");
+    }
+    static PFN_GetDebugInterface GetDebugInterface_Hooked()
+    {
+        return (PFN_GetDebugInterface) KernelBaseProxy::GetProcAddress_()(_dll, "DXGIGetDebugInterface1");
+    }
 
-    static PFN_CreateDxgiFactory Hook_CreateDxgiFactory(PVOID method) 
+    static PFN_CreateDxgiFactory Hook_CreateDxgiFactory(PVOID method)
     {
         auto addr = CreateDxgiFactory_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         //_CreateDxgiFactory = addr;
@@ -80,7 +96,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         //_CreateDxgiFactory1 = addr;
@@ -93,20 +109,20 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         //_CreateDxgiFactory2 = addr;
         return addr;
-    }    
-    
+    }
+
     static PFN_DeclareAdepterRemovalSupport Hook_DeclareAdepterRemovalSupport(PVOID method)
     {
         auto addr = DeclareAdepterRemovalSupport_ForHook();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         //_DeclareAdepterRemovalSupport = addr;
@@ -119,7 +135,7 @@ public:
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)addr, method);
+        DetourAttach(&(PVOID&) addr, method);
         DetourTransactionCommit();
 
         //_GetDebugInterface = addr;
@@ -130,11 +146,11 @@ public:
     {
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
-        DetourDetach(&(PVOID&)addr, method);
+        DetourDetach(&(PVOID&) addr, method);
         DetourTransactionCommit();
     }
 
-private:
+  private:
     inline static HMODULE _dll = nullptr;
 
     inline static PFN_CreateDxgiFactory _CreateDxgiFactory = nullptr;
@@ -143,17 +159,33 @@ private:
     inline static PFN_DeclareAdepterRemovalSupport _DeclareAdepterRemovalSupport = nullptr;
     inline static PFN_GetDebugInterface _GetDebugInterface = nullptr;
 
-    inline static HMODULE HookModule() 
-    {  
+    inline static HMODULE HookModule()
+    {
         if (State::Instance().isDxgiMode)
             return dllModule;
 
         return _dll;
     }
 
-    static PFN_CreateDxgiFactory CreateDxgiFactory_ForHook() { return (PFN_CreateDxgiFactory)KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory"); }
-    static PFN_CreateDxgiFactory1 CreateDxgiFactory1_ForHook() { return (PFN_CreateDxgiFactory1)KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory1"); }
-    static PFN_CreateDxgiFactory2 CreateDxgiFactory2_ForHook() { return (PFN_CreateDxgiFactory2)KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory2"); }
-    static PFN_DeclareAdepterRemovalSupport DeclareAdepterRemovalSupport_ForHook() { return (PFN_DeclareAdepterRemovalSupport)KernelBaseProxy::GetProcAddress_()(HookModule(), "DXGIDeclareAdepterRemovalSupport"); }
-    static PFN_GetDebugInterface GetDebugInterface_ForHook() { return (PFN_GetDebugInterface)KernelBaseProxy::GetProcAddress_()(HookModule(), "DXGIGetDebugInterface1"); }
+    static PFN_CreateDxgiFactory CreateDxgiFactory_ForHook()
+    {
+        return (PFN_CreateDxgiFactory) KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory");
+    }
+    static PFN_CreateDxgiFactory1 CreateDxgiFactory1_ForHook()
+    {
+        return (PFN_CreateDxgiFactory1) KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory1");
+    }
+    static PFN_CreateDxgiFactory2 CreateDxgiFactory2_ForHook()
+    {
+        return (PFN_CreateDxgiFactory2) KernelBaseProxy::GetProcAddress_()(HookModule(), "CreateDXGIFactory2");
+    }
+    static PFN_DeclareAdepterRemovalSupport DeclareAdepterRemovalSupport_ForHook()
+    {
+        return (PFN_DeclareAdepterRemovalSupport) KernelBaseProxy::GetProcAddress_()(
+            HookModule(), "DXGIDeclareAdepterRemovalSupport");
+    }
+    static PFN_GetDebugInterface GetDebugInterface_ForHook()
+    {
+        return (PFN_GetDebugInterface) KernelBaseProxy::GetProcAddress_()(HookModule(), "DXGIGetDebugInterface1");
+    }
 };

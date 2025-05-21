@@ -29,14 +29,14 @@
 
 #include <nvapi/NvApiHooks.h>
 
-#include <cwctype> 
+#include <cwctype>
 
 static std::vector<HMODULE> _asiHandles;
 
-#pragma warning (disable : 4996)
+#pragma warning(disable : 4996)
 
-typedef const char* (CDECL* PFN_wine_get_version)(void);
-typedef void(*PFN_InitializeASI)(void);
+typedef const char*(CDECL* PFN_wine_get_version)(void);
+typedef void (*PFN_InitializeASI)(void);
 
 static bool IsRunningOnWine()
 {
@@ -50,7 +50,7 @@ static bool IsRunningOnWine()
         return true;
     }
 
-    auto pWineGetVersion = (PFN_wine_get_version)KernelBaseProxy::GetProcAddress_()(ntdll, "wine_get_version");
+    auto pWineGetVersion = (PFN_wine_get_version) KernelBaseProxy::GetProcAddress_()(ntdll, "wine_get_version");
 
     if (pWineGetVersion)
     {
@@ -60,6 +60,63 @@ static bool IsRunningOnWine()
 
     LOG_WARN("Wine not detected");
     return false;
+}
+
+UINT customD3D12SDKVersion = 615;
+
+const char8_t* customD3D12SDKPath = u8".\\D3D12_Optiscaler\\"; // Hardcoded for now
+
+static void RunAgilityUpgrade(HMODULE dx12Module)
+{
+    typedef HRESULT (*PFN_IsDeveloperModeEnabled)(BOOL* isEnabled);
+    PFN_IsDeveloperModeEnabled o_IsDeveloperModeEnabled =
+        (PFN_IsDeveloperModeEnabled) GetProcAddress(GetModuleHandle(L"kernelbase.dll"), "IsDeveloperModeEnabled");
+
+    if (o_IsDeveloperModeEnabled == nullptr)
+    {
+        LOG_ERROR("Failed to get IsDeveloperModeEnabled function address");
+        return;
+    }
+
+    auto hk_IsDeveloperModeEnabled = [](BOOL* isEnabled) -> HRESULT
+    {
+        *isEnabled = TRUE;
+        return S_OK;
+    };
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&(PVOID&) o_IsDeveloperModeEnabled, static_cast<HRESULT (*)(BOOL*)>(hk_IsDeveloperModeEnabled));
+    DetourTransactionCommit();
+
+    if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
+    {
+        Microsoft::WRL::ComPtr<ID3D12SDKConfiguration> sdkConfig;
+        auto hr = D3D12GetInterface(CLSID_D3D12SDKConfiguration, IID_PPV_ARGS(&sdkConfig));
+
+        if (SUCCEEDED(hr))
+        {
+            hr = sdkConfig->SetSDKVersion(customD3D12SDKVersion, reinterpret_cast<LPCSTR>(customD3D12SDKPath));
+            if (FAILED(hr))
+            {
+                LOG_ERROR("Failed to upgrade Agility SDK: {0}", hr);
+            }
+            else
+            {
+                LOG_INFO("Agility SDK upgraded successfully");
+            }
+            sdkConfig->Release();
+        }
+        else
+        {
+            LOG_ERROR("Failed to get D3D12 SDK Configuration interface: {0}", hr);
+        }
+    }
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach(&(PVOID&) o_IsDeveloperModeEnabled, static_cast<HRESULT (*)(BOOL*)>(hk_IsDeveloperModeEnabled));
+    DetourTransactionCommit();
 }
 
 void LoadAsiPlugins()
@@ -78,8 +135,7 @@ void LoadAsiPlugins()
             continue;
 
         std::wstring ext = entry.path().extension().wstring();
-        std::transform(ext.begin(), ext.end(), ext.begin(),
-                       [](wchar_t c) { return std::towlower(c); });
+        std::transform(ext.begin(), ext.end(), ext.begin(), [](wchar_t c) { return std::towlower(c); });
 
         if (ext == L".asi")
         {
@@ -90,8 +146,8 @@ void LoadAsiPlugins()
                 LOG_INFO("Loaded: {}", entry.path().string());
                 _asiHandles.push_back(hMod);
 
-                auto init = (PFN_InitializeASI)KernelBaseProxy::GetProcAddress_()(hMod, "InitializeASI");
-                
+                auto init = (PFN_InitializeASI) KernelBaseProxy::GetProcAddress_()(hMod, "InitializeASI");
+
                 if (init != nullptr)
                     init();
             }
@@ -111,12 +167,12 @@ static void CheckWorkingMode()
     if (Config::Instance()->EarlyHooking.value_or_default())
     {
         KernelHooks::Hook();
-        KernelHooks::HookBase(); 
+        KernelHooks::HookBase();
     }
-     
+
     bool modeFound = false;
     std::string filename = Util::DllPath().filename().string();
-    std::string lCaseFilename(filename); 
+    std::string lCaseFilename(filename);
     wchar_t sysFolder[MAX_PATH];
     GetSystemDirectory(sysFolder, MAX_PATH);
     std::filesystem::path sysPath(sysFolder);
@@ -127,7 +183,8 @@ static void CheckWorkingMode()
 
     do
     {
-        if (lCaseFilename == "nvngx.dll" || lCaseFilename == "_nvngx.dll" || lCaseFilename == "dlss-enabler-upscaler.dll")
+        if (lCaseFilename == "nvngx.dll" || lCaseFilename == "_nvngx.dll" ||
+            lCaseFilename == "dlss-enabler-upscaler.dll")
         {
             LOG_INFO("OptiScaler working as native upscaler: {0}", filename);
 
@@ -521,8 +578,9 @@ static void CheckWorkingMode()
 
         if (!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable)
         {
-            Config::Instance()->OverlayMenu.set_volatile_value((!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable) &&
-                                                               Config::Instance()->OverlayMenu.value_or_default());
+            Config::Instance()->OverlayMenu.set_volatile_value(
+                (!State::Instance().isWorkingAsNvngx || State::Instance().enablerAvailable) &&
+                Config::Instance()->OverlayMenu.value_or_default());
 
             // DXGI
             if (DxgiProxy::Module() == nullptr)
@@ -616,7 +674,7 @@ static void CheckWorkingMode()
             {
                 LOG_DEBUG("nvapi64.dll already in memory");
 
-                //if (!isWorkingWithEnabler)
+                // if (!isWorkingWithEnabler)
                 NvApiHooks::Hook(nvapi64);
             }
 
@@ -680,7 +738,9 @@ static void CheckWorkingMode()
             }
 
             // SpecialK
-            if (!State::Instance().enablerAvailable && (Config::Instance()->FGType.value_or_default() != FGType::OptiFG || !Config::Instance()->OverlayMenu.value_or_default()) &&
+            if (!State::Instance().enablerAvailable &&
+                (Config::Instance()->FGType.value_or_default() != FGType::OptiFG ||
+                 !Config::Instance()->OverlayMenu.value_or_default()) &&
                 skModule == nullptr && Config::Instance()->LoadSpecialK.value_or_default())
             {
                 auto skFile = Util::DllPath().parent_path() / L"SpecialK64.dll";
@@ -690,11 +750,12 @@ static void CheckWorkingMode()
                 skModule = LoadLibraryW(skFile.c_str());
                 State::DisableServeOriginal(200);
 
-                LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64)skModule);
+                LOG_INFO("Loading SpecialK64.dll, result: {0:X}", (UINT64) skModule);
             }
 
             // ReShade
-            if (!State::Instance().enablerAvailable && reshadeModule == nullptr && Config::Instance()->LoadReShade.value_or_default())
+            if (!State::Instance().enablerAvailable && reshadeModule == nullptr &&
+                Config::Instance()->LoadReShade.value_or_default())
             {
                 auto rsFile = Util::DllPath().parent_path() / L"ReShade64.dll";
                 SetEnvironmentVariableW(L"RESHADE_DISABLE_LOADING_CHECK", L"1");
@@ -706,12 +767,18 @@ static void CheckWorkingMode()
                 reshadeModule = LoadLibraryW(rsFile.c_str());
                 State::DisableServeOriginal(201);
 
-                LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t)reshadeModule);
+                LOG_INFO("Loading ReShade64.dll, result: {0:X}", (size_t) reshadeModule);
             }
 
-            // Hook kernel32 methods 
+            // Hook kernel32 methods
             if (!Config::Instance()->EarlyHooking.value_or_default())
                 KernelHooks::Hook();
+
+            // For Agility SDK Upgrade
+            if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
+            {
+                RunAgilityUpgrade(KernelBaseProxy::GetModuleHandleW_()(L"d3d12.dll"));
+            }
         }
 
         return;
@@ -733,13 +800,14 @@ static void CheckQuirks()
     LOG_INFO("Game's Exe: {0}", exePathFilename);
     LOG_INFO("Game Name: {0}", State::Instance().GameName);
 
-    if (exePathFilename == "cyberpunk2077.exe") {
+    if (exePathFilename == "cyberpunk2077.exe")
+    {
         State::Instance().gameQuirk = Cyberpunk;
 
         // Disabled OptiFG for now
         if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG)
             Config::Instance()->FGType.set_volatile_value(FGType::NoFG);
-        //Config::Instance()->FGType.set_volatile_value(FGType::Nukems);
+        // Config::Instance()->FGType.set_volatile_value(FGType::Nukems);
 
         LOG_INFO("Enabling a quirk for Cyberpunk (Disable FSR-FG Swapchain & enable DLSS-G fix)");
     }
@@ -805,33 +873,38 @@ bool isNvidia()
     bool loadedHere = false;
     auto nvapiModule = KernelBaseProxy::GetModuleHandleW_()(L"nvapi64.dll");
 
-    if (!nvapiModule) {
+    if (!nvapiModule)
+    {
         nvapiModule = KernelBaseProxy::LoadLibraryExW_()(L"nvapi64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
         loadedHere = true;
     }
 
     // No nvapi, should not be nvidia
-    if (!nvapiModule) {
+    if (!nvapiModule)
+    {
         LOG_DEBUG("Detected: {}", nvidiaDetected);
         return nvidiaDetected;
     }
 
-    if (auto o_NvAPI_QueryInterface = (PFN_NvApi_QueryInterface)KernelBaseProxy::GetProcAddress_()(nvapiModule, "nvapi_QueryInterface"))
+    if (auto o_NvAPI_QueryInterface =
+            (PFN_NvApi_QueryInterface) KernelBaseProxy::GetProcAddress_()(nvapiModule, "nvapi_QueryInterface"))
     {
         // dxvk-nvapi calls CreateDxgiFactory which we can't do because we are inside DLL_PROCESS_ATTACH
         NvAPI_ShortString desc;
         auto* getVersion = GET_INTERFACE(NvAPI_GetInterfaceVersionString, o_NvAPI_QueryInterface);
-        if (getVersion
-            && getVersion(desc) == NVAPI_OK
-            && (std::string_view(desc) == std::string_view("NVAPI Open Source Interface (DXVK-NVAPI)") || std::string_view(desc) == std::string_view("DXVK_NVAPI")))
+        if (getVersion && getVersion(desc) == NVAPI_OK &&
+            (std::string_view(desc) == std::string_view("NVAPI Open Source Interface (DXVK-NVAPI)") ||
+             std::string_view(desc) == std::string_view("DXVK_NVAPI")))
         {
             LOG_DEBUG("Using dxvk-nvapi");
             DISPLAY_DEVICEA dd;
             dd.cb = sizeof(dd);
             int deviceIndex = 0;
 
-            while (EnumDisplayDevicesA(nullptr, deviceIndex, &dd, 0)) {
-                if (dd.StateFlags & DISPLAY_DEVICE_ACTIVE && std::string_view(dd.DeviceID).contains("VEN_10DE")) {
+            while (EnumDisplayDevicesA(nullptr, deviceIndex, &dd, 0))
+            {
+                if (dd.StateFlags & DISPLAY_DEVICE_ACTIVE && std::string_view(dd.DeviceID).contains("VEN_10DE"))
+                {
                     // Having any Nvidia GPU active will take precedence
                     nvidiaDetected = true;
                 }
@@ -869,193 +942,197 @@ bool isNvidia()
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     HMODULE handle = nullptr;
-    OSVERSIONINFOW winVer{ 0 };
+    OSVERSIONINFOW winVer{0};
 
     switch (ul_reason_for_call)
     {
-        case DLL_PROCESS_ATTACH:
-            DisableThreadLibraryCalls(hModule);
+    case DLL_PROCESS_ATTACH:
+        DisableThreadLibraryCalls(hModule);
 
-            dllModule = hModule;
-            processId = GetCurrentProcessId();
+        dllModule = hModule;
+        processId = GetCurrentProcessId();
 
 #ifdef _DEBUG // VER_PRE_RELEASE
-            // Enable file logging for pre builds
-            Config::Instance()->LogToFile.set_volatile_value(true);
+        // Enable file logging for pre builds
+        Config::Instance()->LogToFile.set_volatile_value(true);
 
-            // Set log level to debug
-            if (Config::Instance()->LogLevel.value_or_default() > 1)
-                Config::Instance()->LogLevel.set_volatile_value(1);
+        // Set log level to debug
+        if (Config::Instance()->LogLevel.value_or_default() > 1)
+            Config::Instance()->LogLevel.set_volatile_value(1);
 #endif
 
-            PrepareLogger();
+        PrepareLogger();
 
-            spdlog::warn("{0} loaded", VER_PRODUCT_NAME);
-            spdlog::warn("---------------------------------");
-            spdlog::warn("OptiScaler is freely downloadable from");
-            spdlog::warn("GitHub : https://github.com/cdozdil/OptiScaler/releases");
-            spdlog::warn("Nexus  : https://www.nexusmods.com/site/mods/986");
-            spdlog::warn("If you paid for these files, you've been scammed!");
-            spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
-            spdlog::warn("");
-            spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or_default());
+        spdlog::warn("{0} loaded", VER_PRODUCT_NAME);
+        spdlog::warn("---------------------------------");
+        spdlog::warn("OptiScaler is freely downloadable from");
+        spdlog::warn("GitHub : https://github.com/cdozdil/OptiScaler/releases");
+        spdlog::warn("Nexus  : https://www.nexusmods.com/site/mods/986");
+        spdlog::warn("If you paid for these files, you've been scammed!");
+        spdlog::warn("DO NOT USE IN MULTIPLAYER GAMES");
+        spdlog::warn("");
+        spdlog::warn("LogLevel: {0}", Config::Instance()->LogLevel.value_or_default());
 
+        spdlog::info("");
+        if (Util::GetRealWindowsVersion(winVer))
+            spdlog::info("Windows version: {} ({}.{}.{})", Util::GetWindowsName(winVer), winVer.dwMajorVersion,
+                         winVer.dwMinorVersion, winVer.dwBuildNumber, winVer.dwPlatformId);
+        else
+            spdlog::warn("Can't read windows version");
+
+        spdlog::info("");
+        CheckQuirks();
+
+        // OptiFG & Overlay Checks
+        if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG &&
+            !Config::Instance()->DisableOverlays.has_value())
+            Config::Instance()->DisableOverlays.set_volatile_value(true);
+
+        if (Config::Instance()->DisableOverlays.value_or_default())
+            SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
+
+        // Init Kernel proxies
+        KernelBaseProxy::Init();
+        Kernel32Proxy::Init();
+
+        // Hook FSR4 stuff as early as possible
+        spdlog::info("");
+        InitFSR4Update();
+
+        // Check for Wine
+        spdlog::info("");
+        State::Instance().isRunningOnLinux = IsRunningOnWine();
+        State::Instance().isRunningOnDXVK = State::Instance().isRunningOnLinux;
+
+        // Temporary fix for Linux & DXVK
+        if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
+            Config::Instance()->UseHQFont.set_volatile_value(false);
+
+        // Check if real DLSS available
+        if (Config::Instance()->DLSSEnabled.value_or_default())
+        {
             spdlog::info("");
-            if (Util::GetRealWindowsVersion(winVer))
-                spdlog::info("Windows version: {} ({}.{}.{})", Util::GetWindowsName(winVer), winVer.dwMajorVersion, winVer.dwMinorVersion, winVer.dwBuildNumber, winVer.dwPlatformId);
+            State::Instance().isRunningOnNvidia = isNvidia();
+
+            if (State::Instance().isRunningOnNvidia)
+            {
+                spdlog::info(
+                    "Running on Nvidia, setting DLSS as default upscaler and disabling spoofing options set to auto");
+
+                Config::Instance()->DLSSEnabled.set_volatile_value(true);
+
+                if (!Config::Instance()->DxgiSpoofing.has_value())
+                    Config::Instance()->DxgiSpoofing.set_volatile_value(false);
+            }
             else
-                spdlog::warn("Can't read windows version");
-
-            spdlog::info("");
-            CheckQuirks();
-
-            // OptiFG & Overlay Checks
-            if (Config::Instance()->FGType.value_or_default() == FGType::OptiFG && !Config::Instance()->DisableOverlays.has_value())
-                Config::Instance()->DisableOverlays.set_volatile_value(true);
-
-            if (Config::Instance()->DisableOverlays.value_or_default())
-                SetEnvironmentVariable(L"SteamNoOverlayUIDrawing", L"1");
-
-            // Init Kernel proxies
-            KernelBaseProxy::Init();
-            Kernel32Proxy::Init();
-
-            // Hook FSR4 stuff as early as possible
-            spdlog::info("");
-            InitFSR4Update();
-
-            // Check for Wine
-            spdlog::info("");
-            State::Instance().isRunningOnLinux = IsRunningOnWine();
-            State::Instance().isRunningOnDXVK = State::Instance().isRunningOnLinux;
-
-            // Temporary fix for Linux & DXVK
-            if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
-                Config::Instance()->UseHQFont.set_volatile_value(false);
-
-            // Check if real DLSS available
-            if (Config::Instance()->DLSSEnabled.value_or_default())
             {
-                spdlog::info("");
-                State::Instance().isRunningOnNvidia = isNvidia();
-
-                if (State::Instance().isRunningOnNvidia)
-                {
-                    spdlog::info("Running on Nvidia, setting DLSS as default upscaler and disabling spoofing options set to auto");
-
-                    Config::Instance()->DLSSEnabled.set_volatile_value(true);
-
-                    if (!Config::Instance()->DxgiSpoofing.has_value())
-                        Config::Instance()->DxgiSpoofing.set_volatile_value(false);
-                }
-                else
-                {
-                    spdlog::info("Not running on Nvidia, disabling DLSS");
-                    Config::Instance()->DLSSEnabled.set_volatile_value(false);
-                }
+                spdlog::info("Not running on Nvidia, disabling DLSS");
+                Config::Instance()->DLSSEnabled.set_volatile_value(false);
             }
+        }
 
-            if (!Config::Instance()->OverrideNvapiDll.has_value())
-            {
-                spdlog::info("OverrideNvapiDll not set, setting it to: {}", !State::Instance().isRunningOnNvidia ? "true" : "false");
-                Config::Instance()->OverrideNvapiDll.set_volatile_value(!State::Instance().isRunningOnNvidia);
-            }
+        if (!Config::Instance()->OverrideNvapiDll.has_value())
+        {
+            spdlog::info("OverrideNvapiDll not set, setting it to: {}",
+                         !State::Instance().isRunningOnNvidia ? "true" : "false");
+            Config::Instance()->OverrideNvapiDll.set_volatile_value(!State::Instance().isRunningOnNvidia);
+        }
 
-            // Check for working mode and attach hooks
+        // Check for working mode and attach hooks
+        spdlog::info("");
+        CheckWorkingMode();
+
+        // Asi plugins
+        if (!State::Instance().isWorkingAsNvngx && Config::Instance()->LoadAsiPlugins.value_or_default())
+        {
             spdlog::info("");
-            CheckWorkingMode();
+            LoadAsiPlugins();
+        }
 
-            // Asi plugins
-            if (!State::Instance().isWorkingAsNvngx && Config::Instance()->LoadAsiPlugins.value_or_default())
-            {
-                spdlog::info("");
-                LoadAsiPlugins();
-            }
+        if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value())
+        {
+            LOG_WARN("No nvngx.dll found disabling spoofing!");
+            Config::Instance()->DxgiSpoofing.set_volatile_value(false);
+        }
 
-            if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value())
-            {
-                LOG_WARN("No nvngx.dll found disabling spoofing!");
-                Config::Instance()->DxgiSpoofing.set_volatile_value(false);
-            }
+        handle = KernelBaseProxy::GetModuleHandleW_()(fsr2NamesW[0].c_str());
+        if (handle != nullptr)
+            HookFSR2Inputs(handle);
 
-            handle = KernelBaseProxy::GetModuleHandleW_()(fsr2NamesW[0].c_str());
-            if (handle != nullptr)
-                HookFSR2Inputs(handle);
+        handle = KernelBaseProxy::GetModuleHandleW_()(fsr2BENamesW[0].c_str());
+        if (handle != nullptr)
+            HookFSR2Dx12Inputs(handle);
 
-            handle = KernelBaseProxy::GetModuleHandleW_()(fsr2BENamesW[0].c_str());
-            if (handle != nullptr)
-                HookFSR2Dx12Inputs(handle);
+        spdlog::info("");
 
-            spdlog::info("");
+        HookFSR2ExeInputs();
 
-            HookFSR2ExeInputs();
+        handle = KernelBaseProxy::GetModuleHandleW_()(fsr3NamesW[0].c_str());
+        if (handle != nullptr)
+            HookFSR3Inputs(handle);
 
-            handle = KernelBaseProxy::GetModuleHandleW_()(fsr3NamesW[0].c_str());
-            if (handle != nullptr)
-                HookFSR3Inputs(handle);
+        handle = KernelBaseProxy::GetModuleHandleW_()(fsr3BENamesW[0].c_str());
+        if (handle != nullptr)
+            HookFSR3Dx12Inputs(handle);
 
-            handle = KernelBaseProxy::GetModuleHandleW_()(fsr3BENamesW[0].c_str());
-            if (handle != nullptr)
-                HookFSR3Dx12Inputs(handle);
+        HookFSR3ExeInputs();
 
-            HookFSR3ExeInputs();
+        // HookFfxExeInputs();
 
-            //HookFfxExeInputs();
+        // Initial state of FSR-FG
+        State::Instance().activeFgType = Config::Instance()->FGType.value_or_default();
 
-            // Initial state of FSR-FG
-            State::Instance().activeFgType = Config::Instance()->FGType.value_or_default();
+        for (size_t i = 0; i < 300; i++)
+        {
+            State::Instance().frameTimes.push_back(0.0f);
+            State::Instance().upscaleTimes.push_back(0.0f);
+        }
 
-            for (size_t i = 0; i < 300; i++)
-            {
-                State::Instance().frameTimes.push_back(0.0f);
-                State::Instance().upscaleTimes.push_back(0.0f);
-            }
+        spdlog::info("");
+        spdlog::info("Init done");
+        spdlog::info("---------------------------------------------");
+        spdlog::info("");
 
-            spdlog::info("");
-            spdlog::info("Init done");
-            spdlog::info("---------------------------------------------");
-            spdlog::info("");
+        break;
 
-            break;
+    case DLL_PROCESS_DETACH:
+        // Unhooking and cleaning stuff causing issues during shutdown.
+        // Disabled for now to check if it cause any issues
+        // UnhookApis();
+        // unhookStreamline();
+        // unhookGdi32();
+        // DetachHooks();
 
-        case DLL_PROCESS_DETACH:
-            // Unhooking and cleaning stuff causing issues during shutdown. 
-            // Disabled for now to check if it cause any issues
-            //UnhookApis();
-            //unhookStreamline();
-            //unhookGdi32();
-            //DetachHooks();
+        if (skModule != nullptr)
+            KernelBaseProxy::FreeLibrary_()(skModule);
 
-            if (skModule != nullptr)
-                KernelBaseProxy::FreeLibrary_()(skModule);
+        if (reshadeModule != nullptr)
+            KernelBaseProxy::FreeLibrary_()(reshadeModule);
 
-            if (reshadeModule != nullptr)
-                KernelBaseProxy::FreeLibrary_()(reshadeModule);
+        if (_asiHandles.size() > 0)
+        {
+            for (size_t i = 0; i < _asiHandles.size(); i++)
+                KernelBaseProxy::FreeLibrary_()(_asiHandles[i]);
+        }
 
-            if (_asiHandles.size() > 0)
-            {
-                for (size_t i = 0; i < _asiHandles.size(); i++)
-                    KernelBaseProxy::FreeLibrary_()(_asiHandles[i]);
-            }
+        spdlog::info("");
+        spdlog::info("DLL_PROCESS_DETACH");
+        spdlog::info("Unloading OptiScaler");
+        CloseLogger();
 
-            spdlog::info("");
-            spdlog::info("DLL_PROCESS_DETACH");
-            spdlog::info("Unloading OptiScaler");
-            CloseLogger();
+        break;
 
-            break;
+    case DLL_THREAD_ATTACH:
+        // LOG_DEBUG_ONLY("DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+        break;
 
-        case DLL_THREAD_ATTACH:
-            //LOG_DEBUG_ONLY("DLL_THREAD_ATTACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
-            break;
+    case DLL_THREAD_DETACH:
+        // LOG_DEBUG_ONLY("DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount);
+        break;
 
-        case DLL_THREAD_DETACH:
-            //LOG_DEBUG_ONLY("DLL_THREAD_DETACH from module: {0:X}, count: {1}", (UINT64)hModule, loadCount); 
-            break;
-
-        default:
-            LOG_WARN("Call reason: {0:X}", ul_reason_for_call);
-            break;
+    default:
+        LOG_WARN("Call reason: {0:X}", ul_reason_for_call);
+        break;
     }
 
     return TRUE;

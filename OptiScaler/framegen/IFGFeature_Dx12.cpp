@@ -3,7 +3,8 @@
 #include <State.h>
 #include <Config.h>
 
-bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource* source, D3D12_RESOURCE_STATES state, ID3D12Resource** target, bool UAV, bool depth)
+bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource* source, D3D12_RESOURCE_STATES state,
+                                           ID3D12Resource** target, bool UAV, bool depth)
 {
     if (device == nullptr || source == nullptr)
         return false;
@@ -20,7 +21,8 @@ bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource*
     {
         auto bufDesc = (*target)->GetDesc();
 
-        if (bufDesc.Width != inDesc.Width || bufDesc.Height != inDesc.Height || bufDesc.Format != inDesc.Format || bufDesc.Flags != inDesc.Flags)
+        if (bufDesc.Width != inDesc.Width || bufDesc.Height != inDesc.Height || bufDesc.Format != inDesc.Format ||
+            bufDesc.Flags != inDesc.Flags)
         {
             (*target)->Release();
             (*target) = nullptr;
@@ -37,15 +39,16 @@ bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource*
 
     if (hr != S_OK)
     {
-        LOG_ERROR("GetHeapProperties result: {:X}", (UINT64)hr);
+        LOG_ERROR("GetHeapProperties result: {:X}", (UINT64) hr);
         return false;
     }
 
-    hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &inDesc, state, nullptr, IID_PPV_ARGS(target));
+    hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &inDesc, state, nullptr,
+                                         IID_PPV_ARGS(target));
 
     if (hr != S_OK)
     {
-        LOG_ERROR("CreateCommittedResource result: {:X}", (UINT64)hr);
+        LOG_ERROR("CreateCommittedResource result: {:X}", (UINT64) hr);
         return false;
     }
 
@@ -54,7 +57,8 @@ bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource*
     return true;
 }
 
-void IFGFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* resource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
+void IFGFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* resource,
+                                      D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 {
     D3D12_RESOURCE_BARRIER barrier = {};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -65,7 +69,8 @@ void IFGFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* cmdList, ID3D12
     cmdList->ResourceBarrier(1, &barrier);
 }
 
-bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* source, ID3D12Resource** target, D3D12_RESOURCE_STATES sourceState)
+bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* source, ID3D12Resource** target,
+                                   D3D12_RESOURCE_STATES sourceState)
 {
     auto result = true;
 
@@ -81,7 +86,8 @@ bool IFGFeature_Dx12::CopyResource(ID3D12GraphicsCommandList* cmdList, ID3D12Res
     return result;
 }
 
-void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* velocity, D3D12_RESOURCE_STATES state)
+void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* velocity,
+                                  D3D12_RESOURCE_STATES state)
 {
     auto index = GetIndex();
     LOG_TRACE("Setting velocity, index: {}", index);
@@ -162,10 +168,11 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
     }
 }
 
-void IFGFeature_Dx12::SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* hudless, D3D12_RESOURCE_STATES state, bool makeCopy)
+void IFGFeature_Dx12::SetHudless(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* hudless,
+                                 D3D12_RESOURCE_STATES state, bool makeCopy)
 {
     auto index = GetIndex();
-    LOG_TRACE("Setting hudless, index: {}, resource: {:X}", index, (size_t)hudless);
+    LOG_TRACE("Setting hudless, index: {}, resource: {:X}", index, (size_t) hudless);
 
     if (cmdList == nullptr && !makeCopy)
     {
@@ -198,28 +205,29 @@ void IFGFeature_Dx12::CreateObjects(ID3D12Device* InDevice)
             result = InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&allocator));
             if (result != S_OK)
             {
-                LOG_ERROR("CreateCommandAllocators _commandAllocators[{}]: {:X}", i, (unsigned long)result);
+                LOG_ERROR("CreateCommandAllocators _commandAllocators[{}]: {:X}", i, (unsigned long) result);
                 break;
             }
             allocator->SetName(L"_commandAllocator");
-            if (!CheckForRealObject(__FUNCTION__, allocator, (IUnknown**)&_commandAllocators[i]))
+            if (!CheckForRealObject(__FUNCTION__, allocator, (IUnknown**) &_commandAllocators[i]))
                 _commandAllocators[i] = allocator;
 
             ID3D12GraphicsCommandList* cmdList = nullptr;
-            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocators[i], NULL, IID_PPV_ARGS(&cmdList));
+            result = InDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, _commandAllocators[i], NULL,
+                                                 IID_PPV_ARGS(&cmdList));
             if (result != S_OK)
             {
-                LOG_ERROR("CreateCommandList _commandList[{}]: {:X}", i, (unsigned long)result);
+                LOG_ERROR("CreateCommandList _commandList[{}]: {:X}", i, (unsigned long) result);
                 break;
             }
             cmdList->SetName(L"_commandList");
-            if (!CheckForRealObject(__FUNCTION__, cmdList, (IUnknown**)&_commandList[i]))
+            if (!CheckForRealObject(__FUNCTION__, cmdList, (IUnknown**) &_commandList[i]))
                 _commandList[i] = cmdList;
 
             result = _commandList[i]->Close();
             if (result != S_OK)
             {
-                LOG_ERROR("_commandList[{}]->Close: {:X}", i, (unsigned long)result);
+                LOG_ERROR("_commandList[{}]->Close: {:X}", i, (unsigned long) result);
                 break;
             }
         }
@@ -263,15 +271,9 @@ bool IFGFeature_Dx12::IsFGCommandList(void* cmdList)
     return found;
 }
 
-void IFGFeature_Dx12::MVandDepthReady()
-{
-    _mvAndDepthReady = true;
-}
+void IFGFeature_Dx12::MVandDepthReady() { _mvAndDepthReady = true; }
 
-void IFGFeature_Dx12::HudlessReady()
-{
-    _hudlessReady = true;
-}
+void IFGFeature_Dx12::HudlessReady() { _hudlessReady = true; }
 
 void IFGFeature_Dx12::Present()
 {

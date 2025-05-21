@@ -8,42 +8,44 @@
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {
-    switch (format) {
-        case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-            return DXGI_FORMAT_R32G32B32A32_FLOAT;
-        case DXGI_FORMAT_R32G32B32_TYPELESS:
-            return DXGI_FORMAT_R32G32B32_FLOAT;
-        case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-            return DXGI_FORMAT_R16G16B16A16_FLOAT;
-        case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-            return DXGI_FORMAT_R10G10B10A2_UINT;
-        case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-            return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-            return DXGI_FORMAT_B8G8R8A8_UNORM;
-        case DXGI_FORMAT_R16G16_TYPELESS:
-            return DXGI_FORMAT_R16G16_FLOAT;
-        case DXGI_FORMAT_R32G32_TYPELESS:
-            return DXGI_FORMAT_R32G32_FLOAT;
-        case DXGI_FORMAT_R32G8X24_TYPELESS:
-            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
-        case DXGI_FORMAT_R32_TYPELESS:
-            return DXGI_FORMAT_R32_FLOAT;
-        case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
-            return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
-        default:
-            return format;
+    switch (format)
+    {
+    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+        return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case DXGI_FORMAT_R32G32B32_TYPELESS:
+        return DXGI_FORMAT_R32G32B32_FLOAT;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+        return DXGI_FORMAT_R16G16B16A16_FLOAT;
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+        return DXGI_FORMAT_R10G10B10A2_UINT;
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+        return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case DXGI_FORMAT_R16G16_TYPELESS:
+        return DXGI_FORMAT_R16G16_FLOAT;
+    case DXGI_FORMAT_R32G32_TYPELESS:
+        return DXGI_FORMAT_R32G32_FLOAT;
+    case DXGI_FORMAT_R32G8X24_TYPELESS:
+        return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+    case DXGI_FORMAT_R32_TYPELESS:
+        return DXGI_FORMAT_R32_FLOAT;
+    case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+        return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+    default:
+        return format;
     }
 }
 
-static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
+static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature,
+                                ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
 {
     D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
     psoDesc.pRootSignature = rootSignature;
     psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
     psoDesc.CS = CD3DX12_SHADER_BYTECODE(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize());
 
-    HRESULT hr = device->CreateComputePipelineState(&psoDesc, __uuidof(ID3D12PipelineState*), (void**)pipelineState);
+    HRESULT hr = device->CreateComputePipelineState(&psoDesc, __uuidof(ID3D12PipelineState*), (void**) pipelineState);
 
     if (FAILED(hr))
     {
@@ -76,7 +78,7 @@ bool FT_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 
     LOG_DEBUG("[{0}] Start!", _name);
 
-    LOG_INFO("Texture Format: {}", (UINT)texDesc.Format);
+    LOG_INFO("Texture Format: {}", (UINT) texDesc.Format);
 
     D3D12_HEAP_PROPERTIES heapProperties;
     D3D12_HEAP_FLAGS heapFlags;
@@ -91,7 +93,8 @@ bool FT_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
     texDesc.Format = format;
     texDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-    hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(&_buffer));
+    hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr,
+                                           IID_PPV_ARGS(&_buffer));
 
     if (hr != S_OK)
     {
@@ -99,13 +102,11 @@ bool FT_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
         return false;
     }
 
-
     _buffer->SetName(L"HUDless_Buffer");
     _bufferState = InState;
 
     return true;
 }
-
 
 void FT_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RESOURCE_STATES InState)
 {
@@ -122,7 +123,8 @@ void FT_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RES
     _bufferState = InState;
 }
 
-bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource)
+bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource,
+                       ID3D12Resource* OutResource)
 {
     if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr)
         return false;
@@ -138,7 +140,8 @@ bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     if (_cpuUavHandle[_counter].ptr == NULL)
     {
         _cpuUavHandle[_counter] = _cpuSrvHandle[_counter];
-        _cpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _cpuUavHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
     if (_gpuSrvHandle[_counter].ptr == NULL)
@@ -147,7 +150,8 @@ bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     if (_gpuUavHandle[_counter].ptr == NULL)
     {
         _gpuUavHandle[_counter] = _gpuSrvHandle[_counter];
-        _gpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _gpuUavHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
     auto inDesc = InResource->GetDesc();
@@ -170,7 +174,7 @@ bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     uavDesc.Texture2D.MipSlice = 0;
     InDevice->CreateUnorderedAccessView(OutResource, nullptr, &uavDesc, _cpuUavHandle[_counter]);
 
-    ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
+    ID3D12DescriptorHeap* heaps[] = {_srvHeap[_counter]};
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     InCmdList->SetComputeRootSignature(_rootSignature);
@@ -182,7 +186,8 @@ bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     UINT dispatchWidth = 0;
     UINT dispatchHeight = 0;
 
-    dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
+    dispatchWidth =
+        static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
     dispatchHeight = (State::Instance().currentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
 
     InCmdList->Dispatch(dispatchWidth, dispatchHeight, 1);
@@ -190,7 +195,8 @@ bool FT_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     return true;
 }
 
-FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InFormat) : _name(InName), _device(InDevice), format(InFormat)
+FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InFormat)
+    : _name(InName), _device(InDevice), format(InFormat)
 {
     if (InDevice == nullptr)
     {
@@ -224,14 +230,14 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
 
     // Root Parameter for SRV
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;						// One range (SRV)
-    rootParameters[0].DescriptorTable.pDescriptorRanges = &descriptorRange[0];		// Point to the SRV range
+    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;                 // One range (SRV)
+    rootParameters[0].DescriptorTable.pDescriptorRanges = &descriptorRange[0]; // Point to the SRV range
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
     // Root Parameter for UAV
     rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[1].DescriptorTable.NumDescriptorRanges = 1;						// One range (UAV)
-    rootParameters[1].DescriptorTable.pDescriptorRanges = &descriptorRange[1];		// Point to the UAV range
+    rootParameters[1].DescriptorTable.NumDescriptorRanges = 1;                 // One range (UAV)
+    rootParameters[1].DescriptorTable.pDescriptorRanges = &descriptorRange[1]; // Point to the UAV range
     rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
     // A root signature is an array of root parameters
@@ -256,7 +262,8 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
             break;
         }
 
-        hr = InDevice->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
+        hr = InDevice->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
+                                           IID_PPV_ARGS(&_rootSignature));
 
         if (FAILED(hr))
         {
@@ -293,21 +300,26 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
         computePsoDesc.pRootSignature = _rootSignature;
         computePsoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-        if (InFormat == DXGI_FORMAT_R10G10B10A2_UNORM || InFormat == DXGI_FORMAT_R10G10B10A2_TYPELESS || 
-            InFormat == DXGI_FORMAT_R16G16B16A16_FLOAT || InFormat == DXGI_FORMAT_R16G16B16A16_TYPELESS || 
-            InFormat == DXGI_FORMAT_R11G11B10_FLOAT || 
-            InFormat == DXGI_FORMAT_R32G32B32A32_FLOAT || InFormat == DXGI_FORMAT_R32G32B32A32_TYPELESS ||
-            InFormat == DXGI_FORMAT_R32G32B32_FLOAT || InFormat == DXGI_FORMAT_R32G32B32_TYPELESS)
+        if (InFormat == DXGI_FORMAT_R10G10B10A2_UNORM || InFormat == DXGI_FORMAT_R10G10B10A2_TYPELESS ||
+            InFormat == DXGI_FORMAT_R16G16B16A16_FLOAT || InFormat == DXGI_FORMAT_R16G16B16A16_TYPELESS ||
+            InFormat == DXGI_FORMAT_R11G11B10_FLOAT || InFormat == DXGI_FORMAT_R32G32B32A32_FLOAT ||
+            InFormat == DXGI_FORMAT_R32G32B32A32_TYPELESS || InFormat == DXGI_FORMAT_R32G32B32_FLOAT ||
+            InFormat == DXGI_FORMAT_R32G32B32_TYPELESS)
         {
-            computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(r10g10b10a2_cso), sizeof(r10g10b10a2_cso));
+            computePsoDesc.CS =
+                CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(r10g10b10a2_cso), sizeof(r10g10b10a2_cso));
         }
-        else if (InFormat == DXGI_FORMAT_R8G8B8A8_TYPELESS || InFormat == DXGI_FORMAT_R8G8B8A8_UNORM || InFormat == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+        else if (InFormat == DXGI_FORMAT_R8G8B8A8_TYPELESS || InFormat == DXGI_FORMAT_R8G8B8A8_UNORM ||
+                 InFormat == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
         {
-            computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(r8g8b8a8_cso), sizeof(r8g8b8a8_cso));
+            computePsoDesc.CS =
+                CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(r8g8b8a8_cso), sizeof(r8g8b8a8_cso));
         }
-        else if (InFormat == DXGI_FORMAT_B8G8R8A8_TYPELESS || InFormat == DXGI_FORMAT_B8G8R8A8_UNORM || InFormat == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB)
+        else if (InFormat == DXGI_FORMAT_B8G8R8A8_TYPELESS || InFormat == DXGI_FORMAT_B8G8R8A8_UNORM ||
+                 InFormat == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB)
         {
-            computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(b8r8g8a8_cso), sizeof(b8r8g8a8_cso));
+            computePsoDesc.CS =
+                CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(b8r8g8a8_cso), sizeof(b8r8g8a8_cso));
         }
         else
         {
@@ -315,7 +327,8 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
             return;
         }
 
-        auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**)&_pipelineState);
+        auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*),
+                                                       (void**) &_pipelineState);
 
         if (FAILED(hr))
         {
@@ -364,7 +377,7 @@ FT_Dx12::FT_Dx12(std::string InName, ID3D12Device* InDevice, DXGI_FORMAT InForma
     }
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-    heapDesc.NumDescriptors = 2; // SRV + UAV 
+    heapDesc.NumDescriptors = 2; // SRV + UAV
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
@@ -401,9 +414,11 @@ bool FT_Dx12::IsFormatCompatible(DXGI_FORMAT InFormat)
     {
         return InFormat == DXGI_FORMAT_R10G10B10A2_UNORM || InFormat == DXGI_FORMAT_R10G10B10A2_TYPELESS;
     }
-    else if (format == DXGI_FORMAT_R8G8B8A8_UNORM || format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || format == DXGI_FORMAT_R8G8B8A8_TYPELESS)
+    else if (format == DXGI_FORMAT_R8G8B8A8_UNORM || format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
+             format == DXGI_FORMAT_R8G8B8A8_TYPELESS)
     {
-        return InFormat == DXGI_FORMAT_R8G8B8A8_UNORM || InFormat == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || InFormat == DXGI_FORMAT_R8G8B8A8_TYPELESS;
+        return InFormat == DXGI_FORMAT_R8G8B8A8_UNORM || InFormat == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ||
+               InFormat == DXGI_FORMAT_R8G8B8A8_TYPELESS;
     }
     else if (format == DXGI_FORMAT_B8G8R8A8_UNORM)
     {

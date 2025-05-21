@@ -6,46 +6,48 @@
 
 inline static DXGI_FORMAT TranslateTypelessFormats(DXGI_FORMAT format)
 {
-    switch (format) {
-        case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-            return DXGI_FORMAT_R32G32B32A32_FLOAT;
-        case DXGI_FORMAT_R32G32B32_TYPELESS:
-            return DXGI_FORMAT_R32G32B32_FLOAT;
-        case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-            return DXGI_FORMAT_R16G16B16A16_FLOAT;
-        case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-            return DXGI_FORMAT_R10G10B10A2_UINT;
-        case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-            return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-            return DXGI_FORMAT_B8G8R8A8_UNORM;
-        case DXGI_FORMAT_R16G16_TYPELESS:
-            return DXGI_FORMAT_R16G16_FLOAT;
-        case DXGI_FORMAT_R32G32_TYPELESS:
-            return DXGI_FORMAT_R32G32_FLOAT;
-        case DXGI_FORMAT_R24G8_TYPELESS:
-            return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-        case DXGI_FORMAT_R32G8X24_TYPELESS:
-            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
-        case DXGI_FORMAT_R32_TYPELESS:
-            return DXGI_FORMAT_R32_FLOAT;
-        case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
-            return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
-        case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
-        default:
-            return format;
+    switch (format)
+    {
+    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+        return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case DXGI_FORMAT_R32G32B32_TYPELESS:
+        return DXGI_FORMAT_R32G32B32_FLOAT;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+        return DXGI_FORMAT_R16G16B16A16_FLOAT;
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+        return DXGI_FORMAT_R10G10B10A2_UINT;
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+        return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case DXGI_FORMAT_R16G16_TYPELESS:
+        return DXGI_FORMAT_R16G16_FLOAT;
+    case DXGI_FORMAT_R32G32_TYPELESS:
+        return DXGI_FORMAT_R32G32_FLOAT;
+    case DXGI_FORMAT_R24G8_TYPELESS:
+        return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+    case DXGI_FORMAT_R32G8X24_TYPELESS:
+        return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+    case DXGI_FORMAT_R32_TYPELESS:
+        return DXGI_FORMAT_R32_FLOAT;
+    case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+        return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+    case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+        return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+    default:
+        return format;
     }
 }
 
-static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature, ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
+static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootSignature,
+                                ID3D12PipelineState** pipelineState, ID3DBlob* shaderBlob)
 {
     D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
     psoDesc.pRootSignature = rootSignature;
     psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
     psoDesc.CS = CD3DX12_SHADER_BYTECODE(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize());
 
-    HRESULT hr = device->CreateComputePipelineState(&psoDesc, __uuidof(ID3D12PipelineState*), (void**)pipelineState);
+    HRESULT hr = device->CreateComputePipelineState(&psoDesc, __uuidof(ID3D12PipelineState*), (void**) pipelineState);
 
     if (FAILED(hr))
     {
@@ -56,7 +58,8 @@ static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootS
     return true;
 }
 
-bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, uint32_t InWidth, uint32_t InHeight, D3D12_RESOURCE_STATES InState)
+bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, uint32_t InWidth,
+                                   uint32_t InHeight, D3D12_RESOURCE_STATES InState)
 {
     if (InDevice == nullptr || InSource == nullptr)
         return false;
@@ -80,7 +83,7 @@ bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
 
     LOG_DEBUG("[{0}] Start!", _name);
 
-    LOG_INFO("Texture Format: {}", (UINT)texDesc.Format);
+    LOG_INFO("Texture Format: {}", (UINT) texDesc.Format);
 
     D3D12_HEAP_PROPERTIES heapProperties;
     D3D12_HEAP_FLAGS heapFlags;
@@ -93,18 +96,19 @@ bool DS_Dx12::CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSou
     }
 
     texDesc.Format = DXGI_FORMAT_R32_FLOAT;
-    texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
+    texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS |
+                    D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
     texDesc.Width = InWidth;
     texDesc.Height = InHeight;
 
-    hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr, IID_PPV_ARGS(&_buffer));
+    hr = InDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &texDesc, InState, nullptr,
+                                           IID_PPV_ARGS(&_buffer));
 
     if (hr != S_OK)
     {
         LOG_ERROR("[{0}] CreateCommittedResource result: {1:x}", _name, hr);
         return false;
     }
-
 
     _buffer->SetName(L"Upscaled_Depth_Buffer");
     _bufferState = InState;
@@ -127,7 +131,8 @@ void DS_Dx12::SetBufferState(ID3D12GraphicsCommandList* InCommandList, D3D12_RES
     _bufferState = InState;
 }
 
-bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource, ID3D12Resource* OutResource)
+bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource,
+                       ID3D12Resource* OutResource)
 {
     if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr)
         return false;
@@ -143,13 +148,15 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     if (_cpuUavHandle[_counter].ptr == NULL)
     {
         _cpuUavHandle[_counter] = _cpuSrvHandle[_counter];
-        _cpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _cpuUavHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
     if (_cpuCbvHandle[_counter].ptr == NULL)
     {
         _cpuCbvHandle[_counter] = _cpuUavHandle[_counter];
-        _cpuCbvHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _cpuCbvHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
     if (_gpuSrvHandle[_counter].ptr == NULL)
@@ -158,13 +165,15 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     if (_gpuUavHandle[_counter].ptr == NULL)
     {
         _gpuUavHandle[_counter] = _gpuSrvHandle[_counter];
-        _gpuUavHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _gpuUavHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
     if (_gpuCbvHandle[_counter].ptr == NULL)
     {
         _gpuCbvHandle[_counter] = _gpuUavHandle[_counter];
-        _gpuCbvHandle[_counter].ptr += InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        _gpuCbvHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
     auto inDesc = InResource->GetDesc();
@@ -191,12 +200,12 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
     // Copy the updated constant buffer data to the constant buffer resource
     BYTE* pCBDataBegin;
-    CD3DX12_RANGE readRange(0, 0);  // We do not intend to read from this resource on the CPU
+    CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU
     auto result = _constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pCBDataBegin));
 
     if (result != S_OK)
     {
-        LOG_ERROR("[{0}] _constantBuffer->Map error {1:x}", _name, (unsigned int)result);
+        LOG_ERROR("[{0}] _constantBuffer->Map error {1:x}", _name, (unsigned int) result);
         return false;
     }
 
@@ -215,7 +224,7 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     cbvDesc.SizeInBytes = sizeof(constants);
     InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
-    ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
+    ID3D12DescriptorHeap* heaps[] = {_srvHeap[_counter]};
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     InCmdList->SetComputeRootSignature(_rootSignature);
@@ -230,12 +239,14 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
     if ((State::Instance().currentFeature->GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes) == 0)
     {
-        dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
+        dispatchWidth =
+            static_cast<UINT>((State::Instance().currentFeature->DisplayWidth() + InNumThreadsX - 1) / InNumThreadsX);
         dispatchHeight = (State::Instance().currentFeature->DisplayHeight() + InNumThreadsY - 1) / InNumThreadsY;
     }
     else
     {
-        dispatchWidth = static_cast<UINT>((State::Instance().currentFeature->RenderWidth() + InNumThreadsX - 1) / InNumThreadsX);
+        dispatchWidth =
+            static_cast<UINT>((State::Instance().currentFeature->RenderWidth() + InNumThreadsX - 1) / InNumThreadsX);
         dispatchHeight = (State::Instance().currentFeature->RenderHeight() + InNumThreadsY - 1) / InNumThreadsY;
     }
 
@@ -285,20 +296,20 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
 
     // Root Parameter for SRV
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;						// One range (SRV)
-    rootParameters[0].DescriptorTable.pDescriptorRanges = &descriptorRange[0];		// Point to the SRV range
+    rootParameters[0].DescriptorTable.NumDescriptorRanges = 1;                 // One range (SRV)
+    rootParameters[0].DescriptorTable.pDescriptorRanges = &descriptorRange[0]; // Point to the SRV range
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
     // Root Parameter for UAV
     rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[1].DescriptorTable.NumDescriptorRanges = 1;						// One range (UAV)
-    rootParameters[1].DescriptorTable.pDescriptorRanges = &descriptorRange[1];		// Point to the UAV range
+    rootParameters[1].DescriptorTable.NumDescriptorRanges = 1;                 // One range (UAV)
+    rootParameters[1].DescriptorTable.pDescriptorRanges = &descriptorRange[1]; // Point to the UAV range
     rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
     // Root Parameter for CBV
     rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;						// One range (CBV)
-    rootParameters[2].DescriptorTable.pDescriptorRanges = &descriptorRange[2];		// Point to the CBV range
+    rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;                 // One range (CBV)
+    rootParameters[2].DescriptorTable.pDescriptorRanges = &descriptorRange[2]; // Point to the CBV range
     rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
     // A root signature is an array of root parameters
@@ -313,11 +324,13 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
     D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(DSConstants));
     auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 
-    auto result = InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&_constantBuffer));
+    auto result =
+        InDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ,
+                                          nullptr, IID_PPV_ARGS(&_constantBuffer));
 
     if (result != S_OK)
     {
-        LOG_ERROR("[{0}] CreateCommittedResource error {1:x}", _name, (unsigned int)result);
+        LOG_ERROR("[{0}] CreateCommittedResource error {1:x}", _name, (unsigned int) result);
         return;
     }
 
@@ -334,7 +347,8 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
             break;
         }
 
-        hr = InDevice->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&_rootSignature));
+        hr = InDevice->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
+                                           IID_PPV_ARGS(&_rootSignature));
 
         if (FAILED(hr))
         {
@@ -368,7 +382,8 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
         computePsoDesc.pRootSignature = _rootSignature;
         computePsoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
         computePsoDesc.CS = CD3DX12_SHADER_BYTECODE(reinterpret_cast<const void*>(DS_cso), sizeof(DS_cso));
-        auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*), (void**)&_pipelineState);
+        auto hr = InDevice->CreateComputePipelineState(&computePsoDesc, __uuidof(ID3D12PipelineState*),
+                                                       (void**) &_pipelineState);
 
         if (FAILED(hr))
         {
@@ -402,7 +417,6 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
             _recEncodeShader = nullptr;
         }
     }
-
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
     heapDesc.NumDescriptors = 3; // SRV + UAV + CBV

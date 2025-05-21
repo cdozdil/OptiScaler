@@ -3,7 +3,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-//#define WIN32_NO_STATUS
+// #define WIN32_NO_STATUS
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_DEPRECATE
 #include <Windows.h>
@@ -25,14 +25,14 @@
 #define BUFFER_COUNT 4
 
 // Enables logging of DLSS NV Parameters
-//#define DLSS_PARAM_DUMP
+// #define DLSS_PARAM_DUMP
 
 // Enables async spdlog
 // Have issues when closing
-//#define LOG_ASYNC
+// #define LOG_ASYNC
 
 // Enables LOG_DEBUG_ONLY logs
-//#define DETAILED_DEBUG_LOGS
+// #define DETAILED_DEBUG_LOGS
 
 inline HMODULE dllModule = nullptr;
 inline HMODULE originalModule = nullptr;
@@ -42,40 +42,31 @@ inline HMODULE vulkanModule = nullptr;
 inline HMODULE d3d11Module = nullptr;
 inline DWORD processId;
 
-#define LOG_TRACE(msg, ...) \
-    spdlog::trace(__FUNCTION__ " " msg, ##__VA_ARGS__)
+#define LOG_TRACE(msg, ...) spdlog::trace(__FUNCTION__ " " msg, ##__VA_ARGS__)
 
-#define LOG_DEBUG(msg, ...) \
-    spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__)
+#define LOG_DEBUG(msg, ...) spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__)
 
 #ifdef DETAILED_DEBUG_LOGS
-#define LOG_DEBUG_ONLY(msg, ...) \
-    spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__) 
+#define LOG_DEBUG_ONLY(msg, ...) spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__)
 #else
-#define LOG_DEBUG_ONLY(msg, ...) 
+#define LOG_DEBUG_ONLY(msg, ...)
 #endif
 
 #ifdef LOG_ASYNC
-#define LOG_DEBUG_ASYNC(msg, ...) \
-    spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__) 
+#define LOG_DEBUG_ASYNC(msg, ...) spdlog::debug(__FUNCTION__ " " msg, ##__VA_ARGS__)
 #else
-#define LOG_DEBUG_ASYNC(msg, ...) 
+#define LOG_DEBUG_ASYNC(msg, ...)
 #endif
 
-#define LOG_INFO(msg, ...) \
-    spdlog::info(__FUNCTION__ " " msg, ##__VA_ARGS__)
+#define LOG_INFO(msg, ...) spdlog::info(__FUNCTION__ " " msg, ##__VA_ARGS__)
 
-#define LOG_WARN(msg, ...) \
-    spdlog::warn(__FUNCTION__ " " msg, ##__VA_ARGS__)
+#define LOG_WARN(msg, ...) spdlog::warn(__FUNCTION__ " " msg, ##__VA_ARGS__)
 
-#define LOG_ERROR(msg, ...) \
-    spdlog::error(__FUNCTION__ " " msg, ##__VA_ARGS__)
+#define LOG_ERROR(msg, ...) spdlog::error(__FUNCTION__ " " msg, ##__VA_ARGS__)
 
-#define LOG_FUNC() \
-    spdlog::trace(__FUNCTION__)
+#define LOG_FUNC() spdlog::trace(__FUNCTION__)
 
-#define LOG_FUNC_RESULT(result) \
-    spdlog::trace(__FUNCTION__ " result: {0:X}" , (UINT64)result)
+#define LOG_FUNC_RESULT(result) spdlog::trace(__FUNCTION__ " result: {0:X}", (UINT64) result)
 
 typedef struct _feature_version
 {
@@ -84,16 +75,22 @@ typedef struct _feature_version
     unsigned int patch;
 } feature_version;
 
-inline static bool isVersionOrBetter(const feature_version& current, const feature_version& required) {
-    if (current.major > required.major) {
+inline static bool isVersionOrBetter(const feature_version& current, const feature_version& required)
+{
+    if (current.major > required.major)
+    {
         return true;
     }
-    if (current.major == required.major) {
-        if (current.minor > required.minor) {
+    if (current.major == required.major)
+    {
+        if (current.minor > required.minor)
+        {
             return true;
         }
-        if (current.minor == required.minor) {
-            if (current.patch >= required.patch) {
+        if (current.minor == required.minor)
+        {
+            if (current.patch >= required.patch)
+            {
                 return true;
             }
         }
@@ -101,10 +98,10 @@ inline static bool isVersionOrBetter(const feature_version& current, const featu
     return false;
 }
 
-inline static std::string wstring_to_string(const std::wstring& wide_str) 
+inline static std::string wstring_to_string(const std::wstring& wide_str)
 {
     std::string str(wide_str.length(), 0);
-    std::transform(wide_str.begin(), wide_str.end(), str.begin(), [](wchar_t c) { return (char)c; });
+    std::transform(wide_str.begin(), wide_str.end(), str.begin(), [](wchar_t c) { return (char) c; });
     return str;
 }
 
@@ -117,4 +114,3 @@ inline static std::wstring string_to_wstring(const std::string& str)
     MultiByteToWideChar(CP_UTF8, 0, str.c_str(), slength, &wstr[0], len);
     return wstr;
 }
-

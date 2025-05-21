@@ -25,11 +25,11 @@ static std::map<ffxContext, NVSDK_NGX_Parameter*> _nvParams;
 static std::map<ffxContext, NVSDK_NGX_Handle*> _contexts;
 static ID3D12Device* _d3d12Device = nullptr;
 static bool _nvnxgInited = false;
-static float qualityRatios[] = { 1.0, 1.5, 1.7, 2.0, 3.0 };
+static float qualityRatios[] = {1.0, 1.5, 1.7, 2.0, 3.0};
 
 static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* pExecParams)
 {
-    LOG_DEBUG("context: {:X}", (size_t)handle);
+    LOG_DEBUG("context: {:X}", (size_t) handle);
 
     if (!_nvParams.contains(handle))
         return false;
@@ -37,7 +37,7 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     NVSDK_NGX_Handle* nvHandle = nullptr;
     auto params = _nvParams[handle];
     auto initParams = &_initParams[handle];
-    auto commandList = (ID3D12GraphicsCommandList*)pExecParams->commandList;
+    auto commandList = (ID3D12GraphicsCommandList*) pExecParams->commandList;
 
     UINT initFlags = 0;
 
@@ -67,7 +67,7 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
 
     auto width = pExecParams->upscaleSize.width > 0 ? pExecParams->upscaleSize.width : initParams->maxUpscaleSize.width;
 
-    auto ratio = (float)width / (float)pExecParams->renderSize.width;
+    auto ratio = (float) width / (float) pExecParams->renderSize.width;
 
     LOG_INFO("renderWidth: {}, maxWidth: {}, ratio: {}", pExecParams->renderSize.width, width, ratio);
 
@@ -87,12 +87,12 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     auto nvngxResult = NVSDK_NGX_D3D12_CreateFeature(commandList, NVSDK_NGX_Feature_SuperSampling, params, &nvHandle);
     if (nvngxResult != NVSDK_NGX_Result_Success)
     {
-        LOG_ERROR("NVSDK_NGX_D3D12_CreateFeature error: {:X}", (UINT)nvngxResult);
+        LOG_ERROR("NVSDK_NGX_D3D12_CreateFeature error: {:X}", (UINT) nvngxResult);
         return false;
     }
 
     _contexts[handle] = nvHandle;
-    LOG_INFO("context created: {:X}", (size_t)handle);
+    LOG_INFO("context created: {:X}", (size_t) handle);
 
     return true;
 }
@@ -108,7 +108,7 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
     {
         output = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
 
-        return  output;
+        return output;
     }
 
     if (!Config::Instance()->QualityRatioOverrideEnabled.value_or_default())
@@ -116,39 +116,39 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
 
     switch (input)
     {
-        case FFX_UPSCALE_QUALITY_MODE_ULTRA_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
+    case FFX_UPSCALE_QUALITY_MODE_ULTRA_PERFORMANCE:
+        if (Config::Instance()->QualityRatio_UltraPerformance.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
 
-            break;
+        break;
 
-        case FFX_UPSCALE_QUALITY_MODE_PERFORMANCE:
-            if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Performance.value_or_default();
+    case FFX_UPSCALE_QUALITY_MODE_PERFORMANCE:
+        if (Config::Instance()->QualityRatio_Performance.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Performance.value_or_default();
 
-            break;
+        break;
 
-        case FFX_UPSCALE_QUALITY_MODE_BALANCED:
-            if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Balanced.value_or_default();
+    case FFX_UPSCALE_QUALITY_MODE_BALANCED:
+        if (Config::Instance()->QualityRatio_Balanced.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Balanced.value_or_default();
 
-            break;
+        break;
 
-        case FFX_UPSCALE_QUALITY_MODE_QUALITY:
-            if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_Quality.value_or_default();
+    case FFX_UPSCALE_QUALITY_MODE_QUALITY:
+        if (Config::Instance()->QualityRatio_Quality.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_Quality.value_or_default();
 
-            break;
+        break;
 
-        case FFX_UPSCALE_QUALITY_MODE_NATIVEAA:
-            if (Config::Instance()->QualityRatio_DLAA.value_or_default() >= sliderLimit)
-                output = Config::Instance()->QualityRatio_DLAA.value_or_default();
+    case FFX_UPSCALE_QUALITY_MODE_NATIVEAA:
+        if (Config::Instance()->QualityRatio_DLAA.value_or_default() >= sliderLimit)
+            output = Config::Instance()->QualityRatio_DLAA.value_or_default();
 
-            break;
+        break;
 
-        default:
-            LOG_WARN("Unknown quality: {0}", (int)input);
-            break;
+    default:
+        LOG_WARN("Unknown quality: {0}", (int) input);
+        break;
     }
 
     if (output.has_value())
@@ -159,7 +159,8 @@ static std::optional<float> GetQualityOverrideRatioFfx(const uint32_t input)
     return output;
 }
 
-static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescHeader* desc, const ffxAllocationCallbacks* memCb)
+static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescHeader* desc,
+                                             const ffxAllocationCallbacks* memCb)
 {
     if (desc == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
@@ -170,7 +171,7 @@ static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateConte
 
     if (ffxApiResult != FFX_API_RETURN_OK)
     {
-        LOG_ERROR("D3D12_CreateContext error: {:X}", (UINT)ffxApiResult);
+        LOG_ERROR("D3D12_CreateContext error: {:X}", (UINT) ffxApiResult);
         return ffxApiResult;
     }
 
@@ -183,11 +184,11 @@ static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateConte
         if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE)
         {
             upscaleContext = true;
-            createDesc = (ffxCreateContextDescUpscale*)header;
+            createDesc = (ffxCreateContextDescUpscale*) header;
         }
         else if (header->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12)
         {
-            auto backendDesc = (ffxCreateBackendDX12Desc*)header;
+            auto backendDesc = (ffxCreateBackendDX12Desc*) header;
             _d3d12Device = backendDesc->device;
         }
 
@@ -224,24 +225,24 @@ static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateConte
             pathStorage.push_back(Config::Instance()->DLSSFeaturePath.value());
 
         // Build pointer array
-        wchar_t const** paths = new const wchar_t* [pathStorage.size()];
+        wchar_t const** paths = new const wchar_t*[pathStorage.size()];
         for (size_t i = 0; i < pathStorage.size(); ++i)
         {
             paths[i] = pathStorage[i].c_str();
         }
 
         fcInfo.PathListInfo.Path = paths;
-        fcInfo.PathListInfo.Length = (int)pathStorage.size();
+        fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
-        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID("OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(),
-                                                            _d3d12Device, &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
+        auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
+            "OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, dllPath.c_str(), _d3d12Device,
+            &fcInfo, State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
             return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 
         _nvnxgInited = true;
     }
-
 
     NVSDK_NGX_Parameter* params = nullptr;
 
@@ -256,7 +257,7 @@ static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateConte
     ccd.maxUpscaleSize = createDesc->maxUpscaleSize;
     _initParams[*context] = ccd;
 
-    LOG_INFO("context created: {:X}", (size_t)*context);
+    LOG_INFO("context created: {:X}", (size_t) *context);
 
     return FFX_API_RETURN_OK;
 }
@@ -266,10 +267,10 @@ static ffxReturnCode_t ffxDestroyContext_Dx12(ffxContext* context, const ffxAllo
     if (context == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
 
-    LOG_DEBUG("context: {:X}", (size_t)*context);
+    LOG_DEBUG("context: {:X}", (size_t) *context);
 
     auto cdResult = _D3D12_DestroyContext(context, memCb);
-    LOG_INFO("result: {:X}", (UINT)cdResult);
+    LOG_INFO("result: {:X}", (UINT) cdResult);
 
     if (_contexts.contains(*context))
         NVSDK_NGX_D3D12_ReleaseFeature(_contexts[*context]);
@@ -303,17 +304,18 @@ static ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* de
 
     if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETRENDERRESOLUTIONFROMQUALITYMODE)
     {
-        auto ratioDesc = (ffxQueryDescUpscaleGetRenderResolutionFromQualityMode*)desc;
+        auto ratioDesc = (ffxQueryDescUpscaleGetRenderResolutionFromQualityMode*) desc;
         auto ratio = GetQualityOverrideRatioFfx(ratioDesc->qualityMode).value_or(qualityRatios[ratioDesc->qualityMode]);
 
         if (ratioDesc->pOutRenderHeight != nullptr)
-            *ratioDesc->pOutRenderHeight = (uint32_t)(ratioDesc->displayHeight / ratio);
+            *ratioDesc->pOutRenderHeight = (uint32_t) (ratioDesc->displayHeight / ratio);
 
         if (ratioDesc->pOutRenderWidth != nullptr)
-            *ratioDesc->pOutRenderWidth = (uint32_t)(ratioDesc->displayWidth / ratio);
+            *ratioDesc->pOutRenderWidth = (uint32_t) (ratioDesc->displayWidth / ratio);
 
         if (ratioDesc->pOutRenderWidth != nullptr && ratioDesc->pOutRenderHeight != nullptr)
-            LOG_DEBUG("Quality mode: {}, Render resolution: {}x{}", ratioDesc->qualityMode, *ratioDesc->pOutRenderWidth, *ratioDesc->pOutRenderHeight);
+            LOG_DEBUG("Quality mode: {}, Render resolution: {}x{}", ratioDesc->qualityMode, *ratioDesc->pOutRenderWidth,
+                      *ratioDesc->pOutRenderHeight);
         else
             LOG_WARN("Quality mode: {}, pOutRenderWidth or pOutRenderHeight is null!", ratioDesc->qualityMode);
 
@@ -321,14 +323,15 @@ static ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* de
     }
     else if (desc->type == FFX_API_QUERY_DESC_TYPE_UPSCALE_GETUPSCALERATIOFROMQUALITYMODE)
     {
-        auto scaleDesc = (ffxQueryDescUpscaleGetUpscaleRatioFromQualityMode*)desc;
-        *scaleDesc->pOutUpscaleRatio = GetQualityOverrideRatioFfx((FfxApiUpscaleQualityMode)scaleDesc->qualityMode).value_or(qualityRatios[scaleDesc->qualityMode]);
+        auto scaleDesc = (ffxQueryDescUpscaleGetUpscaleRatioFromQualityMode*) desc;
+        *scaleDesc->pOutUpscaleRatio = GetQualityOverrideRatioFfx((FfxApiUpscaleQualityMode) scaleDesc->qualityMode)
+                                           .value_or(qualityRatios[scaleDesc->qualityMode]);
 
         LOG_DEBUG("Quality mode: {}, Upscale ratio: {}", scaleDesc->qualityMode, *scaleDesc->pOutUpscaleRatio);
 
         return FFX_API_RETURN_OK;
     }
-    
+
     return _D3D12_Query(context, desc);
 }
 
@@ -341,7 +344,7 @@ static ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHead
     if (desc == nullptr || context == nullptr)
         return FFX_API_RETURN_ERROR_PARAMETER;
 
-    LOG_DEBUG("context: {:X}, type: {:X}", (size_t)*context, desc->type);
+    LOG_DEBUG("context: {:X}, type: {:X}", (size_t) *context, desc->type);
 
     if (context == nullptr || !_initParams.contains(*context))
     {
@@ -356,7 +359,7 @@ static ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHead
     do
     {
         if (header->type == FFX_API_DISPATCH_DESC_TYPE_UPSCALE)
-            dispatchDesc = (ffxDispatchDescUpscale*)header;
+            dispatchDesc = (ffxDispatchDescUpscale*) header;
 
         header = header->pNext;
 
@@ -372,7 +375,7 @@ static ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHead
         return FFX_API_RETURN_ERROR_PARAMETER;
 
     // If not in contexts list create and add context
-    auto contextId = (size_t)*context;
+    auto contextId = (size_t) *context;
     if (!_contexts.contains(*context) && _initParams.contains(*context) && !CreateDLSSContext(*context, dispatchDesc))
         return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 
@@ -407,16 +410,18 @@ static ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHead
     params->Set("FSR.upscaleSize.width", dispatchDesc->upscaleSize.width);
     params->Set("FSR.upscaleSize.height", dispatchDesc->upscaleSize.height);
 
-    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width, dispatchDesc->renderSize.height);
+    LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width,
+              dispatchDesc->renderSize.height);
 
     State::Instance().setInputApiName = "FFX-DX12";
 
-    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*)dispatchDesc->commandList, handle, params, nullptr);
+    auto evalResult = NVSDK_NGX_D3D12_EvaluateFeature((ID3D12GraphicsCommandList*) dispatchDesc->commandList, handle,
+                                                      params, nullptr);
 
     if (evalResult == NVSDK_NGX_Result_Success)
         return FFX_API_RETURN_OK;
 
-    LOG_ERROR("evalResult: {:X}", (UINT)evalResult);
+    LOG_ERROR("evalResult: {:X}", (UINT) evalResult);
     return FFX_API_RETURN_ERROR_RUNTIME_ERROR;
 }
 
@@ -428,11 +433,12 @@ void HookFfxExeInputs()
 
     if (exeModule != nullptr)
     {
-        _D3D12_Configure = (PfnFfxConfigure)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxConfigure");
-        _D3D12_CreateContext = (PfnFfxCreateContext)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxCreateContext");
-        _D3D12_DestroyContext = (PfnFfxDestroyContext)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxDestroyContext");
-        _D3D12_Dispatch = (PfnFfxDispatch)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxDispatch");
-        _D3D12_Query = (PfnFfxQuery)KernelBaseProxy::GetProcAddress_()(exeModule, "ffxQuery");
+        _D3D12_Configure = (PfnFfxConfigure) KernelBaseProxy::GetProcAddress_()(exeModule, "ffxConfigure");
+        _D3D12_CreateContext = (PfnFfxCreateContext) KernelBaseProxy::GetProcAddress_()(exeModule, "ffxCreateContext");
+        _D3D12_DestroyContext =
+            (PfnFfxDestroyContext) KernelBaseProxy::GetProcAddress_()(exeModule, "ffxDestroyContext");
+        _D3D12_Dispatch = (PfnFfxDispatch) KernelBaseProxy::GetProcAddress_()(exeModule, "ffxDispatch");
+        _D3D12_Query = (PfnFfxQuery) KernelBaseProxy::GetProcAddress_()(exeModule, "ffxQuery");
     }
 
     if (_D3D12_CreateContext != nullptr)
@@ -442,32 +448,32 @@ void HookFfxExeInputs()
 
         if (_D3D12_Configure != nullptr)
         {
-            LOG_DEBUG("ffxConfigure_Dx12: {:X}", (size_t)_D3D12_Configure);
-            DetourAttach(&(PVOID&)_D3D12_Configure, ffxConfigure_Dx12);
+            LOG_DEBUG("ffxConfigure_Dx12: {:X}", (size_t) _D3D12_Configure);
+            DetourAttach(&(PVOID&) _D3D12_Configure, ffxConfigure_Dx12);
         }
 
         if (_D3D12_CreateContext != nullptr)
         {
-            LOG_DEBUG("ffxCreateContext_Dx12: {:X}", (size_t)_D3D12_CreateContext);
-            DetourAttach(&(PVOID&)_D3D12_CreateContext, ffxCreateContext_Dx12);
+            LOG_DEBUG("ffxCreateContext_Dx12: {:X}", (size_t) _D3D12_CreateContext);
+            DetourAttach(&(PVOID&) _D3D12_CreateContext, ffxCreateContext_Dx12);
         }
 
         if (_D3D12_DestroyContext != nullptr)
         {
-            LOG_DEBUG("ffxDestroyContext_Dx12: {:X}", (size_t)_D3D12_DestroyContext);
-            DetourAttach(&(PVOID&)_D3D12_DestroyContext, ffxDestroyContext_Dx12);
+            LOG_DEBUG("ffxDestroyContext_Dx12: {:X}", (size_t) _D3D12_DestroyContext);
+            DetourAttach(&(PVOID&) _D3D12_DestroyContext, ffxDestroyContext_Dx12);
         }
 
         if (_D3D12_Dispatch != nullptr)
         {
-            LOG_DEBUG("ffxDispatch_Dx12: {:X}", (size_t)_D3D12_Dispatch);
-            DetourAttach(&(PVOID&)_D3D12_Dispatch, ffxDispatch_Dx12);
+            LOG_DEBUG("ffxDispatch_Dx12: {:X}", (size_t) _D3D12_Dispatch);
+            DetourAttach(&(PVOID&) _D3D12_Dispatch, ffxDispatch_Dx12);
         }
 
         if (_D3D12_Query != nullptr)
         {
-            LOG_DEBUG("ffxQuery_Dx12: {:X}", (size_t)_D3D12_Query);
-            DetourAttach(&(PVOID&)_D3D12_Query, ffxQuery_Dx12);
+            LOG_DEBUG("ffxQuery_Dx12: {:X}", (size_t) _D3D12_Query);
+            DetourAttach(&(PVOID&) _D3D12_Query, ffxQuery_Dx12);
         }
 
         State::Instance().fsrHooks = true;

@@ -11,7 +11,8 @@ void DLSSDFeature::ProcessEvaluateParams(NVSDK_NGX_Parameter* InParameters)
     float floatValue;
 
     // override sharpness
-    if (Config::Instance()->OverrideSharpness.value_or_default() && !(State::Instance().api == DX12 && Config::Instance()->RcasEnabled.value_or_default()))
+    if (Config::Instance()->OverrideSharpness.value_or_default() &&
+        !(State::Instance().api == DX12 && Config::Instance()->RcasEnabled.value_or_default()))
     {
         auto sharpness = Config::Instance()->Sharpness.value_or_default();
 
@@ -84,7 +85,7 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
         _targetHeight = DisplayHeight();
     }
 
-    // extended limits changes how resolution 
+    // extended limits changes how resolution
     if (Config::Instance()->ExtendedLimits.value_or_default() && RenderWidth() > DisplayWidth())
     {
         _targetWidth = RenderWidth();
@@ -121,12 +122,18 @@ void DLSSDFeature::ProcessInitParams(NVSDK_NGX_Parameter* InParameters)
 
         if (Config::Instance()->RenderPresetOverride.value_or_default())
         {
-            RenderPresetDLAA = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetDLAA.value_or(RenderPresetDLAA));
-            RenderPresetUltraQuality = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetUltraQuality.value_or(RenderPresetUltraQuality));
-            RenderPresetQuality = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetQuality.value_or(RenderPresetQuality));
-            RenderPresetBalanced = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetBalanced.value_or(RenderPresetBalanced));
-            RenderPresetPerformance = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetPerformance.value_or(RenderPresetPerformance));
-            RenderPresetUltraPerformance = Config::Instance()->RenderPresetForAll.value_or(Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance));
+            RenderPresetDLAA = Config::Instance()->RenderPresetForAll.value_or(
+                Config::Instance()->RenderPresetDLAA.value_or(RenderPresetDLAA));
+            RenderPresetUltraQuality = Config::Instance()->RenderPresetForAll.value_or(
+                Config::Instance()->RenderPresetUltraQuality.value_or(RenderPresetUltraQuality));
+            RenderPresetQuality = Config::Instance()->RenderPresetForAll.value_or(
+                Config::Instance()->RenderPresetQuality.value_or(RenderPresetQuality));
+            RenderPresetBalanced = Config::Instance()->RenderPresetForAll.value_or(
+                Config::Instance()->RenderPresetBalanced.value_or(RenderPresetBalanced));
+            RenderPresetPerformance = Config::Instance()->RenderPresetForAll.value_or(
+                Config::Instance()->RenderPresetPerformance.value_or(RenderPresetPerformance));
+            RenderPresetUltraPerformance = Config::Instance()->RenderPresetForAll.value_or(
+                Config::Instance()->RenderPresetUltraPerformance.value_or(RenderPresetUltraPerformance));
 
             LOG_DEBUG("Preset override active, config overrides:");
             LOG_DEBUG("Preset_DLAA {}", RenderPresetDLAA);
@@ -179,7 +186,7 @@ void DLSSDFeature::ReadVersion()
 
     _version = GetVersionUsingNGXSnippet(possibleDlls);
 
-    if (isVersionOrBetter(_version, {0,0,0}))
+    if (isVersionOrBetter(_version, {0, 0, 0}))
         LOG_INFO("DLSSD v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
     else
         LOG_WARN("Failed to get version using NVSDK_NGX_GetSnippetVersion!");
@@ -200,13 +207,9 @@ DLSSDFeature::DLSSDFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParamet
     _moduleLoaded = NVNGXProxy::NVNGXModule() != nullptr;
 }
 
-DLSSDFeature::~DLSSDFeature()
-{
-}
+DLSSDFeature::~DLSSDFeature() {}
 
-void DLSSDFeature::Shutdown()
-{
-}
+void DLSSDFeature::Shutdown() {}
 
 float DLSSDFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
 {

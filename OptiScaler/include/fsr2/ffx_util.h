@@ -33,46 +33,46 @@ const float FFX_EPSILON = 1e-06f;
 #define FFX_MAKE_VERSION(major, minor, patch) ((major << 22) | (minor << 12) | patch)
 
 ///< Use this to specify no version.
-#define FFX_UNSPECIFIED_VERSION     0xFFFFAD00
+#define FFX_UNSPECIFIED_VERSION 0xFFFFAD00
 
 /// Helper macro to avoid warnings about unused variables.
-#define FFX_UNUSED(x)               ((void)(x))
+#define FFX_UNUSED(x) ((void) (x))
 
 /// Helper macro to align an integer to the specified power of 2 boundary
-#define FFX_ALIGN_UP(x, y)          (((x) + ((y)-1)) & ~((y)-1))
+#define FFX_ALIGN_UP(x, y) (((x) + ((y) - 1)) & ~((y) - 1))
 
 /// Helper macro to check if a value is aligned.
-#define FFX_IS_ALIGNED(x)           (((x) != 0) && ((x) & ((x)-1)))
+#define FFX_IS_ALIGNED(x) (((x) != 0) && ((x) & ((x) - 1)))
 
 /// Helper macro to stringify a value.
-#define FFX_STR(s)                  FFX_XSTR(s)
-#define FFX_XSTR(s)                 #s
+#define FFX_STR(s) FFX_XSTR(s)
+#define FFX_XSTR(s) #s
 
 /// Helper macro to forward declare a structure.
-#define FFX_FORWARD_DECLARE(x)      typedef struct x x
+#define FFX_FORWARD_DECLARE(x) typedef struct x x
 
 /// Helper macro to return the maximum of two values.
-#define FFX_MAXIMUM(x, y)           (((x) > (y)) ? (x) : (y))
+#define FFX_MAXIMUM(x, y) (((x) > (y)) ? (x) : (y))
 
 /// Helper macro to return the minimum of two values.
-#define FFX_MINIMUM(x, y)           (((x) < (y)) ? (x) : (y))
+#define FFX_MINIMUM(x, y) (((x) < (y)) ? (x) : (y))
 
 /// Helper macro to do safe free on a pointer.
-#define FFX_SAFE_FREE(x) \
-    if (x)               \
+#define FFX_SAFE_FREE(x)                                                                                               \
+    if (x)                                                                                                             \
     free(x)
 
 /// Helper macro to return the abs of an integer value.
-#define FFX_ABSOLUTE(x)                 (((x) < 0) ? (-(x)) : (x))
+#define FFX_ABSOLUTE(x) (((x) < 0) ? (-(x)) : (x))
 
 /// Helper macro to return sign of a value.
-#define FFX_SIGN(x)                     (((x) < 0) ? -1 : 1)
+#define FFX_SIGN(x) (((x) < 0) ? -1 : 1)
 
 /// Helper macro to work out the number of elements in an array.
-#define FFX_ARRAY_ELEMENTS(x)           (int32_t)((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+#define FFX_ARRAY_ELEMENTS(x) (int32_t) ((sizeof(x) / sizeof(0 [x])) / ((size_t) (!(sizeof(x) % sizeof(0 [x])))))
 
 /// The maximum length of a path that can be specified to the FidelityFX API.
-#define FFX_MAXIMUM_PATH                (260)
+#define FFX_MAXIMUM_PATH (260)
 
 /// Helper macro to check if the specified key is set in a bitfield.
 #define FFX_CONTAINS_FLAG(options, key) ((options & key) == key)

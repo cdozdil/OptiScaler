@@ -35,9 +35,11 @@ typedef enum FGType : uint32_t
     Nukems
 } FGType;
 
-class State {
-public:
-    static State& Instance() {
+class State
+{
+  public:
+    static State& Instance()
+    {
         static State instance;
         return instance;
     }
@@ -85,7 +87,7 @@ public:
     NVSDK_NGX_Version NVNGX_Version{};
     const NVSDK_NGX_FeatureCommonInfo* NVNGX_FeatureInfo = nullptr;
     std::vector<std::wstring> NVNGX_FeatureInfo_Paths;
-    NVSDK_NGX_LoggingInfo NVNGX_Logger{ nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
+    NVSDK_NGX_LoggingInfo NVNGX_Logger{nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false};
     NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
     std::string NVNGX_EngineVersion;
 
@@ -104,7 +106,7 @@ public:
     bool reflexShowWarning = false;
 
     // for realtime changes
-    ankerl::unordered_dense::map <unsigned int, bool> changeBackend;
+    ankerl::unordered_dense::map<unsigned int, bool> changeBackend;
     std::string newBackend = "";
 
     // XeSS debug stuff
@@ -184,7 +186,7 @@ public:
 
     // Moved checks here to prevent circular includes
     /// <summary>
-    /// Enables skipping of LoadLibrary checks 
+    /// Enables skipping of LoadLibrary checks
     /// </summary>
     /// <param name="dllName">Lower case dll name without `.dll` at the end. Leave blank for skipping all dll's</param>
     static void DisableChecks(UINT owner, std::string dllName = "")
@@ -233,11 +235,11 @@ public:
     static std::string SkipDllName() { return _skipDllName; }
     static bool ServeOriginal() { return _serveOriginal; }
 
-private:
+  private:
     inline static bool _skipChecks = false;
     inline static std::string _skipDllName = "";
     inline static UINT _skipOwner = 0;
-    
+
     inline static bool _serveOriginal = false;
     inline static UINT _serveOwner = 0;
 

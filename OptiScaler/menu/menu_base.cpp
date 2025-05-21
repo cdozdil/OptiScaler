@@ -14,8 +14,9 @@ void MenuBase::LoadCustomFonts(ImGuiIO& io, float menuScale)
 
     // This automatically becomes the next default font
     ImFontConfig fontConfig;
-    //fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
-    font = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, std::round(menuScale * fontSize), &fontConfig);
+    // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
+    font = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85,
+                                                       std::round(menuScale * fontSize), &fontConfig);
     if (!font)
     {
         LOG_ERROR("Couldn't create font");
@@ -24,8 +25,9 @@ void MenuBase::LoadCustomFonts(ImGuiIO& io, float menuScale)
 
     ImFontConfig scaledFontConfig;
     constexpr auto scaledFontScale = 3.0f;
-    //fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
-    scaledFont = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, std::round(scaledFontScale * menuScale * fontSize), &scaledFontConfig);
+    // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
+    scaledFont = atlas->AddFontFromMemoryCompressedBase85TTF(
+        hack_compressed_compressed_data_base85, std::round(scaledFontScale * menuScale * fontSize), &scaledFontConfig);
     if (!scaledFont)
     {
         LOG_ERROR("Couldn't create scaled font");
@@ -43,7 +45,7 @@ void MenuBase::UpdateFonts(ImGuiIO& io, float rasterizerDensity)
     {
         if (Config::Instance()->UseHQFont.value_or_default())
             LoadCustomFonts(io, rasterizerDensity);
-        
+
         lastDensity = rasterizerDensity;
     }
 }

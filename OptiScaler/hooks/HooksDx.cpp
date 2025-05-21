@@ -38,19 +38,23 @@ static bool _skipFGSwapChainCreation = false;
 static UINT64 _frameCounter = 0;
 static double _lastFrameTime = 0.0;
 
-#pragma endregion                            
+#pragma endregion
 
-// dxgi stuff                                
-typedef HRESULT(*PFN_EnumAdapterByGpuPreference2)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
-typedef HRESULT(*PFN_EnumAdapterByLuid2)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
-typedef HRESULT(*PFN_EnumAdapters12)(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
-typedef HRESULT(*PFN_EnumAdapters2)(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
+// dxgi stuff
+typedef HRESULT (*PFN_EnumAdapterByGpuPreference2)(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference,
+                                                   REFIID riid, IUnknown** ppvAdapter);
+typedef HRESULT (*PFN_EnumAdapterByLuid2)(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
+typedef HRESULT (*PFN_EnumAdapters12)(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
+typedef HRESULT (*PFN_EnumAdapters2)(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
 
-typedef HRESULT(*PFN_CreateSwapChain)(IDXGIFactory*, IUnknown*, DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**);
-typedef HRESULT(*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, const DXGI_SWAP_CHAIN_DESC1*, const DXGI_SWAP_CHAIN_FULLSCREEN_DESC*, IDXGIOutput*, IDXGISwapChain1**);
-typedef HRESULT(*PFN_CreateSwapChainForCoreWindow)(IDXGIFactory2*, IUnknown* pDevice, IUnknown* pWindow, DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain);
+typedef HRESULT (*PFN_CreateSwapChain)(IDXGIFactory*, IUnknown*, DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**);
+typedef HRESULT (*PFN_CreateSwapChainForHwnd)(IDXGIFactory*, IUnknown*, HWND, const DXGI_SWAP_CHAIN_DESC1*,
+                                              const DXGI_SWAP_CHAIN_FULLSCREEN_DESC*, IDXGIOutput*, IDXGISwapChain1**);
+typedef HRESULT (*PFN_CreateSwapChainForCoreWindow)(IDXGIFactory2*, IUnknown* pDevice, IUnknown* pWindow,
+                                                    DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput,
+                                                    IDXGISwapChain1** ppSwapChain);
 
-typedef HRESULT(*PFN_Present)(void* This, UINT SyncInterval, UINT Flags);
+typedef HRESULT (*PFN_Present)(void* This, UINT SyncInterval, UINT Flags);
 
 static DxgiProxy::PFN_CreateDxgiFactory o_CreateDXGIFactory = nullptr;
 static DxgiProxy::PFN_CreateDxgiFactory1 o_CreateDXGIFactory1 = nullptr;
@@ -70,8 +74,10 @@ static PFN_Present o_FGSCPresent = nullptr;
 static bool skipHighPerfCheck = false;
 
 // DirectX
-typedef void(*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
-typedef HRESULT(*PFN_CreateSamplerState)(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState);
+typedef void (*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc,
+                                  D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+typedef HRESULT (*PFN_CreateSamplerState)(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc,
+                                          ID3D11SamplerState** ppSamplerState);
 
 static PFN_CreateSampler o_CreateSampler = nullptr;
 
@@ -96,12 +102,15 @@ static ID3D11Device* d3d11on12Device = nullptr;
 static bool _isInited = false;
 static bool _d3d12Captured = false;
 
-static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
-static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState);
+static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc,
+                            D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc,
+                                    ID3D11SamplerState** ppSamplerState);
 static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
 static HRESULT hkEnumAdapters1(IDXGIFactory1* This, UINT Adapter, IUnknown** ppAdapter);
 static HRESULT hkEnumAdapterByLuid(IDXGIFactory4* This, LUID AdapterLuid, REFIID riid, IUnknown** ppvAdapter);
-static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter);
+static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference,
+                                            REFIID riid, IUnknown** ppvAdapter);
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory);
 static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory);
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
@@ -118,7 +127,7 @@ static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnk
             return false;
     }
 
-    auto qResult = pObject->QueryInterface(streamlineRiid, (void**)ppRealObject);
+    auto qResult = pObject->QueryInterface(streamlineRiid, (void**) ppRealObject);
 
     if (qResult == S_OK && *ppRealObject != nullptr)
     {
@@ -168,8 +177,9 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
     {
-        if (State::Instance().activeFgType == OptiFG && HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr && 
-            HooksDx::queryHeap != nullptr && State::Instance().currentCommandQueue != nullptr)
+        if (State::Instance().activeFgType == OptiFG && HooksDx::dx12UpscaleTrig &&
+            HooksDx::readbackBuffer != nullptr && HooksDx::queryHeap != nullptr &&
+            State::Instance().currentCommandQueue != nullptr)
         {
             UINT64* timestampData;
             HooksDx::readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&timestampData));
@@ -221,10 +231,12 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         fg->Mutex.lock(2);
 
         // If half or full sync is active, we need to release the mutex after 1 or 2 frames at Present
-        lockAccuired = !Config::Instance()->FGHudfixHalfSync.value_or_default() && !Config::Instance()->FGHudfixFullSync.value_or_default();
+        lockAccuired = !Config::Instance()->FGHudfixHalfSync.value_or_default() &&
+                       !Config::Instance()->FGHudfixFullSync.value_or_default();
         _lockAccuiredForHalfOrFull = !lockAccuired;
 
-        if (Config::Instance()->FGDebugView.value_or_default() || Config::Instance()->FGHudfixHalfSync.value_or_default())
+        if (Config::Instance()->FGDebugView.value_or_default() ||
+            Config::Instance()->FGHudfixHalfSync.value_or_default())
             _releaseMutexTargetFrame = _frameCounter + 1; // For debug 1 frame
         else
             _releaseMutexTargetFrame = _frameCounter + 2; // For FG 2 frames
@@ -251,7 +263,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     return result;
 }
 
-static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flags, const DXGI_PRESENT_PARAMETERS * pPresentParameters, IUnknown * pDevice, HWND hWnd, bool isUWP)
+static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags,
+                       const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd, bool isUWP)
 {
     LOG_DEBUG("{}", _frameCounter);
 
@@ -262,12 +275,12 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
         else
-            presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
+            presentResult = ((IDXGISwapChain1*) pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
         if (presentResult == S_OK)
-            LOG_TRACE("1 {}", (UINT)presentResult);
+            LOG_TRACE("1 {}", (UINT) presentResult);
         else
-            LOG_ERROR("1 {:X}", (UINT)presentResult);
+            LOG_ERROR("1 {:X}", (UINT) presentResult);
 
         return presentResult;
     }
@@ -290,7 +303,7 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
     }
 
     // Removing might cause issues, saved almost 1 ms
-    //if (hWnd != Util::GetProcessWindow())
+    // if (hWnd != Util::GetProcessWindow())
     //{
     //    if (pPresentParameters == nullptr)
     //        presentResult = pSwapChain->Present(SyncInterval, Flags);
@@ -345,7 +358,8 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
         ReflexHooks::update(false);
 
     // Upscaler GPU time computation
-    if (State::Instance().activeFgType != OptiFG && HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr && HooksDx::queryHeap != nullptr && cq != nullptr)
+    if (State::Instance().activeFgType != OptiFG && HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr &&
+        HooksDx::queryHeap != nullptr && cq != nullptr)
     {
         UINT64* timestampData;
         HooksDx::readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&timestampData));
@@ -380,21 +394,25 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
 
         HooksDx::dx12UpscaleTrig = false;
     }
-    else if (HooksDx::dx11UpscaleTrig[HooksDx::currentFrameIndex] && device != nullptr && HooksDx::disjointQueries[0] != nullptr &&
-             HooksDx::startQueries[0] != nullptr && HooksDx::endQueries[0] != nullptr)
+    else if (HooksDx::dx11UpscaleTrig[HooksDx::currentFrameIndex] && device != nullptr &&
+             HooksDx::disjointQueries[0] != nullptr && HooksDx::startQueries[0] != nullptr &&
+             HooksDx::endQueries[0] != nullptr)
     {
         if (_d3d11DeviceContext == nullptr)
             device->GetImmediateContext(&_d3d11DeviceContext);
 
         // Retrieve the results from the previous frame
         D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
-        if (_d3d11DeviceContext->GetData(HooksDx::disjointQueries[HooksDx::previousFrameIndex], &disjointData, sizeof(disjointData), 0) == S_OK)
+        if (_d3d11DeviceContext->GetData(HooksDx::disjointQueries[HooksDx::previousFrameIndex], &disjointData,
+                                         sizeof(disjointData), 0) == S_OK)
         {
             if (!disjointData.Disjoint && disjointData.Frequency > 0)
             {
                 UINT64 startTime = 0, endTime = 0;
-                if (_d3d11DeviceContext->GetData(HooksDx::startQueries[HooksDx::previousFrameIndex], &startTime, sizeof(UINT64), 0) == S_OK &&
-                    _d3d11DeviceContext->GetData(HooksDx::endQueries[HooksDx::previousFrameIndex], &endTime, sizeof(UINT64), 0) == S_OK)
+                if (_d3d11DeviceContext->GetData(HooksDx::startQueries[HooksDx::previousFrameIndex], &startTime,
+                                                 sizeof(UINT64), 0) == S_OK &&
+                    _d3d11DeviceContext->GetData(HooksDx::endQueries[HooksDx::previousFrameIndex], &endTime,
+                                                 sizeof(UINT64), 0) == S_OK)
                 {
                     double elapsedTimeMs = (endTime - startTime) / static_cast<double>(disjointData.Frequency) * 1000.0;
 
@@ -409,7 +427,6 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
                 }
             }
         }
-
 
         HooksDx::dx11UpscaleTrig[HooksDx::currentFrameIndex] = false;
         HooksDx::currentFrameIndex = (HooksDx::currentFrameIndex + 1) % HooksDx::QUERY_BUFFER_COUNT;
@@ -430,12 +447,12 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
         if (pPresentParameters == nullptr)
             presentResult = pSwapChain->Present(SyncInterval, Flags);
         else
-            presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
+            presentResult = ((IDXGISwapChain1*) pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
         if (presentResult == S_OK)
-            LOG_TRACE("3 {}", (UINT)presentResult);
+            LOG_TRACE("3 {}", (UINT) presentResult);
         else
-            LOG_ERROR("3 {:X}", (UINT)presentResult);
+            LOG_ERROR("3 {:X}", (UINT) presentResult);
 
         if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
             State::Instance().currentFG->CallbackMutex.unlock();
@@ -456,7 +473,7 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
     if (pPresentParameters == nullptr)
         presentResult = pSwapChain->Present(SyncInterval, Flags);
     else
-        presentResult = ((IDXGISwapChain1*)pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
+        presentResult = ((IDXGISwapChain1*) pSwapChain)->Present1(SyncInterval, Flags, pPresentParameters);
 
     // release used objects
     if (cq != nullptr)
@@ -469,15 +486,16 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
         device12->Release();
 
     if (presentResult == S_OK)
-        LOG_TRACE("4 {}, Present result: {:X}", _frameCounter, (UINT)presentResult);
+        LOG_TRACE("4 {}, Present result: {:X}", _frameCounter, (UINT) presentResult);
     else
-        LOG_ERROR("4 {:X}", (UINT)presentResult);
+        LOG_ERROR("4 {:X}", (UINT) presentResult);
 
     if (_releaseMutexTargetFrame != 0 && _frameCounter >= _releaseMutexTargetFrame)
         ResTrack_Dx12::PresentDone();
 
     // If Half of Full sync is active or was active (_releaseMutexTargetFrame != 0)
-    if (_releaseMutexTargetFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() && _frameCounter >= _releaseMutexTargetFrame && fg != nullptr)
+    if (_releaseMutexTargetFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() &&
+        _frameCounter >= _releaseMutexTargetFrame && fg != nullptr)
     {
         if (_lockAccuiredForHalfOrFull)
         {
@@ -507,8 +525,8 @@ static void CheckAdapter(IUnknown* unkAdapter)
     if (State::Instance().isRunningOnDXVK)
         return;
 
-    //DXVK VkInterface GUID
-    const GUID guid = { 0x907bf281, 0xea3c, 0x43b4, { 0xa8, 0xe4, 0x9f, 0x23, 0x11, 0x07, 0xb4, 0xff } };
+    // DXVK VkInterface GUID
+    const GUID guid = {0x907bf281, 0xea3c, 0x43b4, {0xa8, 0xe4, 0x9f, 0x23, 0x11, 0x07, 0xb4, 0xff}};
 
     IDXGIAdapter* adapter = nullptr;
     bool adapterOk = unkAdapter->QueryInterface(IID_PPV_ARGS(&adapter)) == S_OK;
@@ -517,7 +535,7 @@ static void CheckAdapter(IUnknown* unkAdapter)
     if (adapterOk && adapter->QueryInterface(guid, &dxvkAdapter) == S_OK)
     {
         State::Instance().isRunningOnDXVK = dxvkAdapter != nullptr;
-        ((IDXGIAdapter*)dxvkAdapter)->Release();
+        ((IDXGIAdapter*) dxvkAdapter)->Release();
 
         // Temporary fix for Linux & DXVK
         if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
@@ -528,7 +546,9 @@ static void CheckAdapter(IUnknown* unkAdapter)
         adapter->Release();
 }
 
-static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown* pDevice, IUnknown* pWindow, DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown* pDevice, IUnknown* pWindow,
+                                              DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput,
+                                              IDXGISwapChain1** ppSwapChain)
 {
     LOG_FUNC();
 
@@ -537,8 +557,8 @@ static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown*
         LOG_WARN("Vulkan is creating swapchain!");
 
         if (pDesc != nullptr)
-            LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, SkipWrapping: {}",
-                      pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, _skipFGSwapChainCreation);
+            LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, SkipWrapping: {}", pDesc->Width, pDesc->Height,
+                      (UINT) pDesc->Format, pDesc->BufferCount, _skipFGSwapChainCreation);
 
         State::Instance().skipDxgiLoadChecks = true;
         auto res = oCreateSwapChainForCoreWindow(pFactory, pDevice, pWindow, pDesc, pRestrictToOutput, ppSwapChain);
@@ -564,8 +584,8 @@ static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown*
         return res;
     }
 
-    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, SkipWrapping: {}",
-              pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, _skipFGSwapChainCreation);
+    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, SkipWrapping: {}", pDesc->Width, pDesc->Height,
+              (UINT) pDesc->Format, pDesc->BufferCount, _skipFGSwapChainCreation);
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
@@ -599,23 +619,25 @@ static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown*
     {
         // check for SL proxy
         IDXGISwapChain* realSC = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&realSC))
+        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**) &realSC))
             realSC = *ppSwapChain;
 
         IUnknown* readDevice = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&readDevice))
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**) &readDevice))
             readDevice = pDevice;
 
         State::Instance().screenWidth = pDesc->Width;
         State::Instance().screenHeight = pDesc->Height;
 
-        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pWindow);
-        *ppSwapChain = new WrappedIDXGISwapChain4(realSC, readDevice, (HWND)pWindow, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain, true);
+        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64) *ppSwapChain, (UINT64) pWindow);
+        *ppSwapChain =
+            new WrappedIDXGISwapChain4(realSC, readDevice, (HWND) pWindow, Present, MenuOverlayDx::CleanupRenderTarget,
+                                       HooksDx::ReleaseDx12SwapChain, true);
 
         if (!_skipFGSwapChainCreation)
             State::Instance().currentSwapchain = *ppSwapChain;
 
-        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64) *ppSwapChain, (UINT64) pDevice);
 
         // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
         // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
@@ -651,7 +673,7 @@ static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown*
 
                     if (result != S_OK)
                     {
-                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT) result);
                         break;
                     }
 
@@ -661,7 +683,7 @@ static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown*
 
                         if (result != S_OK)
                         {
-                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT) result);
                             break;
                         }
                     }
@@ -679,7 +701,8 @@ static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown*
     return result;
 }
 
-static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
+static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc,
+                                 IDXGISwapChain** ppSwapChain)
 {
     LOG_FUNC();
 
@@ -691,7 +714,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
         if (pDesc != nullptr)
             LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
-                      pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, _skipFGSwapChainCreation);
+                      pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT) pDesc->BufferDesc.Format,
+                      pDesc->BufferCount, (UINT) pDesc->OutputWindow, pDesc->Windowed, _skipFGSwapChainCreation);
 
         State::Instance().skipDxgiLoadChecks = true;
         auto res = oCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
@@ -718,7 +742,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     }
 
     LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, Windowed: {}, SkipWrapping: {}",
-              pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT)pDesc->BufferDesc.Format, pDesc->BufferCount, (UINT)pDesc->OutputWindow, pDesc->Windowed, _skipFGSwapChainCreation);
+              pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, (UINT) pDesc->BufferDesc.Format, pDesc->BufferCount,
+              (UINT) pDesc->OutputWindow, pDesc->Windowed, _skipFGSwapChainCreation);
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
     // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
@@ -760,8 +785,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
         auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
         ID3D12CommandQueue* real = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&real))
-            real = (ID3D12CommandQueue*)pDevice;
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**) &real))
+            real = (ID3D12CommandQueue*) pDevice;
 
         _skipFGSwapChainCreation = true;
         State::Instance().skipHeapCapture = true;
@@ -779,7 +804,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             {
                 void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
 
-                o_FGSCPresent = (PFN_Present)pFactoryVTable[8];
+                o_FGSCPresent = (PFN_Present) pFactoryVTable[8];
 
                 if (o_FGSCPresent != nullptr)
                 {
@@ -788,7 +813,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
                     DetourTransactionBegin();
                     DetourUpdateThread(GetCurrentThread());
 
-                    DetourAttach(&(PVOID&)o_FGSCPresent, hkFGPresent);
+                    DetourAttach(&(PVOID&) o_FGSCPresent, hkFGPresent);
 
                     DetourTransactionCommit();
                 }
@@ -824,7 +849,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
                         if (result != S_OK)
                         {
-                            LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                            LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT) result);
                             break;
                         }
 
@@ -834,7 +859,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
                             if (result != S_OK)
                             {
-                                LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                                LOG_ERROR("SetColorSpace1 error: {:X}", (UINT) result);
                                 break;
                             }
                         }
@@ -874,11 +899,11 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
     {
         // check for SL proxy
         IDXGISwapChain* realSC = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&realSC))
+        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**) &realSC))
             realSC = *ppSwapChain;
 
         IUnknown* readDevice = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&readDevice))
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**) &readDevice))
             readDevice = pDevice;
 
         if (Util::GetProcessWindow() == pDesc->OutputWindow)
@@ -887,13 +912,15 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
             State::Instance().screenHeight = pDesc->BufferDesc.Height;
         }
 
-        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDesc->OutputWindow);
-        *ppSwapChain = new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain, false);
+        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64) *ppSwapChain, (UINT64) pDesc->OutputWindow);
+        *ppSwapChain =
+            new WrappedIDXGISwapChain4(realSC, readDevice, pDesc->OutputWindow, Present,
+                                       MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain, false);
 
         if (!_skipFGSwapChainCreation)
             State::Instance().currentSwapchain = *ppSwapChain;
 
-        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64) *ppSwapChain, (UINT64) pDevice);
 
         // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
         // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
@@ -929,7 +956,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
                     if (result != S_OK)
                     {
-                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT) result);
                         break;
                     }
 
@@ -939,7 +966,7 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 
                         if (result != S_OK)
                         {
-                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT) result);
                             break;
                         }
                     }
@@ -958,7 +985,8 @@ static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI
 }
 
 static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, HWND hWnd, DXGI_SWAP_CHAIN_DESC1* pDesc,
-                                        DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc, IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
+                                        DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc,
+                                        IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
     LOG_FUNC();
 
@@ -988,8 +1016,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         State::Instance().skipDxgiLoadChecks = false;
     }
 
-    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}",
-              pDesc->Width, pDesc->Height, (UINT)pDesc->Format, pDesc->BufferCount, (UINT)hWnd, _skipFGSwapChainCreation);
+    LOG_DEBUG("Width: {}, Height: {}, Format: {:X}, Count: {}, Hwnd: {:X}, SkipWrapping: {}", pDesc->Width,
+              pDesc->Height, (UINT) pDesc->Format, pDesc->BufferCount, (UINT) hWnd, _skipFGSwapChainCreation);
 
     if (Config::Instance()->ForceHDR.value_or_default() && !_skipFGSwapChainCreation)
     {
@@ -1014,7 +1042,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     }
 
     ID3D12CommandQueue* cq = nullptr;
-    if (State::Instance().activeFgType == FGType::OptiFG && !_skipFGSwapChainCreation && FfxApiProxy::InitFfxDx12() && pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
+    if (State::Instance().activeFgType == FGType::OptiFG && !_skipFGSwapChainCreation && FfxApiProxy::InitFfxDx12() &&
+        pDevice->QueryInterface(IID_PPV_ARGS(&cq)) == S_OK)
     {
         cq->SetName(L"GameQueueHwnd");
         cq->Release();
@@ -1028,8 +1057,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
         auto fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
         ID3D12CommandQueue* real = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&real))
-            real = (ID3D12CommandQueue*)pDevice;
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**) &real))
+            real = (ID3D12CommandQueue*) pDevice;
 
         _skipFGSwapChainCreation = true;
         State::Instance().skipHeapCapture = true;
@@ -1047,7 +1076,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             {
                 void** pFactoryVTable = *reinterpret_cast<void***>(*ppSwapChain);
 
-                o_FGSCPresent = (PFN_Present)pFactoryVTable[8];
+                o_FGSCPresent = (PFN_Present) pFactoryVTable[8];
 
                 if (o_FGSCPresent != nullptr)
                 {
@@ -1056,7 +1085,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                     DetourTransactionBegin();
                     DetourUpdateThread(GetCurrentThread());
 
-                    DetourAttach(&(PVOID&)o_FGSCPresent, hkFGPresent);
+                    DetourAttach(&(PVOID&) o_FGSCPresent, hkFGPresent);
 
                     DetourTransactionCommit();
                 }
@@ -1092,7 +1121,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
                         if (result != S_OK)
                         {
-                            LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                            LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT) result);
                             break;
                         }
 
@@ -1102,7 +1131,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
                             if (result != S_OK)
                             {
-                                LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                                LOG_ERROR("SetColorSpace1 error: {:X}", (UINT) result);
                                 break;
                             }
                         }
@@ -1141,11 +1170,11 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
     {
         // check for SL proxy
         IDXGISwapChain1* realSC = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&realSC))
+        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**) &realSC))
             realSC = *ppSwapChain;
 
         IUnknown* readDevice = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**)&readDevice))
+        if (!CheckForRealObject(__FUNCTION__, pDevice, (IUnknown**) &readDevice))
             readDevice = pDevice;
 
         if (Util::GetProcessWindow() == hWnd)
@@ -1154,9 +1183,10 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
             State::Instance().screenHeight = pDesc->Height;
         }
 
-        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)hWnd);
-        *ppSwapChain = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain, false);
-        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)pDevice);
+        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64) *ppSwapChain, (UINT64) hWnd);
+        *ppSwapChain = new WrappedIDXGISwapChain4(realSC, readDevice, hWnd, Present, MenuOverlayDx::CleanupRenderTarget,
+                                                  HooksDx::ReleaseDx12SwapChain, false);
+        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64) *ppSwapChain, (UINT64) pDevice);
 
         if (!_skipFGSwapChainCreation)
             State::Instance().currentSwapchain = *ppSwapChain;
@@ -1193,7 +1223,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
                     if (result != S_OK)
                     {
-                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT) result);
                         break;
                     }
 
@@ -1203,7 +1233,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
                         if (result != S_OK)
                         {
-                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT) result);
                             break;
                         }
                     }
@@ -1227,7 +1257,7 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 #ifndef ENABLE_DEBUG_LAYER_DX12
     auto result = o_CreateDXGIFactory(riid, ppFactory);
 #else
-    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
+    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**) ppFactory);
 #endif
     State::EnableChecks(97);
 
@@ -1235,14 +1265,14 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
         return result;
 
     IDXGIFactory* real = nullptr;
-    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**)&real))
+    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**) &real))
         real = *ppFactory;
 
     if (oCreateSwapChain == nullptr)
     {
         void** pFactoryVTable = *reinterpret_cast<void***>(real);
 
-        oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+        oCreateSwapChain = (PFN_CreateSwapChain) pFactoryVTable[10];
 
         IDXGIFactory2* factory2 = nullptr;
         if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
@@ -1250,8 +1280,8 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
             pFactoryVTable = *reinterpret_cast<void***>(factory2);
             factory2->Release();
 
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd) pFactoryVTable[15];
+            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow) pFactoryVTable[16];
         }
 
         if (oCreateSwapChain != nullptr)
@@ -1261,13 +1291,13 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 
-            DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+            DetourAttach(&(PVOID&) oCreateSwapChain, hkCreateSwapChain);
 
             if (oCreateSwapChainForHwnd != nullptr)
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+                DetourAttach(&(PVOID&) oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
 
             if (oCreateSwapChainForCoreWindow != nullptr)
-                DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
+                DetourAttach(&(PVOID&) oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
 
             DetourTransactionCommit();
         }
@@ -1282,7 +1312,7 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 #ifndef ENABLE_DEBUG_LAYER_DX12
     auto result = o_CreateDXGIFactory1(riid, ppFactory);
 #else
-    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**)ppFactory);
+    auto result = o_CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, riid, (IDXGIFactory2**) ppFactory);
 #endif
     State::EnableChecks(98);
 
@@ -1290,14 +1320,14 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
         return result;
 
     IDXGIFactory1* real = nullptr;
-    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**)&real))
+    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**) &real))
         real = *ppFactory;
 
     if (oCreateSwapChain == nullptr)
     {
         void** pFactoryVTable = *reinterpret_cast<void***>(real);
 
-        oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+        oCreateSwapChain = (PFN_CreateSwapChain) pFactoryVTable[10];
 
         IDXGIFactory2* factory2 = nullptr;
         if (real->QueryInterface(IID_PPV_ARGS(&factory2)) == S_OK && factory2 != nullptr)
@@ -1305,8 +1335,8 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
             pFactoryVTable = *reinterpret_cast<void***>(factory2);
             factory2->Release();
 
-            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+            oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd) pFactoryVTable[15];
+            oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow) pFactoryVTable[16];
         }
 
         if (oCreateSwapChain != nullptr)
@@ -1316,13 +1346,13 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 
-            DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+            DetourAttach(&(PVOID&) oCreateSwapChain, hkCreateSwapChain);
 
             if (oCreateSwapChainForHwnd != nullptr)
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+                DetourAttach(&(PVOID&) oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
 
             if (oCreateSwapChainForCoreWindow != nullptr)
-                DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
+                DetourAttach(&(PVOID&) oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
 
             DetourTransactionCommit();
         }
@@ -1345,7 +1375,7 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
         return result;
 
     IDXGIFactory2* real = nullptr;
-    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**)&real))
+    if (!CheckForRealObject(__FUNCTION__, *ppFactory, (IUnknown**) &real))
         real = *ppFactory;
 
     if (oCreateSwapChainForHwnd == nullptr)
@@ -1355,12 +1385,12 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
         bool skip = false;
 
         if (oCreateSwapChain == nullptr)
-            oCreateSwapChain = (PFN_CreateSwapChain)pFactoryVTable[10];
+            oCreateSwapChain = (PFN_CreateSwapChain) pFactoryVTable[10];
         else
             skip = true;
 
-        oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd)pFactoryVTable[15];
-        oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow)pFactoryVTable[16];
+        oCreateSwapChainForHwnd = (PFN_CreateSwapChainForHwnd) pFactoryVTable[15];
+        oCreateSwapChainForCoreWindow = (PFN_CreateSwapChainForCoreWindow) pFactoryVTable[16];
 
         if (oCreateSwapChainForHwnd != nullptr)
         {
@@ -1370,13 +1400,13 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
             DetourUpdateThread(GetCurrentThread());
 
             if (!skip)
-                DetourAttach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+                DetourAttach(&(PVOID&) oCreateSwapChain, hkCreateSwapChain);
 
             if (oCreateSwapChainForHwnd != nullptr)
-                DetourAttach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+                DetourAttach(&(PVOID&) oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
 
             if (oCreateSwapChainForCoreWindow != nullptr)
-                DetourAttach(&(PVOID&)oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
+                DetourAttach(&(PVOID&) oCreateSwapChainForCoreWindow, hkCreateSwapChainForCoreWindow);
 
             DetourTransactionCommit();
         }
@@ -1385,9 +1415,10 @@ static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppF
     return result;
 }
 
-static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IUnknown** ppvAdapter)
+static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference,
+                                            REFIID riid, IUnknown** ppvAdapter)
 {
-    LOG_TRACE("HooksDx Adapter: {}, GpuPreference: {}", Adapter, (UINT)GpuPreference);
+    LOG_TRACE("HooksDx Adapter: {}, GpuPreference: {}", Adapter, (UINT) GpuPreference);
 
     State::DisableChecks(2, "dxgi");
     auto result = o_EnumAdapterByGpuPreference(This, Adapter, GpuPreference, riid, ppvAdapter);
@@ -1396,7 +1427,7 @@ static HRESULT hkEnumAdapterByGpuPreference(IDXGIFactory6* This, UINT Adapter, D
     if (result == S_OK)
         CheckAdapter(*ppvAdapter);
 
-    LOG_TRACE("HooksDx result: {:X}, Adapter: {:X}", (UINT)result, (size_t)*ppvAdapter);
+    LOG_TRACE("HooksDx result: {:X}, Adapter: {:X}", (UINT) result, (size_t) *ppvAdapter);
     return result;
 }
 
@@ -1454,14 +1485,14 @@ static void HookToDevice(ID3D12Device* InDevice)
     LOG_DEBUG("Dx12");
 
     // Get the vtable pointer
-    PVOID* pVTable = *(PVOID**)InDevice;
+    PVOID* pVTable = *(PVOID**) InDevice;
 
     ID3D12Device* realDevice = nullptr;
-    if (CheckForRealObject(__FUNCTION__, InDevice, (IUnknown**)&realDevice))
-        PVOID* pVTable = *(PVOID**)realDevice;
+    if (CheckForRealObject(__FUNCTION__, InDevice, (IUnknown**) &realDevice))
+        PVOID* pVTable = *(PVOID**) realDevice;
 
     // hudless
-    o_CreateSampler = (PFN_CreateSampler)pVTable[22];
+    o_CreateSampler = (PFN_CreateSampler) pVTable[22];
 
     // Apply the detour
     if (o_CreateSampler != nullptr)
@@ -1470,7 +1501,7 @@ static void HookToDevice(ID3D12Device* InDevice)
         DetourUpdateThread(GetCurrentThread());
 
         if (o_CreateSampler != nullptr)
-            DetourAttach(&(PVOID&)o_CreateSampler, hkCreateSampler);
+            DetourAttach(&(PVOID&) o_CreateSampler, hkCreateSampler);
 
         DetourTransactionCommit();
     }
@@ -1487,9 +1518,9 @@ static void HookToDevice(ID3D11Device* InDevice)
     LOG_DEBUG("Dx11");
 
     // Get the vtable pointer
-    PVOID* pVTable = *(PVOID**)InDevice;
+    PVOID* pVTable = *(PVOID**) InDevice;
 
-    o_CreateSamplerState = (PFN_CreateSamplerState)pVTable[23];
+    o_CreateSamplerState = (PFN_CreateSamplerState) pVTable[23];
 
     // Apply the detour
     if (o_CreateSamplerState != nullptr)
@@ -1497,14 +1528,16 @@ static void HookToDevice(ID3D11Device* InDevice)
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
 
-        DetourAttach(&(PVOID&)o_CreateSamplerState, hkCreateSamplerState);
+        DetourAttach(&(PVOID&) o_CreateSamplerState, hkCreateSamplerState);
 
         DetourTransactionCommit();
     }
 }
 
-static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATURE_LEVEL* pFeatureLevels, UINT FeatureLevels, IUnknown** ppCommandQueues,
-                                       UINT NumQueues, UINT NodeMask, ID3D11Device** ppDevice, ID3D11DeviceContext** ppImmediateContext, D3D_FEATURE_LEVEL* pChosenFeatureLevel)
+static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATURE_LEVEL* pFeatureLevels,
+                                       UINT FeatureLevels, IUnknown** ppCommandQueues, UINT NumQueues, UINT NodeMask,
+                                       ID3D11Device** ppDevice, ID3D11DeviceContext** ppImmediateContext,
+                                       D3D_FEATURE_LEVEL* pChosenFeatureLevel)
 {
     LOG_FUNC();
 
@@ -1514,21 +1547,24 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
 
     bool rtss = false;
 
-    // Assuming RTSS is creating a D3D11on12 device, not sure why but sometimes RTSS tries to create 
+    // Assuming RTSS is creating a D3D11on12 device, not sure why but sometimes RTSS tries to create
     // it's D3D11on12 device with old CommandQueue which results crash
     // I am changing it's CommandQueue with current swapchain's command queue
-    if (State::Instance().currentCommandQueue != nullptr && *ppCommandQueues != State::Instance().currentCommandQueue && GetModuleHandle(L"RTSSHooks64.dll") != nullptr && pDevice == State::Instance().currentD3D12Device)
+    if (State::Instance().currentCommandQueue != nullptr && *ppCommandQueues != State::Instance().currentCommandQueue &&
+        GetModuleHandle(L"RTSSHooks64.dll") != nullptr && pDevice == State::Instance().currentD3D12Device)
     {
-        LOG_INFO("Replaced RTSS CommandQueue with correct one {0:X} -> {1:X}", (UINT64)*ppCommandQueues, (UINT64)State::Instance().currentCommandQueue);
+        LOG_INFO("Replaced RTSS CommandQueue with correct one {0:X} -> {1:X}", (UINT64) *ppCommandQueues,
+                 (UINT64) State::Instance().currentCommandQueue);
         *ppCommandQueues = State::Instance().currentCommandQueue;
         rtss = true;
     }
 
-    auto result = o_D3D11On12CreateDevice(pDevice, Flags, pFeatureLevels, FeatureLevels, ppCommandQueues, NumQueues, NodeMask, ppDevice, ppImmediateContext, pChosenFeatureLevel);
+    auto result = o_D3D11On12CreateDevice(pDevice, Flags, pFeatureLevels, FeatureLevels, ppCommandQueues, NumQueues,
+                                          NodeMask, ppDevice, ppImmediateContext, pChosenFeatureLevel);
 
     if (result == S_OK && *ppDevice != nullptr && !rtss && !_d3d12Captured)
     {
-        LOG_INFO("Device captured, D3D11Device: {0:X}", (UINT64)*ppDevice);
+        LOG_INFO("Device captured, D3D11Device: {0:X}", (UINT64) *ppDevice);
         d3d11on12Device = *ppDevice;
         HookToDevice(d3d11on12Device);
     }
@@ -1541,8 +1577,10 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
     return result;
 }
 
-static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software, UINT Flags, CONST D3D_FEATURE_LEVEL* pFeatureLevels,
-                                   UINT FeatureLevels, UINT SDKVersion, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
+static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software, UINT Flags,
+                                   CONST D3D_FEATURE_LEVEL* pFeatureLevels, UINT FeatureLevels, UINT SDKVersion,
+                                   ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel,
+                                   ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
 
@@ -1551,7 +1589,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 #endif
 
     static const D3D_FEATURE_LEVEL levels[] = {
-     D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_1,
     };
 
     D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
@@ -1563,12 +1601,14 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
 
     if (maxLevel == D3D_FEATURE_LEVEL_11_0)
     {
-        LOG_INFO("Overriding D3D_FEATURE_LEVEL, Game requested D3D_FEATURE_LEVEL_11_0, we need D3D_FEATURE_LEVEL_11_1!");
+        LOG_INFO(
+            "Overriding D3D_FEATURE_LEVEL, Game requested D3D_FEATURE_LEVEL_11_0, we need D3D_FEATURE_LEVEL_11_1!");
         pFeatureLevels = levels;
         FeatureLevels = ARRAYSIZE(levels);
     }
 
-    auto result = o_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
+    auto result = o_D3D11CreateDevice(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
+                                      ppDevice, pFeatureLevel, ppImmediateContext);
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -1586,8 +1626,12 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
     return result;
 }
 
-static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software, UINT Flags, CONST D3D_FEATURE_LEVEL* pFeatureLevels,
-                                               UINT FeatureLevels, UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc, IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel, ID3D11DeviceContext** ppImmediateContext)
+static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE DriverType, HMODULE Software,
+                                               UINT Flags, CONST D3D_FEATURE_LEVEL* pFeatureLevels, UINT FeatureLevels,
+                                               UINT SDKVersion, DXGI_SWAP_CHAIN_DESC* pSwapChainDesc,
+                                               IDXGISwapChain** ppSwapChain, ID3D11Device** ppDevice,
+                                               D3D_FEATURE_LEVEL* pFeatureLevel,
+                                               ID3D11DeviceContext** ppImmediateContext)
 {
     LOG_FUNC();
 
@@ -1596,7 +1640,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 #endif
 
     static const D3D_FEATURE_LEVEL levels[] = {
-    D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_1,
     };
 
     D3D_FEATURE_LEVEL maxLevel = D3D_FEATURE_LEVEL_1_0_CORE;
@@ -1608,7 +1652,8 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
     if (maxLevel == D3D_FEATURE_LEVEL_11_0)
     {
-        LOG_INFO("Overriding D3D_FEATURE_LEVEL, Game requested D3D_FEATURE_LEVEL_11_0, we need D3D_FEATURE_LEVEL_11_1!");
+        LOG_INFO(
+            "Overriding D3D_FEATURE_LEVEL, Game requested D3D_FEATURE_LEVEL_11_0, we need D3D_FEATURE_LEVEL_11_1!");
         pFeatureLevels = levels;
         FeatureLevels = ARRAYSIZE(levels);
     }
@@ -1616,12 +1661,14 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
     if (pSwapChainDesc != nullptr && pSwapChainDesc->BufferDesc.Height == 2 && pSwapChainDesc->BufferDesc.Width == 2)
     {
         LOG_WARN("Overlay call!");
-        auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+        auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels,
+                                                      FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice,
+                                                      pFeatureLevel, ppImmediateContext);
         return result;
     }
 
     // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
-    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade    
+    // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
     if (pSwapChainDesc != nullptr && Config::Instance()->ForceHDR.value_or_default())
     {
         LOG_INFO("Force HDR on");
@@ -1644,8 +1691,9 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         pSwapChainDesc->Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
     }
 
-
-    auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+    auto result = o_D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels,
+                                                  SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel,
+                                                  ppImmediateContext);
 
     if (result == S_OK && *ppDevice != nullptr && !_d3d12Captured)
     {
@@ -1654,15 +1702,16 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
         HookToDevice(d3d11Device);
     }
 
-    if (result == S_OK && pSwapChainDesc != nullptr && ppSwapChain != nullptr && *ppSwapChain != nullptr && ppDevice != nullptr && *ppDevice != nullptr)
+    if (result == S_OK && pSwapChainDesc != nullptr && ppSwapChain != nullptr && *ppSwapChain != nullptr &&
+        ppDevice != nullptr && *ppDevice != nullptr)
     {
         // check for SL proxy
         IDXGISwapChain* realSC = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**)&realSC))
+        if (!CheckForRealObject(__FUNCTION__, *ppSwapChain, (IUnknown**) &realSC))
             realSC = *ppSwapChain;
 
         IUnknown* readDevice = nullptr;
-        if (!CheckForRealObject(__FUNCTION__, *ppDevice, (IUnknown**)&readDevice))
+        if (!CheckForRealObject(__FUNCTION__, *ppDevice, (IUnknown**) &readDevice))
             readDevice = *ppDevice;
 
         if (Util::GetProcessWindow() == pSwapChainDesc->OutputWindow)
@@ -1671,13 +1720,17 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
             State::Instance().screenHeight = pSwapChainDesc->BufferDesc.Height;
         }
 
-        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64)*ppSwapChain, (UINT64)pSwapChainDesc->OutputWindow);
-        *ppSwapChain = new WrappedIDXGISwapChain4(realSC, readDevice, pSwapChainDesc->OutputWindow, Present, MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain, false);
+        LOG_DEBUG("Created new swapchain: {0:X}, hWnd: {1:X}", (UINT64) *ppSwapChain,
+                  (UINT64) pSwapChainDesc->OutputWindow);
+        *ppSwapChain =
+            new WrappedIDXGISwapChain4(realSC, readDevice, pSwapChainDesc->OutputWindow, Present,
+                                       MenuOverlayDx::CleanupRenderTarget, HooksDx::ReleaseDx12SwapChain, false);
 
         if (!_skipFGSwapChainCreation)
             State::Instance().currentSwapchain = *ppSwapChain;
 
-        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64)*ppSwapChain, (UINT64)*ppDevice);
+        LOG_DEBUG("Created new WrappedIDXGISwapChain4: {0:X}, pDevice: {1:X}", (UINT64) *ppSwapChain,
+                  (UINT64) *ppDevice);
 
         // Crude implementation of EndlesslyFlowering's AutoHDR-ReShade
         // https://github.com/EndlesslyFlowering/AutoHDR-ReShade
@@ -1713,7 +1766,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
                     if (result != S_OK)
                     {
-                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT)result);
+                        LOG_ERROR("CheckColorSpaceSupport error: {:X}", (UINT) result);
                         break;
                     }
 
@@ -1723,7 +1776,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
 
                         if (result != S_OK)
                         {
-                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT)result);
+                            LOG_ERROR("SetColorSpace1 error: {:X}", (UINT) result);
                             break;
                         }
                     }
@@ -1750,15 +1803,18 @@ static ID3D12Debug3* debugController = nullptr;
 static ID3D12InfoQueue* infoQueue = nullptr;
 static ID3D12InfoQueue1* infoQueue1 = nullptr;
 
-static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext)
+static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity,
+                                        D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext)
 {
-    LOG_DEBUG("Category: {}, Severity: {}, ID: {}, Message: {}", (UINT)Category, (UINT)Severity, (UINT)ID, pDescription);
+    LOG_DEBUG("Category: {}, Severity: {}, ID: {}, Message: {}", (UINT) Category, (UINT) Severity, (UINT) ID,
+              pDescription);
 }
 #endif
 
-static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
+static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid,
+                                   void** ppDevice)
 {
-    LOG_TRACE("Adapter: {:X}, Level: {:X}", (size_t)pAdapter, (UINT)MinimumFeatureLevel);
+    LOG_TRACE("Adapter: {:X}, Level: {:X}", (size_t) pAdapter, (UINT) MinimumFeatureLevel);
 
 #ifdef ENABLE_DEBUG_LAYER_DX12
     LOG_WARN("Debug layers active!");
@@ -1795,16 +1851,16 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 
     auto result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
-    LOG_DEBUG("o_D3D12CreateDevice result: {:X}", (UINT)result);
+    LOG_DEBUG("o_D3D12CreateDevice result: {:X}", (UINT) result);
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
     {
-        LOG_DEBUG("Device captured: {0:X}", (size_t)*ppDevice);
-        State::Instance().currentD3D12Device = (ID3D12Device*)*ppDevice;
+        LOG_DEBUG("Device captured: {0:X}", (size_t) *ppDevice);
+        State::Instance().currentD3D12Device = (ID3D12Device*) *ppDevice;
         HookToDevice(State::Instance().currentD3D12Device);
         _d3d12Captured = true;
 
-        State::Instance().d3d12Devices.push_back((ID3D12Device*)*ppDevice);
+        State::Instance().d3d12Devices.push_back((ID3D12Device*) *ppDevice);
 
 #ifdef ENABLE_DEBUG_LAYER_DX12
         if (infoQueue != nullptr)
@@ -1822,23 +1878,26 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 
             HRESULT res;
             res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-            //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-            //res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+            // res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+            // res = infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
 
             if (infoQueue->QueryInterface(IID_PPV_ARGS(&infoQueue1)) == S_OK && infoQueue1 != nullptr)
             {
                 LOG_DEBUG("infoQueue1 accuired, registering MessageCallback");
-                res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS, NULL, NULL);
+                res = infoQueue1->RegisterMessageCallback(D3D12DebugCallback, D3D12_MESSAGE_CALLBACK_IGNORE_FILTERS,
+                                                          NULL, NULL);
             }
         }
 #endif
     }
 
-    LOG_DEBUG("final result: {:X}", (UINT)result);
+    LOG_DEBUG("final result: {:X}", (UINT) result);
     return result;
 }
 
-static HRESULT hkD3D12SerializeRootSignature(D3d12Proxy::D3D12_ROOT_SIGNATURE_DESC_L* pRootSignature, D3D_ROOT_SIGNATURE_VERSION Version, ID3DBlob** ppBlob, ID3DBlob** ppErrorBlob)
+static HRESULT hkD3D12SerializeRootSignature(D3d12Proxy::D3D12_ROOT_SIGNATURE_DESC_L* pRootSignature,
+                                             D3D_ROOT_SIGNATURE_VERSION Version, ID3DBlob** ppBlob,
+                                             ID3DBlob** ppErrorBlob)
 {
     if (Config::Instance()->OverrideShaderSampler.value_or_default() && pRootSignature != nullptr)
     {
@@ -1846,18 +1905,25 @@ static HRESULT hkD3D12SerializeRootSignature(D3d12Proxy::D3D12_ROOT_SIGNATURE_DE
         {
             if (Config::Instance()->MipmapBiasOverride.has_value())
             {
-                if (pRootSignature->pStaticSamplers[i].MipLODBias < 0.0f || Config::Instance()->MipmapBiasOverrideAll.value_or_default())
+                if (pRootSignature->pStaticSamplers[i].MipLODBias < 0.0f ||
+                    Config::Instance()->MipmapBiasOverrideAll.value_or_default())
                 {
                     if (Config::Instance()->MipmapBiasOverride.has_value())
                     {
-                        LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pRootSignature->pStaticSamplers[i].MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+                        LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pRootSignature->pStaticSamplers[i].MipLODBias,
+                                  Config::Instance()->MipmapBiasOverride.value());
 
                         if (Config::Instance()->MipmapBiasFixedOverride.value_or_default())
-                            pRootSignature->pStaticSamplers[i].MipLODBias = Config::Instance()->MipmapBiasOverride.value();
+                            pRootSignature->pStaticSamplers[i].MipLODBias =
+                                Config::Instance()->MipmapBiasOverride.value();
                         else if (Config::Instance()->MipmapBiasScaleOverride.value_or_default())
-                            pRootSignature->pStaticSamplers[i].MipLODBias = pRootSignature->pStaticSamplers[i].MipLODBias * Config::Instance()->MipmapBiasOverride.value();
+                            pRootSignature->pStaticSamplers[i].MipLODBias =
+                                pRootSignature->pStaticSamplers[i].MipLODBias *
+                                Config::Instance()->MipmapBiasOverride.value();
                         else
-                            pRootSignature->pStaticSamplers[i].MipLODBias = pRootSignature->pStaticSamplers[i].MipLODBias + Config::Instance()->MipmapBiasOverride.value();
+                            pRootSignature->pStaticSamplers[i].MipLODBias =
+                                pRootSignature->pStaticSamplers[i].MipLODBias +
+                                Config::Instance()->MipmapBiasOverride.value();
                     }
 
                     if (State::Instance().lastMipBiasMax < pRootSignature->pStaticSamplers[i].MipLODBias)
@@ -1870,12 +1936,15 @@ static HRESULT hkD3D12SerializeRootSignature(D3d12Proxy::D3D12_ROOT_SIGNATURE_DE
 
             if (Config::Instance()->AnisotropyOverride.has_value())
             {
-                if (pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
+                if (pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR ||
+                    pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
                     pRootSignature->pStaticSamplers[i].Filter == D3D12_FILTER_ANISOTROPIC)
                 {
                     pRootSignature->pStaticSamplers[i].Filter = D3D12_FILTER_ANISOTROPIC;
                     LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}",
-                              pRootSignature->pStaticSamplers[i].MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pRootSignature->pStaticSamplers[i].Filter);
+                              pRootSignature->pStaticSamplers[i].MaxAnisotropy,
+                              Config::Instance()->AnisotropyOverride.value(),
+                              (UINT) pRootSignature->pStaticSamplers[i].Filter);
                     pRootSignature->pStaticSamplers[i].MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
                 }
             }
@@ -1885,7 +1954,8 @@ static HRESULT hkD3D12SerializeRootSignature(D3d12Proxy::D3D12_ROOT_SIGNATURE_DE
     return o_D3D12SerializeRootSignature(pRootSignature, Version, ppBlob, ppErrorBlob);
 }
 
-static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc, D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
+static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc,
+                            D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor)
 {
     if (pDesc == nullptr || device == nullptr)
         return;
@@ -1903,10 +1973,12 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
 
     if (Config::Instance()->AnisotropyOverride.has_value())
     {
-        if (pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR || pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT || pDesc->Filter == D3D12_FILTER_ANISOTROPIC)
+        if (pDesc->Filter == D3D12_FILTER_MIN_MAG_MIP_LINEAR ||
+            pDesc->Filter == D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT || pDesc->Filter == D3D12_FILTER_ANISOTROPIC)
         {
             newDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pDesc->Filter);
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pDesc->MaxAnisotropy,
+                      Config::Instance()->AnisotropyOverride.value(), (UINT) pDesc->Filter);
             newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
         }
     }
@@ -1924,7 +1996,8 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     {
         if (Config::Instance()->MipmapBiasOverride.has_value())
         {
-            LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+            LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pDesc->MipLODBias,
+                      Config::Instance()->MipmapBiasOverride.value());
 
             if (Config::Instance()->MipmapBiasFixedOverride.value_or_default())
                 newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
@@ -1944,7 +2017,8 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     return o_CreateSampler(device, &newDesc, DestDescriptor);
 }
 
-static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc, ID3D11SamplerState** ppSamplerState)
+static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc,
+                                    ID3D11SamplerState** ppSamplerState)
 {
     if (pSamplerDesc == nullptr || This == nullptr)
         return E_INVALIDARG;
@@ -1969,10 +2043,13 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
 
     if (Config::Instance()->AnisotropyOverride.has_value())
     {
-        if (pSamplerDesc->Filter == D3D11_FILTER_MIN_MAG_MIP_LINEAR || pSamplerDesc->Filter == D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT || pSamplerDesc->Filter == D3D11_FILTER_ANISOTROPIC)
+        if (pSamplerDesc->Filter == D3D11_FILTER_MIN_MAG_MIP_LINEAR ||
+            pSamplerDesc->Filter == D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT ||
+            pSamplerDesc->Filter == D3D11_FILTER_ANISOTROPIC)
         {
             newDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy, Config::Instance()->AnisotropyOverride.value(), (UINT)pSamplerDesc->Filter);
+            LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", pSamplerDesc->MaxAnisotropy,
+                      Config::Instance()->AnisotropyOverride.value(), (UINT) pSamplerDesc->Filter);
             newDesc.MaxAnisotropy = Config::Instance()->AnisotropyOverride.value();
         }
     }
@@ -1988,7 +2065,8 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
     {
         if (Config::Instance()->MipmapBiasOverride.has_value())
         {
-            LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pSamplerDesc->MipLODBias, Config::Instance()->MipmapBiasOverride.value());
+            LOG_DEBUG("Overriding mipmap bias {0} -> {1}", pSamplerDesc->MipLODBias,
+                      Config::Instance()->MipmapBiasOverride.value());
 
             if (Config::Instance()->MipmapBiasFixedOverride.value_or_default())
                 newDesc.MipLODBias = Config::Instance()->MipmapBiasOverride.value();
@@ -2030,11 +2108,14 @@ void HooksDx::HookDx11(HMODULE dx11Module)
 
     LOG_DEBUG("");
 
-    o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)KernelBaseProxy::GetProcAddress_()(dx11Module, "D3D11CreateDevice");
-    o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)KernelBaseProxy::GetProcAddress_()(dx11Module, "D3D11CreateDeviceAndSwapChain");
-    o_D3D11On12CreateDevice = (PFN_D3D11ON12_CREATE_DEVICE)KernelBaseProxy::GetProcAddress_()(dx11Module, "D3D11On12CreateDevice");
+    o_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE) KernelBaseProxy::GetProcAddress_()(dx11Module, "D3D11CreateDevice");
+    o_D3D11CreateDeviceAndSwapChain = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN) KernelBaseProxy::GetProcAddress_()(
+        dx11Module, "D3D11CreateDeviceAndSwapChain");
+    o_D3D11On12CreateDevice =
+        (PFN_D3D11ON12_CREATE_DEVICE) KernelBaseProxy::GetProcAddress_()(dx11Module, "D3D11On12CreateDevice");
 
-    if (o_D3D11CreateDevice != nullptr || o_D3D11On12CreateDevice != nullptr || o_D3D11CreateDeviceAndSwapChain != nullptr)
+    if (o_D3D11CreateDevice != nullptr || o_D3D11On12CreateDevice != nullptr ||
+        o_D3D11CreateDeviceAndSwapChain != nullptr)
     {
         LOG_DEBUG("Hooking D3D11CreateDevice methods");
 
@@ -2042,13 +2123,13 @@ void HooksDx::HookDx11(HMODULE dx11Module)
         DetourUpdateThread(GetCurrentThread());
 
         if (o_D3D11CreateDevice != nullptr)
-            DetourAttach(&(PVOID&)o_D3D11CreateDevice, hkD3D11CreateDevice);
+            DetourAttach(&(PVOID&) o_D3D11CreateDevice, hkD3D11CreateDevice);
 
         if (o_D3D11On12CreateDevice != nullptr)
-            DetourAttach(&(PVOID&)o_D3D11On12CreateDevice, hkD3D11On12CreateDevice);
+            DetourAttach(&(PVOID&) o_D3D11On12CreateDevice, hkD3D11On12CreateDevice);
 
         if (o_D3D11CreateDeviceAndSwapChain != nullptr)
-            DetourAttach(&(PVOID&)o_D3D11CreateDeviceAndSwapChain, hkD3D11CreateDeviceAndSwapChain);
+            DetourAttach(&(PVOID&) o_D3D11CreateDeviceAndSwapChain, hkD3D11CreateDeviceAndSwapChain);
 
         DetourTransactionCommit();
     }
@@ -2095,49 +2176,49 @@ void HooksDx::UnHookDx()
 
     if (o_D3D11CreateDevice != nullptr)
     {
-        DetourDetach(&(PVOID&)o_D3D11CreateDevice, hkD3D11CreateDevice);
+        DetourDetach(&(PVOID&) o_D3D11CreateDevice, hkD3D11CreateDevice);
         o_D3D11CreateDevice = nullptr;
     }
 
     if (o_D3D11On12CreateDevice != nullptr)
     {
-        DetourDetach(&(PVOID&)o_D3D11On12CreateDevice, hkD3D11On12CreateDevice);
+        DetourDetach(&(PVOID&) o_D3D11On12CreateDevice, hkD3D11On12CreateDevice);
         o_D3D11On12CreateDevice = nullptr;
     }
 
     if (o_D3D12CreateDevice != nullptr)
     {
-        DetourDetach(&(PVOID&)o_D3D12CreateDevice, hkD3D12CreateDevice);
+        DetourDetach(&(PVOID&) o_D3D12CreateDevice, hkD3D12CreateDevice);
         o_D3D12CreateDevice = nullptr;
     }
 
     if (o_CreateDXGIFactory1 != nullptr)
     {
-        DetourDetach(&(PVOID&)o_CreateDXGIFactory1, hkCreateDXGIFactory1);
+        DetourDetach(&(PVOID&) o_CreateDXGIFactory1, hkCreateDXGIFactory1);
         o_CreateDXGIFactory1 = nullptr;
     }
 
     if (o_CreateDXGIFactory2 != nullptr)
     {
-        DetourDetach(&(PVOID&)o_CreateDXGIFactory2, hkCreateDXGIFactory2);
+        DetourDetach(&(PVOID&) o_CreateDXGIFactory2, hkCreateDXGIFactory2);
         o_CreateDXGIFactory2 = nullptr;
     }
 
     if (oCreateSwapChain != nullptr)
     {
-        DetourDetach(&(PVOID&)oCreateSwapChain, hkCreateSwapChain);
+        DetourDetach(&(PVOID&) oCreateSwapChain, hkCreateSwapChain);
         oCreateSwapChain = nullptr;
     }
 
     if (oCreateSwapChainForHwnd != nullptr)
     {
-        DetourDetach(&(PVOID&)oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
+        DetourDetach(&(PVOID&) oCreateSwapChainForHwnd, hkCreateSwapChainForHwnd);
         oCreateSwapChainForHwnd = nullptr;
     }
 
     if (o_CreateSampler != nullptr)
     {
-        DetourDetach(&(PVOID&)o_CreateSampler, hkCreateSampler);
+        DetourDetach(&(PVOID&) o_CreateSampler, hkCreateSampler);
         o_CreateSampler = nullptr;
     }
 
