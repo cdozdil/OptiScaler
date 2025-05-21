@@ -151,8 +151,10 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 
         if (elapsedTimeMs > 0.0 && elapsedTimeMs < 5000.0)
         {
+            State::Instance().frameTimeMutex.lock();
             State::Instance().upscaleTimes.push_back(elapsedTimeMs);
             State::Instance().upscaleTimes.pop_front();
+            State::Instance().frameTimeMutex.unlock();
         }
 
         HooksVk::vkUpscaleTrig = false;

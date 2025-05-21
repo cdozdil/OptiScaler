@@ -950,22 +950,43 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
     if (State::Instance().currentFG == nullptr)
         return;
 
-    for (size_t i = 0; i < NumCommandLists; i++)
+    IFGFeature_Dx12* fg = State::Instance().currentFG;
+    if (!fg->ReadyForDispatch())
     {
-        LOG_DEBUG_ONLY("cmdlist[{}]: {:X}", i, (size_t)ppCommandLists[i]);
-
-        if (_commandList != nullptr && ppCommandLists[i] == _commandList)
+        for (size_t i = 0; i < NumCommandLists; i++)
         {
-            LOG_DEBUG("Hudless cmdlist, {}", State::Instance().currentFG->FrameCount());
-            State::Instance().currentFG->HudlessReady();
-            _commandList = nullptr;
+            LOG_DEBUG_ONLY("cmdlist[{}]: {:X}", i, (size_t)ppCommandLists[i]);
+
+            if (_commandList != nullptr && ppCommandLists[i] == _commandList)
+            {
+                LOG_DEBUG("Hudless cmdlist, {}", fg->FrameCount());
+                fg->HudlessReady();
+                _commandList = nullptr;
+            }
+
+            if (_upscalerCommandList != nullptr && ppCommandLists[i] == _upscalerCommandList)
+            {
+                LOG_DEBUG("Upscaler cmdlist, {}", fg->FrameCount());
+                fg->MVandDepthReady();
+                _upscalerCommandList = nullptr;
+            }
         }
 
-        if (_upscalerCommandList != nullptr && ppCommandLists[i] == _upscalerCommandList)
+        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() && 
+            fg->ReadyForDispatch() && Config::Instance()->FGImmediatelyExecute.value_or_default())
         {
-            LOG_DEBUG("Upscaler cmdlist, {}", State::Instance().currentFG->FrameCount());
-            State::Instance().currentFG->MVandDepthReady();
-            _upscalerCommandList = nullptr;
+            LOG_DEBUG("Immediate dispatch fg");
+            State::Instance().fgTrigSource = "Immediate";
+            fg->Present();
+        }
+    }
+    else if (Config::Instance()->FGWaitForNextExecute.value_or_default())
+    {
+        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() && fg->ReadyForDispatch())
+        {
+            LOG_DEBUG("Next execute dispatch fg");
+            State::Instance().fgTrigSource = "Next";
+            fg->Present();
         }
     }
 }

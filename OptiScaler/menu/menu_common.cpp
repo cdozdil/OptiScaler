@@ -1101,8 +1101,10 @@ bool MenuCommon::RenderMenu()
         MenuSizeCheck(io);
         ImGui::NewFrame();
 
+        State::Instance().frameTimeMutex.lock();
         std::vector<float> frameTimeArray(State::Instance().frameTimes.begin(), State::Instance().frameTimes.end());
         std::vector<float> upscalerFrameTimeArray(State::Instance().upscaleTimes.begin(), State::Instance().upscaleTimes.end());
+        State::Instance().frameTimeMutex.unlock();
         float averageFrameTime = 0.0f;
         float averageUpscalerFT = 0.0f;
 
@@ -1642,6 +1644,42 @@ bool MenuCommon::RenderMenu()
                         if (ImGui::Checkbox("FG Flip Resources (Unity)", &resourceFlip))
                             Config::Instance()->FGResourceFlip = resourceFlip;
                         ShowHelpMarker("Flip Velocity & Depth resources of Unity games");
+
+                        ImGui::SeparatorText("Experimental sync settings");
+
+                        bool executeImmediately = Config::Instance()->FGImmediatelyExecute.value_or_default();
+                        if (ImGui::Checkbox("FG Execute Immediately", &executeImmediately))
+                        {
+                            if (executeImmediately)
+                                Config::Instance()->FGWaitForNextExecute = false;
+
+                            Config::Instance()->FGImmediatelyExecute = executeImmediately;
+                        }
+                        ShowHelpMarker("Execute FG Command List immediately\n"
+                                       "This might cause image issues if copy\n"
+                                       "operations are not commpleted");
+
+                        bool waitNext = Config::Instance()->FGWaitForNextExecute.value_or_default();
+                        if (ImGui::Checkbox("FG Wait Next Execute", &waitNext))
+                        {
+                            if (waitNext)
+                                Config::Instance()->FGImmediatelyExecute = false;
+
+                            Config::Instance()->FGWaitForNextExecute = waitNext;
+                        }
+                        ShowHelpMarker("Execute FG Command List with next query execute\n"
+                                       "This might be too late and Present trigger could kick in");
+
+                        ImGui::Spacing();
+                        ImGui::TextColored(ImVec4(0.9372549f, 0.8f, 0.f, 1.f), State::Instance().fgTrigSource.c_str());
+                        ImGui::Spacing();
+
+                        bool executeAC = Config::Instance()->FGExecuteAfterCallback.value_or_default();
+                        if (ImGui::Checkbox("FG Execute After Callback", &executeAC))
+                            Config::Instance()->FGExecuteAfterCallback = executeAC;
+
+                        ShowHelpMarker("Execute command list after FG callback\n"
+                                       "Normally it's executed after dispatch");
 
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Advanced OptiFG Settings"))
@@ -3323,6 +3361,7 @@ bool MenuCommon::RenderMenu()
                 {
                     ImGui::TableNextColumn();
                     ImGui::Text("FrameTime");
+                    State::Instance().frameTimeMutex.lock();
                     auto ft = std::format("{:6.2f} ms / {:5.1f} fps", State::Instance().frameTimes.back(), frameRate);
                     std::vector<float> frameTimeArray(State::Instance().frameTimes.begin(), State::Instance().frameTimes.end());
                     ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), (int)frameTimeArray.size());
@@ -3336,6 +3375,7 @@ bool MenuCommon::RenderMenu()
                         std::vector<float> upscaleTimeArray(State::Instance().upscaleTimes.begin(), State::Instance().upscaleTimes.end());
                         ImGui::PlotLines(ups.c_str(), upscaleTimeArray.data(), (int)upscaleTimeArray.size());
                     }
+                    State::Instance().frameTimeMutex.unlock();
 
                     ImGui::EndTable();
                 }

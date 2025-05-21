@@ -188,8 +188,10 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
                 // filter out posibly wrong measured high values
                 if (elapsedTimeMs < 100.0)
                 {
+                    State::Instance().frameTimeMutex.lock();
                     State::Instance().upscaleTimes.push_back(elapsedTimeMs);
                     State::Instance().upscaleTimes.pop_front();
+                    State::Instance().frameTimeMutex.unlock();
                 }
             }
             else
@@ -203,8 +205,10 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
             HooksDx::dx12UpscaleTrig = false;
         }
 
-        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount())
+        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() && fg->ReadyForDispatch())
         {
+            LOG_DEBUG("Dispatch fg");
+            State::Instance().fgTrigSource = "Present";
             fg->Present();
         }
     }
@@ -267,6 +271,9 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
 
         return presentResult;
     }
+
+    if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+        State::Instance().currentFG->CallbackMutex.lock();
 
     if (State::Instance().activeFgType != OptiFG && !(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
     {
@@ -357,8 +364,10 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
             // filter out posibly wrong measured high values
             if (elapsedTimeMs < 100.0)
             {
+                State::Instance().frameTimeMutex.lock();
                 State::Instance().upscaleTimes.push_back(elapsedTimeMs);
                 State::Instance().upscaleTimes.pop_front();
+                State::Instance().frameTimeMutex.unlock();
             }
         }
         else
@@ -392,8 +401,10 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
                     // filter out posibly wrong measured high values
                     if (elapsedTimeMs < 100.0)
                     {
+                        State::Instance().frameTimeMutex.lock();
                         State::Instance().upscaleTimes.push_back(elapsedTimeMs);
                         State::Instance().upscaleTimes.pop_front();
+                        State::Instance().frameTimeMutex.unlock();
                     }
                 }
             }
@@ -425,6 +436,9 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
             LOG_TRACE("3 {}", (UINT)presentResult);
         else
             LOG_ERROR("3 {:X}", (UINT)presentResult);
+
+        if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+            State::Instance().currentFG->CallbackMutex.unlock();
 
         return presentResult;
     }
@@ -477,6 +491,9 @@ static HRESULT Present(IDXGISwapChain * pSwapChain, UINT SyncInterval, UINT Flag
         // Signal for pause
         fg->FgDone();
     }
+
+    if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+        State::Instance().currentFG->CallbackMutex.unlock();
 
     return presentResult;
 }
@@ -1796,7 +1813,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         if (infoQueue1 != nullptr)
             infoQueue1->Release();
 
-        if (g_pd3dDeviceParam->QueryInterface(IID_PPV_ARGS(&infoQueue)) == S_OK)
+        if (State::Instance().currentD3D12Device->QueryInterface(IID_PPV_ARGS(&infoQueue)) == S_OK)
         {
             LOG_DEBUG("infoQueue accuired");
 

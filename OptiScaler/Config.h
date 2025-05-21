@@ -329,6 +329,9 @@ public:
     CustomOptional<bool> FGImmediateCapture{ false };
     CustomOptional<bool> FGHudfixHalfSync{ false };
     CustomOptional<bool> FGHudfixFullSync{ false };
+    CustomOptional<bool> FGImmediatelyExecute{ true };
+    CustomOptional<bool> FGWaitForNextExecute{ false };
+    CustomOptional<bool> FGExecuteAfterCallback { false };
 
     // OptiFG - Resource Tracking
     CustomOptional<bool> FGAlwaysTrackHeaps{ false };
@@ -336,7 +339,7 @@ public:
     // OptiFG - DLSS-D Depth scale
     CustomOptional<bool> FGEnableDepthScale{ false };
     CustomOptional<float> FGDepthScaleMax{ 10000.0f };
-    
+
     // OptiFG - FSR-FG 
     CustomOptional<int, NoDefault> FGRectLeft;
     CustomOptional<int, NoDefault> FGRectTop;

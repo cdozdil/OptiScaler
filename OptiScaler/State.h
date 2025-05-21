@@ -144,6 +144,8 @@ public:
     std::deque<double> upscaleTimes;
     std::deque<double> frameTimes;
     double lastFrameTime = 0.0;
+    std::mutex frameTimeMutex;
+    std::string fgTrigSource = "";
 
     // Swapchain info
     float screenWidth = 800.0;

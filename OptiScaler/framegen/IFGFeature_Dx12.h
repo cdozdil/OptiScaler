@@ -68,4 +68,5 @@ public:
     void MVandDepthReady() override;
     void HudlessReady() override;
     void Present() override;
+    bool ReadyForDispatch() override;
 };
