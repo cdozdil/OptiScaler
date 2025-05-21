@@ -36,7 +36,7 @@ void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool 
         // Starting with FSR 3.1.1 we can provide an AntiLag 2 context to FSR FG
         // and it will call SetFrameGenFrameType for us
         auto static ffxApiVersion = FfxApiProxy::VersionDx12();
-        constexpr feature_version requiredVersion = {3, 1, 1};
+        constexpr feature_version requiredVersion = { 3, 1, 1 };
         if (isVersionOrBetter(ffxApiVersion, requiredVersion) && Fake_GetAntiLagCtx != nullptr)
         {
             void* antilag2Context = nullptr;

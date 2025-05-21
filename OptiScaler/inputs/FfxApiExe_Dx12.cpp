@@ -25,7 +25,7 @@ static std::map<ffxContext, NVSDK_NGX_Parameter*> _nvParams;
 static std::map<ffxContext, NVSDK_NGX_Handle*> _contexts;
 static ID3D12Device* _d3d12Device = nullptr;
 static bool _nvnxgInited = false;
-static float qualityRatios[] = {1.0, 1.5, 1.7, 2.0, 3.0};
+static float qualityRatios[] = { 1.0, 1.5, 1.7, 2.0, 3.0 };
 
 static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* pExecParams)
 {
@@ -201,7 +201,7 @@ static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateConte
 
     if (!State::Instance().NvngxDx12Inited)
     {
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
 
         auto dllPath = Util::DllPath().remove_filename();
         auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
@@ -251,7 +251,7 @@ static ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateConte
 
     _nvParams[*context] = params;
 
-    ffxCreateContextDescUpscale ccd{};
+    ffxCreateContextDescUpscale ccd {};
     ccd.flags = createDesc->flags;
     ccd.maxRenderSize = createDesc->maxRenderSize;
     ccd.maxUpscaleSize = createDesc->maxUpscaleSize;

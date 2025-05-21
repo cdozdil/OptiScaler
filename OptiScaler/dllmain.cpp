@@ -942,7 +942,7 @@ bool isNvidia()
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     HMODULE handle = nullptr;
-    OSVERSIONINFOW winVer{0};
+    OSVERSIONINFOW winVer { 0 };
 
     switch (ul_reason_for_call)
     {

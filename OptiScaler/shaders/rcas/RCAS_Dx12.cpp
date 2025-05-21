@@ -223,7 +223,7 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
         }
     }
 
-    InternalConstants constants{};
+    InternalConstants constants {};
 
     if (Config::Instance()->ContrastEnabled.value_or_default())
         constants.Contrast = Config::Instance()->Contrast.value_or_default() * -1.0f;
@@ -273,7 +273,7 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
     cbvDesc.SizeInBytes = sizeof(constants);
     InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
-    ID3D12DescriptorHeap* heaps[] = {_srvHeap[_counter]};
+    ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     InCmdList->SetComputeRootSignature(_rootSignature);

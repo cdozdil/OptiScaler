@@ -339,7 +339,7 @@ static void ImGui_ImplWin32_UpdateMouseData()
         // ImGuiConfigFlags_NavEnableSetMousePos is enabled by user)
         if (io.WantSetMousePos)
         {
-            POINT pos = {(int) io.MousePos.x, (int) io.MousePos.y};
+            POINT pos = { (int) io.MousePos.x, (int) io.MousePos.y };
             if (::ClientToScreen(bd->hWnd, &pos))
                 ::SetCursorPos(pos.x, pos.y);
         }
@@ -431,7 +431,7 @@ void ImGui_ImplWin32_NewFrame()
     ImGuiIO& io = ImGui::GetIO();
 
     // Setup display size (every frame to accommodate for window resizing)
-    RECT rect = {0, 0, 0, 0};
+    RECT rect = { 0, 0, 0, 0 };
     ::GetClientRect(bd->hWnd, &rect);
     io.DisplaySize = ImVec2((float) (rect.right - rect.left), (float) (rect.bottom - rect.top));
 
@@ -766,15 +766,15 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
         bd->MouseHwnd = hwnd;
         if (bd->MouseTrackedArea != area)
         {
-            TRACKMOUSEEVENT tme_cancel = {sizeof(tme_cancel), TME_CANCEL, hwnd, 0};
-            TRACKMOUSEEVENT tme_track = {sizeof(tme_track),
-                                         (DWORD) ((area == 2) ? (TME_LEAVE | TME_NONCLIENT) : TME_LEAVE), hwnd, 0};
+            TRACKMOUSEEVENT tme_cancel = { sizeof(tme_cancel), TME_CANCEL, hwnd, 0 };
+            TRACKMOUSEEVENT tme_track = { sizeof(tme_track),
+                                          (DWORD) ((area == 2) ? (TME_LEAVE | TME_NONCLIENT) : TME_LEAVE), hwnd, 0 };
             if (bd->MouseTrackedArea != 0)
                 ::TrackMouseEvent(&tme_cancel);
             ::TrackMouseEvent(&tme_track);
             bd->MouseTrackedArea = area;
         }
-        POINT mouse_pos = {(LONG) GET_X_LPARAM(lParam), (LONG) GET_Y_LPARAM(lParam)};
+        POINT mouse_pos = { (LONG) GET_X_LPARAM(lParam), (LONG) GET_Y_LPARAM(lParam) };
         if (msg == WM_NCMOUSEMOVE &&
             ::ScreenToClient(hwnd, &mouse_pos) == FALSE) // WM_NCMOUSEMOVE are provided in absolute coordinates.
             return 0;
@@ -798,7 +798,7 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
     case WM_DESTROY:
         if (bd->MouseHwnd == hwnd && bd->MouseTrackedArea != 0)
         {
-            TRACKMOUSEEVENT tme_cancel = {sizeof(tme_cancel), TME_CANCEL, hwnd, 0};
+            TRACKMOUSEEVENT tme_cancel = { sizeof(tme_cancel), TME_CANCEL, hwnd, 0 };
             ::TrackMouseEvent(&tme_cancel);
             bd->MouseHwnd = nullptr;
             bd->MouseTrackedArea = 0;

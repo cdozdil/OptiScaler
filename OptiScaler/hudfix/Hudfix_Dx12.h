@@ -57,7 +57,7 @@ class Hudfix_Dx12
     inline static double _frameTime = 0.0;
 
     // Buffer for Format Transfer
-    inline static ID3D12Resource* _captureBuffer[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
+    inline static ID3D12Resource* _captureBuffer[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
 
     // used hudless list
     inline static ankerl::unordered_dense::map<ID3D12Resource*, HudlessInfo> _hudlessList;
@@ -68,13 +68,13 @@ class Hudfix_Dx12
     inline static std::mutex _checkMutex;
     inline static std::mutex _captureMutex;
     inline static std::mutex _counterMutex;
-    inline static INT64 _captureCounter[BUFFER_COUNT] = {0, 0, 0, 0};
+    inline static INT64 _captureCounter[BUFFER_COUNT] = { 0, 0, 0, 0 };
     inline static FT_Dx12* _formatTransfer = nullptr;
 
     inline static ID3D12CommandQueue* _commandQueue = nullptr;
-    inline static ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
-    inline static ID3D12CommandAllocator* _commandAllocator[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
-    inline static ID3D12Fence* _fence[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
+    inline static ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    inline static ID3D12CommandAllocator* _commandAllocator[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    inline static ID3D12Fence* _fence[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
 
     inline static bool _skipHudlessChecks = false;
 
@@ -91,7 +91,7 @@ class Hudfix_Dx12
 
     static int GetIndex();
 
-    inline static IID streamlineRiid{};
+    inline static IID streamlineRiid {};
     static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject);
 
   public:

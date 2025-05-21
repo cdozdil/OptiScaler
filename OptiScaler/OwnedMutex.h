@@ -9,7 +9,7 @@ class OwnedMutex
 {
   private:
     std::shared_mutex mtx;
-    std::atomic<uint32_t> owner{}; // don't use 0
+    std::atomic<uint32_t> owner {}; // don't use 0
 
   public:
     void lock(uint32_t _owner)

@@ -124,7 +124,7 @@ static bool contextRendering = false;
 static std::shared_mutex computeSigatureMutex;
 static std::shared_mutex graphSigatureMutex;
 
-static IID streamlineRiid{};
+static IID streamlineRiid {};
 
 static int64_t GetTicks()
 {
@@ -846,7 +846,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_CreateFeature(ID3D12GraphicsComma
     auto deviceContext = Dx12Contexts[handleId].feature.get();
 
     if (*OutHandle == nullptr)
-        *OutHandle = new NVSDK_NGX_Handle{handleId};
+        *OutHandle = new NVSDK_NGX_Handle { handleId };
     else
         (*OutHandle)->Id = handleId;
 
@@ -1253,7 +1253,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         auto* feature = deviceContext->feature.get();
 
         // FSR 3.1 supports upscaleSize that doesn't need reinit to change output resolution
-        if (!(feature->Name().starts_with("FSR") && isVersionOrBetter(feature->Version(), {3, 1, 0})) &&
+        if (!(feature->Name().starts_with("FSR") && isVersionOrBetter(feature->Version(), { 3, 1, 0 })) &&
             feature->UpdateOutputResolution(InParameters))
             State::Instance().changeBackend[handleId] = true;
     }
@@ -1669,7 +1669,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
 #ifdef USE_COPY_QUEUE_FOR_FG
         auto result = FrameGen_Dx12::fgCopyCommandList[frameIndex]->Close();
-        ID3D12CommandList* cl[] = {nullptr};
+        ID3D12CommandList* cl[] = { nullptr };
         cl[0] = FrameGen_Dx12::fgCopyCommandList[frameIndex];
         FrameGen_Dx12::fgCopyCommandQueue->ExecuteCommandLists(1, cl);
 #endif
@@ -1713,7 +1713,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
                 ResTrack_Dx12::SetUpscalerCmdList(InCmdList);
                 Hudfix_Dx12::UpscaleEnd(deviceContext->feature->FrameCount(), State::Instance().lastFrameTime);
 
-                ResourceInfo info{};
+                ResourceInfo info {};
                 auto desc = output->GetDesc();
                 info.buffer = output;
                 info.width = desc.Width;

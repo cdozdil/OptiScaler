@@ -251,7 +251,7 @@ static inline void CheckForGPU()
         return;
 
     UINT adapterIndex = 0;
-    DXGI_ADAPTER_DESC adapterDesc{};
+    DXGI_ADAPTER_DESC adapterDesc {};
     IDXGIAdapter* adapter;
 
     while (factory->EnumAdapters(adapterIndex, &adapter) == S_OK)

@@ -188,7 +188,7 @@ bool DLSSDFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 
             RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-            RcasConstants rcasConstants{};
+            RcasConstants rcasConstants {};
 
             rcasConstants.Sharpness = _sharpness;
             rcasConstants.DisplayWidth = TargetWidth();

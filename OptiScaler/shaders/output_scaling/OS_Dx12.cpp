@@ -200,7 +200,7 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     // fsr upscaling
     if (Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
-        UpscaleShaderConstants constants{};
+        UpscaleShaderConstants constants {};
 
         FsrEasuCon(constants.const0, constants.const1, constants.const2, constants.const3,
                    State::Instance().currentFeature->TargetWidth(), State::Instance().currentFeature->TargetHeight(),
@@ -219,7 +219,7 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     }
     else
     {
-        Constants constants{};
+        Constants constants {};
         constants.srcWidth = State::Instance().currentFeature->TargetWidth();
         constants.srcHeight = State::Instance().currentFeature->TargetHeight();
         constants.destWidth = State::Instance().currentFeature->DisplayWidth();
@@ -238,7 +238,7 @@ bool OS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
     InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
-    ID3D12DescriptorHeap* heaps[] = {_srvHeap[_counter]};
+    ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     InCmdList->SetComputeRootSignature(_rootSignature);

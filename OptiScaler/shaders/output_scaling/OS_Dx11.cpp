@@ -160,7 +160,7 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     // fsr upscaling
     if (Config::Instance()->OutputScalingUseFsr.value_or_default())
     {
-        UpscaleShaderConstants constants{};
+        UpscaleShaderConstants constants {};
 
         FsrEasuCon(constants.const0, constants.const1, constants.const2, constants.const3,
                    State::Instance().currentFeature->TargetWidth(), State::Instance().currentFeature->TargetHeight(),
@@ -181,7 +181,7 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     }
     else
     {
-        Constants constants{};
+        Constants constants {};
         constants.srcWidth = State::Instance().currentFeature->TargetWidth();
         constants.srcHeight = State::Instance().currentFeature->TargetHeight();
         constants.destWidth = State::Instance().currentFeature->DisplayWidth(); // static_cast<uint32_t>(outDesc.Width);
@@ -226,7 +226,7 @@ bool OS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, I
     // Unbind resources
     ID3D11UnorderedAccessView* nullUAV = nullptr;
     InContext->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
-    ID3D11ShaderResourceView* nullSRV[2] = {nullptr, nullptr};
+    ID3D11ShaderResourceView* nullSRV[2] = { nullptr, nullptr };
     InContext->CSSetShaderResources(0, 2, nullSRV);
 
     return true;

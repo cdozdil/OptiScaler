@@ -318,10 +318,10 @@ struct ExampleMemberInfo
 };
 
 // Metadata description of ExampleTreeNode struct.
-static const ExampleMemberInfo ExampleTreeNodeMemberInfos[]{
-    {"MyBool", ImGuiDataType_Bool, 1, offsetof(ExampleTreeNode, DataMyBool)},
-    {"MyInt", ImGuiDataType_S32, 1, offsetof(ExampleTreeNode, DataMyInt)},
-    {"MyVec2", ImGuiDataType_Float, 2, offsetof(ExampleTreeNode, DataMyVec2)},
+static const ExampleMemberInfo ExampleTreeNodeMemberInfos[] {
+    { "MyBool", ImGuiDataType_Bool, 1, offsetof(ExampleTreeNode, DataMyBool) },
+    { "MyInt", ImGuiDataType_S32, 1, offsetof(ExampleTreeNode, DataMyInt) },
+    { "MyVec2", ImGuiDataType_Float, 2, offsetof(ExampleTreeNode, DataMyVec2) },
 };
 
 static ExampleTreeNode* ExampleTree_CreateNode(const char* name, int uid, ExampleTreeNode* parent)
@@ -340,8 +340,8 @@ static ExampleTreeNode* ExampleTree_CreateNode(const char* name, int uid, Exampl
 // (this allocates _many_ more times than most other code in either Dear ImGui or others demo)
 static ExampleTreeNode* ExampleTree_CreateDemoTree()
 {
-    static const char* root_names[] = {"Apple",  "Banana", "Cherry",    "Kiwi",       "Mango",
-                                       "Orange", "Pear",   "Pineapple", "Strawberry", "Watermelon"};
+    static const char* root_names[] = { "Apple",  "Banana", "Cherry",    "Kiwi",       "Mango",
+                                        "Orange", "Pear",   "Pineapple", "Strawberry", "Watermelon" };
     const size_t NAME_MAX_LEN = sizeof(ExampleTreeNode::Name);
     char name_buf[NAME_MAX_LEN];
     int uid = 0;
@@ -995,7 +995,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             HelpMarker("You can input value using the scientific notation,\n"
                        "  e.g. \"1e+8\" becomes \"100000000\".");
 
-            static float vec4a[4] = {0.10f, 0.20f, 0.30f, 0.44f};
+            static float vec4a[4] = { 0.10f, 0.20f, 0.30f, 0.44f };
             ImGui::InputFloat3("input float3", vec4a);
         }
 
@@ -1048,7 +1048,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
                 Element_COUNT
             };
             static int elem = Element_Fire;
-            const char* elems_names[Element_COUNT] = {"Fire", "Earth", "Air", "Water"};
+            const char* elems_names[Element_COUNT] = { "Fire", "Earth", "Air", "Water" };
             const char* elem_name = (elem >= 0 && elem < Element_COUNT) ? elems_names[elem] : "Unknown";
             ImGui::SliderInt("slider enum", &elem, 0, Element_COUNT - 1,
                              elem_name); // Use ImGuiSliderFlags_NoInput flag to disable CTRL+Click here.
@@ -1060,8 +1060,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
 
         {
             IMGUI_DEMO_MARKER("Widgets/Basic/ColorEdit3, ColorEdit4");
-            static float col1[3] = {1.0f, 0.0f, 0.2f};
-            static float col2[4] = {0.4f, 0.7f, 0.0f, 0.5f};
+            static float col1[3] = { 1.0f, 0.0f, 0.2f };
+            static float col2[4] = { 0.4f, 0.7f, 0.0f, 0.5f };
             ImGui::ColorEdit3("color 1", col1);
             ImGui::SameLine();
             HelpMarker("Click on the color square to open a color picker.\n"
@@ -1076,8 +1076,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             // Using the _simplified_ one-liner Combo() api here
             // See "Combo" section for examples of how to use the more flexible BeginCombo()/EndCombo() api.
             IMGUI_DEMO_MARKER("Widgets/Basic/Combo");
-            const char* items[] = {"AAAA", "BBBB", "CCCC",    "DDDD", "EEEE",   "FFFF",
-                                   "GGGG", "HHHH", "IIIIIII", "JJJJ", "KKKKKKK"};
+            const char* items[] = { "AAAA", "BBBB", "CCCC",    "DDDD", "EEEE",   "FFFF",
+                                    "GGGG", "HHHH", "IIIIIII", "JJJJ", "KKKKKKK" };
             static int item_current = 0;
             ImGui::Combo("combo", &item_current, items, IM_ARRAYSIZE(items));
             ImGui::SameLine();
@@ -1090,8 +1090,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             // Using the _simplified_ one-liner ListBox() api here
             // See "List boxes" section for examples of how to use the more flexible BeginListBox()/EndListBox() api.
             IMGUI_DEMO_MARKER("Widgets/Basic/ListBox");
-            const char* items[] = {"Apple",  "Banana",    "Cherry",     "Kiwi",      "Mango",
-                                   "Orange", "Pineapple", "Strawberry", "Watermelon"};
+            const char* items[] = { "Apple",  "Banana",    "Cherry",     "Kiwi",      "Mango",
+                                    "Orange", "Pineapple", "Strawberry", "Watermelon" };
             static int item_current = 1;
             ImGui::ListBox("listbox", &item_current, items, IM_ARRAYSIZE(items), 4);
             ImGui::SameLine();
@@ -1128,7 +1128,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         if (ImGui::BeginItemTooltip())
         {
             ImGui::Text("I am a fancy tooltip");
-            static float arr[] = {0.6f, 0.1f, 1.0f, 0.5f, 0.92f, 0.1f, 0.2f};
+            static float arr[] = { 0.6f, 0.1f, 1.0f, 0.5f, 0.92f, 0.1f, 0.2f };
             ImGui::PlotLines("Curve", arr, IM_ARRAYSIZE(arr));
             ImGui::Text("Sin(time) = %f", sinf((float) ImGui::GetTime()));
             ImGui::EndTooltip();
@@ -1590,8 +1590,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         // Using the generic BeginCombo() API, you have full control over how to display the combo contents.
         // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
         // stored in the object itself, etc.)
-        const char* items[] = {"AAAA", "BBBB", "CCCC", "DDDD", "EEEE",    "FFFF", "GGGG",
-                               "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO"};
+        const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE",    "FFFF", "GGGG",
+                                "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
         static int item_selected_idx = 0; // Here we store our selection data as an index.
 
         // Pass in the preview value visible before opening the combo (it could technically be different contents or not
@@ -1647,8 +1647,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         // Using the generic BeginListBox() API, you have full control over how to display the combo contents.
         // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
         // stored in the object itself, etc.)
-        const char* items[] = {"AAAA", "BBBB", "CCCC", "DDDD", "EEEE",    "FFFF", "GGGG",
-                               "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO"};
+        const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE",    "FFFF", "GGGG",
+                                "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
         static int item_selected_idx = 0; // Here we store our selected data as an index.
 
         static bool item_highlight = false;
@@ -1709,7 +1709,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         IMGUI_DEMO_MARKER("Widgets/Selectables/Basic");
         if (ImGui::TreeNode("Basic"))
         {
-            static bool selection[5] = {false, true, false, false};
+            static bool selection[5] = { false, true, false, false };
             ImGui::Selectable("1. I am selectable", &selection[0]);
             ImGui::Selectable("2. I am selectable", &selection[1]);
             ImGui::Selectable("3. I am selectable", &selection[2]);
@@ -1725,7 +1725,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             // (1) Using SetNextItemAllowOverlap()
             // (2) Using the Selectable() override that takes "bool* p_selected" parameter, the bool value is toggled
             // automatically.
-            static bool selected[3] = {false, false, false};
+            static bool selected[3] = { false, false, false };
             ImGui::SetNextItemAllowOverlap();
             ImGui::Selectable("main.c", &selected[0]);
             ImGui::SameLine();
@@ -1782,7 +1782,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         IMGUI_DEMO_MARKER("Widgets/Selectables/Grid");
         if (ImGui::TreeNode("Grid"))
         {
-            static char selected[4][4] = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
+            static char selected[4][4] = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1 } };
 
             // Add in a bit of silly fun...
             const float time = (float) ImGui::GetTime();
@@ -1831,7 +1831,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             HelpMarker("By default, Selectables uses style.SelectableTextAlign but it can be overridden on a per-item "
                        "basis using PushStyleVar(). You'll probably want to always keep your default situation to "
                        "left-align otherwise it becomes difficult to layout multiple items on a same line");
-            static bool selected[3 * 3] = {true, false, true, false, true, false, true, false, true};
+            static bool selected[3 * 3] = { true, false, true, false, true, false, true, false, true };
             for (int y = 0; y < 3; y++)
             {
                 for (int x = 0; x < 3; x++)
@@ -2136,8 +2136,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             // Tab Bar
             ImGui::AlignTextToFramePadding();
             ImGui::Text("Opened:");
-            const char* names[4] = {"Artichoke", "Beetroot", "Celery", "Daikon"};
-            static bool opened[4] = {true, true, true, true}; // Persistent user state
+            const char* names[4] = { "Artichoke", "Beetroot", "Celery", "Daikon" };
+            static bool opened[4] = { true, true, true, true }; // Persistent user state
             for (int n = 0; n < IM_ARRAYSIZE(opened); n++)
             {
                 ImGui::SameLine();
@@ -2247,7 +2247,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         ImGui::Checkbox("Animate", &animate);
 
         // Plot as lines and plot as histogram
-        static float arr[] = {0.6f, 0.1f, 1.0f, 0.5f, 0.92f, 0.1f, 0.2f};
+        static float arr[] = { 0.6f, 0.1f, 1.0f, 0.5f, 0.92f, 0.1f, 0.2f };
         ImGui::PlotLines("Frame Times", arr, IM_ARRAYSIZE(arr));
         ImGui::PlotHistogram("Histogram", arr, IM_ARRAYSIZE(arr), 0, NULL, 0.0f, 1.0f, ImVec2(0, 80.0f));
         // ImGui::SameLine(); HelpMarker("Consider using ImPlot instead!");
@@ -2783,8 +2783,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
     IMGUI_DEMO_MARKER("Widgets/Multi-component Widgets");
     if (ImGui::TreeNode("Multi-component Widgets"))
     {
-        static float vec4f[4] = {0.10f, 0.20f, 0.30f, 0.44f};
-        static int vec4i[4] = {1, 5, 100, 255};
+        static float vec4f[4] = { 0.10f, 0.20f, 0.30f, 0.44f };
+        static int vec4i[4] = { 1, 5, 100, 255 };
 
         ImGui::SeparatorText("2-wide");
         ImGui::InputFloat2("input float2", vec4f);
@@ -2823,7 +2823,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         ImGui::VSliderInt("##int", ImVec2(18, 160), &int_value, 0, 5);
         ImGui::SameLine();
 
-        static float values[7] = {0.0f, 0.60f, 0.35f, 0.9f, 0.70f, 0.20f, 0.0f};
+        static float values[7] = { 0.0f, 0.60f, 0.35f, 0.9f, 0.70f, 0.20f, 0.0f };
         ImGui::PushID("set1");
         for (int i = 0; i < 7; i++)
         {
@@ -2844,7 +2844,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
 
         ImGui::SameLine();
         ImGui::PushID("set2");
-        static float values2[4] = {0.20f, 0.80f, 0.40f, 0.25f};
+        static float values2[4] = { 0.20f, 0.80f, 0.40f, 0.25f };
         const int rows = 3;
         const ImVec2 small_slider_size(18, (float) (int) ((160.0f - (rows - 1) * spacing) / rows));
         for (int nx = 0; nx < 4; nx++)
@@ -2892,8 +2892,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             // to allow your own widgets to use colors in their drag and drop interaction.
             // Also see 'Demo->Widgets->Color/Picker Widgets->Palette' demo.
             HelpMarker("You can drag from the color squares.");
-            static float col1[3] = {1.0f, 0.0f, 0.2f};
-            static float col2[4] = {0.4f, 0.7f, 0.0f, 0.5f};
+            static float col1[3] = { 1.0f, 0.0f, 0.2f };
+            static float col2[4] = { 0.4f, 0.7f, 0.0f, 0.5f };
             ImGui::ColorEdit3("color 1", col1);
             ImGui::ColorEdit4("color 2", col2);
             ImGui::TreePop();
@@ -2923,8 +2923,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             {
                 mode = Mode_Swap;
             }
-            static const char* names[9] = {"Bobby",   "Beatrice", "Betty",  "Brianna", "Barry",
-                                           "Bernard", "Bibi",     "Blaine", "Bryn"};
+            static const char* names[9] = { "Bobby",   "Beatrice", "Betty",  "Brianna", "Barry",
+                                            "Bernard", "Bibi",     "Blaine", "Bryn" };
             for (int n = 0; n < IM_ARRAYSIZE(names); n++)
             {
                 ImGui::PushID(n);
@@ -2994,7 +2994,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             // Simple reordering
             HelpMarker("We don't use the drag and drop api at all here! "
                        "Instead we query when the item is held but not hovered, and order items accordingly.");
-            static const char* item_names[] = {"Item One", "Item Two", "Item Three", "Item Four", "Item Five"};
+            static const char* item_names[] = { "Item One", "Item Two", "Item Three", "Item Four", "Item Five" };
             for (int n = 0; n < IM_ARRAYSIZE(item_names); n++)
             {
                 const char* item = item_names[n];
@@ -3038,7 +3038,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
                 }
 
                 // Drop source
-                static ImVec4 col4 = {1.0f, 0.0f, 0.2f, 1.0f};
+                static ImVec4 col4 = { 1.0f, 0.0f, 0.2f, 1.0f };
                 if (n == 0)
                     ImGui::ColorButton("drag me", col4);
             }
@@ -3052,22 +3052,22 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
     if (ImGui::TreeNode("Querying Item Status (Edited/Active/Hovered etc.)"))
     {
         // Select an item type
-        const char* item_names[] = {"Text",
-                                    "Button",
-                                    "Button (w/ repeat)",
-                                    "Checkbox",
-                                    "SliderFloat",
-                                    "InputText",
-                                    "InputTextMultiline",
-                                    "InputFloat",
-                                    "InputFloat3",
-                                    "ColorEdit4",
-                                    "Selectable",
-                                    "MenuItem",
-                                    "TreeNode",
-                                    "TreeNode (w/ double-click)",
-                                    "Combo",
-                                    "ListBox"};
+        const char* item_names[] = { "Text",
+                                     "Button",
+                                     "Button (w/ repeat)",
+                                     "Checkbox",
+                                     "SliderFloat",
+                                     "InputText",
+                                     "InputTextMultiline",
+                                     "InputFloat",
+                                     "InputFloat3",
+                                     "ColorEdit4",
+                                     "Selectable",
+                                     "MenuItem",
+                                     "TreeNode",
+                                     "TreeNode (w/ double-click)",
+                                     "Combo",
+                                     "ListBox" };
         static int item_type = 4;
         static bool item_disabled = false;
         ImGui::Combo("Item Type", &item_type, item_names, IM_ARRAYSIZE(item_names), IM_ARRAYSIZE(item_names));
@@ -3080,7 +3080,7 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         // Submit selected items so we can query their status in the code following it.
         bool ret = false;
         static bool b = false;
-        static float col4f[4] = {1.0f, 0.5, 0.0f, 1.0f};
+        static float col4f[4] = { 1.0f, 0.5, 0.0f, 1.0f };
         static char str[16] = {};
         if (item_disabled)
             ImGui::BeginDisabled(true);
@@ -3147,13 +3147,13 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         } // Testing tree node with ImGuiButtonFlags_PressedOnDoubleClick button policy.
         if (item_type == 14)
         {
-            const char* items[] = {"Apple", "Banana", "Cherry", "Kiwi"};
+            const char* items[] = { "Apple", "Banana", "Cherry", "Kiwi" };
             static int current = 1;
             ret = ImGui::Combo("ITEM: Combo", &current, items, IM_ARRAYSIZE(items));
         }
         if (item_type == 15)
         {
-            const char* items[] = {"Apple", "Banana", "Cherry", "Kiwi"};
+            const char* items[] = { "Apple", "Banana", "Cherry", "Kiwi" };
             static int current = 1;
             ret = ImGui::ListBox("ITEM: ListBox", &current, items, IM_ARRAYSIZE(items), IM_ARRAYSIZE(items));
         }
@@ -3330,8 +3330,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
                     "  \"xxx,yyy\"  display lines containing \"xxx\" or \"yyy\"\n"
                     "  \"-xxx\"     hide lines containing \"xxx\"");
         filter.Draw();
-        const char* lines[] = {"aaa1.c",   "bbb1.c",   "ccc1.c", "aaa2.cpp",
-                               "bbb2.cpp", "ccc2.cpp", "abc.h",  "hello, world"};
+        const char* lines[] = { "aaa1.c",   "bbb1.c",   "ccc1.c", "aaa2.cpp",
+                                "bbb2.cpp", "ccc2.cpp", "abc.h",  "hello, world" };
         for (int i = 0; i < IM_ARRAYSIZE(lines); i++)
             if (filter.PassFilter(lines[i]))
                 ImGui::BulletText("%s", lines[i]);
@@ -3339,12 +3339,13 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
     }
 }
 
-static const char* ExampleNames[] = {"Artichoke",        "Arugula",  "Asparagus",   "Avocado",          "Bamboo Shoots",
-                                     "Bean Sprouts",     "Beans",    "Beet",        "Belgian Endive",   "Bell Pepper",
-                                     "Bitter Gourd",     "Bok Choy", "Broccoli",    "Brussels Sprouts", "Burdock Root",
-                                     "Cabbage",          "Calabash", "Capers",      "Carrot",           "Cassava",
-                                     "Cauliflower",      "Celery",   "Celery Root", "Celcuce",          "Chayote",
-                                     "Chinese Broccoli", "Corn",     "Cucumber"};
+static const char* ExampleNames[] = { "Artichoke",      "Arugula",          "Asparagus",    "Avocado",
+                                      "Bamboo Shoots",  "Bean Sprouts",     "Beans",        "Beet",
+                                      "Belgian Endive", "Bell Pepper",      "Bitter Gourd", "Bok Choy",
+                                      "Broccoli",       "Brussels Sprouts", "Burdock Root", "Cabbage",
+                                      "Calabash",       "Capers",           "Carrot",       "Cassava",
+                                      "Cauliflower",    "Celery",           "Celery Root",  "Celcuce",
+                                      "Chayote",        "Chinese Broccoli", "Corn",         "Cucumber" };
 
 // Extra functions to add deletion support to ImGuiSelectionBasicStorage
 struct ExampleSelectionWithDeletion : ImGuiSelectionBasicStorage
@@ -3545,7 +3546,7 @@ struct ExampleDualListBox
             ImGui::NewLine();
             // ImVec2 button_sz = { ImGui::CalcTextSize(">>").x + ImGui::GetStyle().FramePadding.x * 2.0f,
             // ImGui::GetFrameHeight() + padding.y * 2.0f };
-            ImVec2 button_sz = {ImGui::GetFrameHeight(), ImGui::GetFrameHeight()};
+            ImVec2 button_sz = { ImGui::GetFrameHeight(), ImGui::GetFrameHeight() };
 
             // (Using BeginDisabled()/EndDisabled() works but feels distracting given how it is currently visualized)
             if (ImGui::Button(">>", button_sz))
@@ -3614,7 +3615,7 @@ static void ShowDemoWindowMultiSelect(ImGuiDemoWindowData* demo_data)
         if (ImGui::TreeNode("Multi-Select (manual/simplified, without BeginMultiSelect)"))
         {
             HelpMarker("Hold CTRL and click to select multiple items.");
-            static bool selection[5] = {false, false, false, false, false};
+            static bool selection[5] = { false, false, false, false, false };
             for (int n = 0; n < 5; n++)
             {
                 char buf[32];
@@ -4717,7 +4718,7 @@ static void ShowDemoWindowLayout()
         // Various
         static float f0 = 1.0f, f1 = 2.0f, f2 = 3.0f;
         ImGui::PushItemWidth(80);
-        const char* items[] = {"AAAA", "BBBB", "CCCC", "DDDD"};
+        const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD" };
         static int item = -1;
         ImGui::Combo("Combo", &item, items, IM_ARRAYSIZE(items));
         ImGui::SameLine();
@@ -4730,7 +4731,7 @@ static void ShowDemoWindowLayout()
 
         ImGui::PushItemWidth(80);
         ImGui::Text("Lists:");
-        static int selection[4] = {0, 1, 2, 3};
+        static int selection[4] = { 0, 1, 2, 3 };
         for (int i = 0; i < 4; i++)
         {
             if (i > 0)
@@ -4797,7 +4798,7 @@ static void ShowDemoWindowLayout()
         }
         // Capture the group size and create widgets using the same size
         ImVec2 size = ImGui::GetItemRectSize();
-        const float values[5] = {0.5f, 0.20f, 0.80f, 0.60f, 0.25f};
+        const float values[5] = { 0.5f, 0.20f, 0.80f, 0.60f, 0.25f };
         ImGui::PlotHistogram("##values", values, IM_ARRAYSIZE(values), 0, NULL, 0.0f, 1.0f, size);
 
         ImGui::Button("ACTION", ImVec2((size.x - ImGui::GetStyle().ItemSpacing.x) * 0.5f, size.y));
@@ -5003,7 +5004,7 @@ static void ShowDemoWindowLayout()
             if (i > 0)
                 ImGui::SameLine();
             ImGui::BeginGroup();
-            const char* names[] = {"Top", "25%", "Center", "75%", "Bottom"};
+            const char* names[] = { "Top", "25%", "Center", "75%", "Bottom" };
             ImGui::TextUnformatted(names[i]);
 
             const ImGuiWindowFlags child_flags = enable_extra_decorations ? ImGuiWindowFlags_MenuBar : 0;
@@ -5083,7 +5084,7 @@ static void ShowDemoWindowLayout()
             float scroll_max_x = ImGui::GetScrollMaxX();
             ImGui::EndChild();
             ImGui::SameLine();
-            const char* names[] = {"Left", "25%", "Center", "75%", "Right"};
+            const char* names[] = { "Left", "25%", "Center", "75%", "Right" };
             ImGui::Text("%s\n%.0f/%.0f", names[i], scroll_x, scroll_max_x);
             ImGui::Spacing();
         }
@@ -5407,8 +5408,8 @@ static void ShowDemoWindowPopups()
                            "Clicking outside the popup closes it.");
 
         static int selected_fish = -1;
-        const char* names[] = {"Bream", "Haddock", "Mackerel", "Pollock", "Tilefish"};
-        static bool toggles[] = {true, false, false, false, false};
+        const char* names[] = { "Bream", "Haddock", "Mackerel", "Pollock", "Tilefish" };
+        static bool toggles[] = { true, false, false, false, false };
 
         // Simple selection popup (if you want to show the current selection inside the Button itself,
         // you may want to build a string using the "###" operator to preserve a constant ID with a variable label)
@@ -5511,7 +5512,7 @@ static void ShowDemoWindowPopups()
         // When used after an item that has an ID (e.g. Button), we can skip providing an ID to BeginPopupContextItem(),
         // and BeginPopupContextItem() will use the last item ID as the popup ID.
         {
-            const char* names[5] = {"Label1", "Label2", "Label3", "Label4", "Label5"};
+            const char* names[5] = { "Label1", "Label2", "Label3", "Label4", "Label5" };
             static int selected = -1;
             for (int n = 0; n < 5; n++)
             {
@@ -5643,7 +5644,7 @@ static void ShowDemoWindowPopups()
 
             // Testing behavior of widgets stacking their own regular popups over the modal.
             static int item = 1;
-            static float color[4] = {0.4f, 0.7f, 0.0f, 0.5f};
+            static float color[4] = { 0.4f, 0.7f, 0.0f, 0.5f };
             ImGui::Combo("Combo", &item, "aaaa\0bbbb\0cccc\0dddd\0eeee\0\0");
             ImGui::ColorEdit4("Color", color);
 
@@ -5794,18 +5795,19 @@ static void EditTableSizingFlags(ImGuiTableFlags* p_flags)
         const char* Tooltip;
     };
     static const EnumDesc policies[] = {
-        {ImGuiTableFlags_None, "Default",
-         "Use default sizing policy:\n- ImGuiTableFlags_SizingFixedFit if ScrollX is on or if host window has "
-         "ImGuiWindowFlags_AlwaysAutoResize.\n- ImGuiTableFlags_SizingStretchSame otherwise."},
-        {ImGuiTableFlags_SizingFixedFit, "ImGuiTableFlags_SizingFixedFit",
-         "Columns default to _WidthFixed (if resizable) or _WidthAuto (if not resizable), matching contents width."},
-        {ImGuiTableFlags_SizingFixedSame, "ImGuiTableFlags_SizingFixedSame",
-         "Columns are all the same width, matching the maximum contents width.\nImplicitly disable "
-         "ImGuiTableFlags_Resizable and enable ImGuiTableFlags_NoKeepColumnsVisible."},
-        {ImGuiTableFlags_SizingStretchProp, "ImGuiTableFlags_SizingStretchProp",
-         "Columns default to _WidthStretch with weights proportional to their widths."},
-        {ImGuiTableFlags_SizingStretchSame, "ImGuiTableFlags_SizingStretchSame",
-         "Columns default to _WidthStretch with same weights."}};
+        { ImGuiTableFlags_None, "Default",
+          "Use default sizing policy:\n- ImGuiTableFlags_SizingFixedFit if ScrollX is on or if host window has "
+          "ImGuiWindowFlags_AlwaysAutoResize.\n- ImGuiTableFlags_SizingStretchSame otherwise." },
+        { ImGuiTableFlags_SizingFixedFit, "ImGuiTableFlags_SizingFixedFit",
+          "Columns default to _WidthFixed (if resizable) or _WidthAuto (if not resizable), matching contents width." },
+        { ImGuiTableFlags_SizingFixedSame, "ImGuiTableFlags_SizingFixedSame",
+          "Columns are all the same width, matching the maximum contents width.\nImplicitly disable "
+          "ImGuiTableFlags_Resizable and enable ImGuiTableFlags_NoKeepColumnsVisible." },
+        { ImGuiTableFlags_SizingStretchProp, "ImGuiTableFlags_SizingStretchProp",
+          "Columns default to _WidthStretch with weights proportional to their widths." },
+        { ImGuiTableFlags_SizingStretchSame, "ImGuiTableFlags_SizingStretchSame",
+          "Columns default to _WidthStretch with same weights." }
+    };
     int idx;
     for (idx = 0; idx < IM_ARRAYSIZE(policies); idx++)
         if (policies[idx].Value == (*p_flags & ImGuiTableFlags_SizingMask_))
@@ -6384,9 +6386,10 @@ static void ShowDemoWindowTables()
         ImGui::CheckboxFlags("ImGuiTableFlags_NoHostExtendX", &flags1, ImGuiTableFlags_NoHostExtendX);
         PopStyleCompact();
 
-        static ImGuiTableFlags sizing_policy_flags[4] = {
-            ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_SizingFixedSame, ImGuiTableFlags_SizingStretchProp,
-            ImGuiTableFlags_SizingStretchSame};
+        static ImGuiTableFlags sizing_policy_flags[4] = { ImGuiTableFlags_SizingFixedFit,
+                                                          ImGuiTableFlags_SizingFixedSame,
+                                                          ImGuiTableFlags_SizingStretchProp,
+                                                          ImGuiTableFlags_SizingStretchSame };
         for (int table_n = 0; table_n < 4; table_n++)
         {
             ImGui::PushID(table_n);
@@ -6665,10 +6668,11 @@ static void ShowDemoWindowTables()
     {
         // Create a first table just to show all the options/flags we want to make visible in our example!
         const int column_count = 3;
-        const char* column_names[column_count] = {"One", "Two", "Three"};
-        static ImGuiTableColumnFlags column_flags[column_count] = {
-            ImGuiTableColumnFlags_DefaultSort, ImGuiTableColumnFlags_None, ImGuiTableColumnFlags_DefaultHide};
-        static ImGuiTableColumnFlags column_flags_out[column_count] = {0, 0, 0}; // Output from TableGetColumnFlags()
+        const char* column_names[column_count] = { "One", "Two", "Three" };
+        static ImGuiTableColumnFlags column_flags[column_count] = { ImGuiTableColumnFlags_DefaultSort,
+                                                                    ImGuiTableColumnFlags_None,
+                                                                    ImGuiTableColumnFlags_DefaultHide };
+        static ImGuiTableColumnFlags column_flags_out[column_count] = { 0, 0, 0 }; // Output from TableGetColumnFlags()
 
         if (ImGui::BeginTable("table_columns_flags_checkboxes", column_count, ImGuiTableFlags_None))
         {
@@ -7130,15 +7134,15 @@ static void ShowDemoWindowTables()
                 }
             };
             static const MyTreeNode nodes[] = {
-                {"Root", "Folder", -1, 1, 3},                                    // 0
-                {"Music", "Folder", -1, 4, 2},                                   // 1
-                {"Textures", "Folder", -1, 6, 3},                                // 2
-                {"desktop.ini", "System file", 1024, -1, -1},                    // 3
-                {"File1_a.wav", "Audio file", 123000, -1, -1},                   // 4
-                {"File1_b.wav", "Audio file", 456000, -1, -1},                   // 5
-                {"Image001.png", "Image file", 203128, -1, -1},                  // 6
-                {"Copy of Image001.png", "Image file", 203256, -1, -1},          // 7
-                {"Copy of Image001 (Final2).png", "Image file", 203512, -1, -1}, // 8
+                { "Root", "Folder", -1, 1, 3 },                                    // 0
+                { "Music", "Folder", -1, 4, 2 },                                   // 1
+                { "Textures", "Folder", -1, 6, 3 },                                // 2
+                { "desktop.ini", "System file", 1024, -1, -1 },                    // 3
+                { "File1_a.wav", "Audio file", 123000, -1, -1 },                   // 4
+                { "File1_b.wav", "Audio file", 456000, -1, -1 },                   // 5
+                { "Image001.png", "Image file", 203128, -1, -1 },                  // 6
+                { "Copy of Image001.png", "Image file", 203256, -1, -1 },          // 7
+                { "Copy of Image001 (Final2).png", "Image file", 203512, -1, -1 }, // 8
             };
 
             MyTreeNode::DisplayNode(&nodes[0], nodes);
@@ -7256,8 +7260,8 @@ static void ShowDemoWindowTables()
     IMGUI_DEMO_MARKER("Tables/Angled headers");
     if (ImGui::TreeNode("Angled headers"))
     {
-        const char* column_names[] = {"Track",   "cabasa",  "ride",    "smash",   "tom-hi", "tom-mid", "tom-low",
-                                      "hihat-o", "hihat-c", "snare-s", "snare-c", "clap",   "rim",     "kick"};
+        const char* column_names[] = { "Track",   "cabasa",  "ride",    "smash",   "tom-hi", "tom-mid", "tom-low",
+                                       "hihat-o", "hihat-c", "snare-s", "snare-c", "clap",   "rim",     "kick" };
         const int columns_count = IM_ARRAYSIZE(column_names);
         const int rows_count = 12;
 
@@ -7486,9 +7490,9 @@ static void ShowDemoWindowTables()
     // This is a simplified version of the "Advanced" example, where we mostly focus on the code necessary to handle
     // sorting. Note that the "Advanced" example also showcase manually triggering a sort (e.g. if item quantities have
     // been modified)
-    static const char* template_items_names[] = {"Banana",     "Apple", "Cherry",  "Watermelon", "Grapefruit",
-                                                 "Strawberry", "Mango", "Kiwi",    "Orange",     "Pineapple",
-                                                 "Blueberry",  "Plum",  "Coconut", "Pear",       "Apricot"};
+    static const char* template_items_names[] = { "Banana",     "Apple", "Cherry",  "Watermelon", "Grapefruit",
+                                                  "Strawberry", "Mango", "Kiwi",    "Orange",     "Pineapple",
+                                                  "Blueberry",  "Plum",  "Coconut", "Pear",       "Apricot" };
     if (open_action != -1)
         ImGui::SetNextItemOpen(open_action != 0);
     IMGUI_DEMO_MARKER("Tables/Sorting");
@@ -7606,8 +7610,8 @@ static void ShowDemoWindowTables()
             CT_SelectableSpanRow
         };
         static int contents_type = CT_SelectableSpanRow;
-        const char* contents_type_names[] = {"Text",       "Button",     "SmallButton",
-                                             "FillButton", "Selectable", "Selectable (span row)"};
+        const char* contents_type_names[] = { "Text",       "Button",     "SmallButton",
+                                              "FillButton", "Selectable", "Selectable (span row)" };
         static int freeze_cols = 1;
         static int freeze_rows = 1;
         static int items_count = IM_ARRAYSIZE(template_items_names) * 2;
@@ -8022,8 +8026,8 @@ static void ShowDemoWindowColumns()
         ImGui::Text("Hovered");
         ImGui::NextColumn();
         ImGui::Separator();
-        const char* names[3] = {"One", "Two", "Three"};
-        const char* paths[3] = {"/path/one", "/path/two", "/path/three"};
+        const char* names[3] = { "One", "Two", "Three" };
+        const char* paths[3] = { "/path/one", "/path/two", "/path/three" };
         static int selected = -1;
         for (int i = 0; i < 3; i++)
         {
@@ -8313,7 +8317,7 @@ static void ShowDemoWindowInputs()
                            "and true when clicking.");
                 static int capture_override_mouse = -1;
                 static int capture_override_keyboard = -1;
-                const char* capture_override_desc[] = {"None", "Set to false", "Set to true"};
+                const char* capture_override_desc[] = { "None", "Set to false", "Set to true" };
                 ImGui::SetNextItemWidth(ImGui::GetFontSize() * 15);
                 ImGui::SliderInt("SetNextFrameWantCaptureMouse() on hover", &capture_override_mouse, -1, +1,
                                  capture_override_desc[capture_override_mouse + 1], ImGuiSliderFlags_AlwaysClamp);
@@ -8443,8 +8447,8 @@ static void ShowDemoWindowInputs()
         IMGUI_DEMO_MARKER("Inputs & Focus/Mouse Cursors");
         if (ImGui::TreeNode("Mouse Cursors"))
         {
-            const char* mouse_cursors_names[] = {"Arrow",      "TextInput",  "ResizeAll", "ResizeNS",  "ResizeEW",
-                                                 "ResizeNESW", "ResizeNWSE", "Hand",      "NotAllowed"};
+            const char* mouse_cursors_names[] = { "Arrow",      "TextInput",  "ResizeAll", "ResizeNS",  "ResizeEW",
+                                                  "ResizeNESW", "ResizeNWSE", "Hand",      "NotAllowed" };
             IM_ASSERT(IM_ARRAYSIZE(mouse_cursors_names) == ImGuiMouseCursor_COUNT);
 
             ImGuiMouseCursor current = ImGui::GetMouseCursor();
@@ -8531,7 +8535,7 @@ static void ShowDemoWindowInputs()
                 ImGui::Text("Item with focus: <none>");
 
             // Use >= 0 parameter to SetKeyboardFocusHere() to focus an upcoming item
-            static float f3[3] = {0.0f, 0.0f, 0.0f};
+            static float f3[3] = { 0.0f, 0.0f, 0.0f };
             int focus_ahead = -1;
             if (ImGui::Button("Focus on X"))
             {
@@ -9927,9 +9931,9 @@ static void ShowExampleAppLog(bool* p_open)
     if (ImGui::SmallButton("[Debug] Add 5 entries"))
     {
         static int counter = 0;
-        const char* categories[3] = {"info", "warn", "error"};
-        const char* words[] = {"Bumfuzzled",   "Cattywampus", "Snickersnee", "Abibliophobia",
-                               "Absquatulate", "Nincompoop",  "Pauciloquent"};
+        const char* categories[3] = { "info", "warn", "error" };
+        const char* words[] = { "Bumfuzzled",   "Cattywampus", "Snickersnee", "Abibliophobia",
+                                "Absquatulate", "Nincompoop",  "Pauciloquent" };
         for (int n = 0; n < 5; n++)
         {
             const char* category = categories[counter % IM_ARRAYSIZE(categories)];
@@ -10536,8 +10540,8 @@ static void ShowExampleAppWindowTitles(bool*)
 // Add a |_| looking shape
 static void PathConcaveShape(ImDrawList* draw_list, float x, float y, float sz)
 {
-    const ImVec2 pos_norms[] = {{0.0f, 0.0f}, {0.3f, 0.0f}, {0.3f, 0.7f}, {0.7f, 0.7f},
-                                {0.7f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
+    const ImVec2 pos_norms[] = { { 0.0f, 0.0f }, { 0.3f, 0.0f }, { 0.3f, 0.7f }, { 0.7f, 0.7f },
+                                 { 0.7f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
     for (const ImVec2& p : pos_norms)
         draw_list->PathLineTo(ImVec2(x + 0.5f + (int) (sz * p.x), y + 0.5f + (int) (sz * p.y)));
 }
@@ -10616,10 +10620,10 @@ static void ShowExampleAppCustomRendering(bool* p_open)
             const float rounding = sz / 5.0f;
             const int circle_segments = circle_segments_override ? circle_segments_override_v : 0;
             const int curve_segments = curve_segments_override ? curve_segments_override_v : 0;
-            const ImVec2 cp3[3] = {ImVec2(0.0f, sz * 0.6f), ImVec2(sz * 0.5f, -sz * 0.4f),
-                                   ImVec2(sz, sz)}; // Control points for curves
-            const ImVec2 cp4[4] = {ImVec2(0.0f, 0.0f), ImVec2(sz * 1.3f, sz * 0.3f),
-                                   ImVec2(sz - sz * 1.3f, sz - sz * 0.3f), ImVec2(sz, sz)};
+            const ImVec2 cp3[3] = { ImVec2(0.0f, sz * 0.6f), ImVec2(sz * 0.5f, -sz * 0.4f),
+                                    ImVec2(sz, sz) }; // Control points for curves
+            const ImVec2 cp4[4] = { ImVec2(0.0f, 0.0f), ImVec2(sz * 1.3f, sz * 0.3f),
+                                    ImVec2(sz - sz * 1.3f, sz - sz * 0.3f), ImVec2(sz, sz) };
 
             float x = p.x + 4.0f;
             float y = p.y + 4.0f;
@@ -11496,7 +11500,7 @@ struct ExampleAssetsBrowser
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(LayoutSelectableSpacing, LayoutSelectableSpacing));
 
             // Rendering parameters
-            const ImU32 icon_type_overlay_colors[3] = {0, IM_COL32(200, 70, 70, 255), IM_COL32(70, 170, 70, 255)};
+            const ImU32 icon_type_overlay_colors[3] = { 0, IM_COL32(200, 70, 70, 255), IM_COL32(70, 170, 70, 255) };
             const ImU32 icon_bg_color = ImGui::GetColorU32(ImGuiCol_MenuBarBg);
             const ImVec2 icon_type_overlay_size = ImVec2(4.0f, 4.0f);
             const bool display_label = (LayoutItemSize.x >= ImGui::CalcTextSize("999").x);

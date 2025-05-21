@@ -1441,7 +1441,7 @@ static int stbtt_GetNumberOfFonts_internal(unsigned char* font_collection)
 
 static stbtt__buf stbtt__get_subrs(stbtt__buf cff, stbtt__buf fontdict)
 {
-    stbtt_uint32 subrsoff = 0, private_loc[2] = {0, 0};
+    stbtt_uint32 subrsoff = 0, private_loc[2] = { 0, 0 };
     stbtt__buf pdict;
     stbtt__dict_get_ints(&fontdict, 18, 2, private_loc);
     if (!private_loc[1] || !private_loc[0])
@@ -1990,7 +1990,7 @@ static int stbtt__GetGlyphShapeTT(const stbtt_fontinfo* info, int glyph_index, s
             stbtt_uint16 flags, gidx;
             int comp_num_verts = 0, i;
             stbtt_vertex *comp_verts = 0, *tmp = 0;
-            float mtx[6] = {1, 0, 0, 1, 0, 0}, m, n;
+            float mtx[6] = { 1, 0, 0, 1, 0, 0 }, m, n;
 
             flags = ttSHORT(comp);
             comp += 2;
@@ -2112,7 +2112,7 @@ typedef struct
     int num_vertices;
 } stbtt__csctx;
 
-#define STBTT__CSCTX_INIT(bounds) {bounds, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0}
+#define STBTT__CSCTX_INIT(bounds) { bounds, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, 0 }
 
 static void stbtt__track_vertex(stbtt__csctx* c, stbtt_int32 x, stbtt_int32 y)
 {
@@ -3284,7 +3284,7 @@ static void stbtt__fill_active_edges(unsigned char* scanline, int len, stbtt__ac
 static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, int off_x,
                                           int off_y, void* userdata)
 {
-    stbtt__hheap hh = {0, 0, 0};
+    stbtt__hheap hh = { 0, 0, 0 };
     stbtt__active_edge* active = NULL;
     int y, j = 0;
     int max_weight = (255 / vsubsample); // weight per vertical scanline
@@ -3724,7 +3724,7 @@ static void stbtt__fill_active_edges_new(float* scanline, float* scanline_fill, 
 static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, int off_x,
                                           int off_y, void* userdata)
 {
-    stbtt__hheap hh = {0, 0, 0};
+    stbtt__hheap hh = { 0, 0, 0 };
     stbtt__active_edge* active = NULL;
     int y, j = 0, i;
     float scanline_data[129], *scanline, *scanline2;
@@ -5013,7 +5013,7 @@ static int equal(float* a, float* b) { return (a[0] == b[0] && a[1] == b[1]); }
 static int stbtt__compute_crossings_x(float x, float y, int nverts, stbtt_vertex* verts)
 {
     int i;
-    float orig[2], ray[2] = {1, 0};
+    float orig[2], ray[2] = { 1, 0 };
     float y_frac;
     int winding = 0;
 
@@ -5263,7 +5263,7 @@ STBTT_DEF unsigned char* stbtt_GetGlyphSDF(const stbtt_fontinfo* info, float sca
                             float ax = x1 - x0, ay = y1 - y0;
                             float bx = x0 - 2 * x1 + x2, by = y0 - 2 * y1 + y2;
                             float mx = x0 - sx, my = y0 - sy;
-                            float res[3] = {0.f, 0.f, 0.f};
+                            float res[3] = { 0.f, 0.f, 0.f };
                             float px, py, t, it, dist2;
                             float a_inv = precompute[i];
                             if (a_inv == 0.0)

@@ -140,7 +140,7 @@ static thread_local HeapCacheTLS cacheRTV;
 static thread_local HeapCacheTLS cacheCBV;
 static thread_local HeapCacheTLS cacheSRV;
 static thread_local HeapCacheTLS cacheUAV;
-static std::atomic<unsigned> gHeapGeneration{1};
+static std::atomic<unsigned> gHeapGeneration { 1 };
 
 static thread_local HeapCacheTLS cacheGR;
 static thread_local HeapCacheTLS cacheCR;
@@ -161,7 +161,7 @@ bool ResTrack_Dx12::CheckResource(ID3D12Resource* resource)
 
     o_Release(temp);
 
-    DXGI_SWAP_CHAIN_DESC scDesc{};
+    DXGI_SWAP_CHAIN_DESC scDesc {};
     if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
     {
         LOG_WARN("Can't get swapchain desc!");
@@ -185,7 +185,7 @@ static ankerl::unordered_dense::map<ID3D12GraphicsCommandList*,
 static std::shared_mutex heapMutex;
 static std::mutex hudlessMutex;
 
-inline static IID streamlineRiid{};
+inline static IID streamlineRiid {};
 bool ResTrack_Dx12::CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
 {
     if (streamlineRiid.Data1 == 0)
@@ -279,7 +279,7 @@ static void AddResourceHeap(ID3D12Resource* resource, size_t cpuHeapStart)
     if (fgHandlesByResources.contains(resource))
         fgHandlesByResources[resource].push_back(cpuHeapStart);
     else
-        fgHandlesByResources[resource] = {cpuHeapStart};
+        fgHandlesByResources[resource] = { cpuHeapStart };
 }
 
 static void RemoveResourceHeap(ID3D12Resource* resource, size_t cpuHeapStart)
@@ -724,11 +724,11 @@ void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource*
 
     auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-    ResourceHeapInfo info{};
+    ResourceHeapInfo info {};
     info.cpuStart = DestDescriptor.ptr;
     info.gpuStart = gpuHandle;
 
-    ResourceInfo resInfo{};
+    ResourceInfo resInfo {};
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = RTV;
 
@@ -807,11 +807,11 @@ void ResTrack_Dx12::hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resourc
 
     auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    ResourceHeapInfo info{};
+    ResourceHeapInfo info {};
     info.cpuStart = DestDescriptor.ptr;
     info.gpuStart = gpuHandle;
 
-    ResourceInfo resInfo{};
+    ResourceInfo resInfo {};
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = SRV;
 
@@ -890,11 +890,11 @@ void ResTrack_Dx12::hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resour
 
     auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    ResourceHeapInfo info{};
+    ResourceHeapInfo info {};
     info.cpuStart = DestDescriptor.ptr;
     info.gpuStart = gpuHandle;
 
-    ResourceInfo resInfo{};
+    ResourceInfo resInfo {};
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = UAV;
 
@@ -939,7 +939,7 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
     if (!IsHudFixActive())
         return;
 
-    ResourceInfo srcInfo{};
+    ResourceInfo srcInfo {};
     FillResourceInfo(Source, &srcInfo);
 
     if (CheckForHudless(__FUNCTION__, &srcInfo) && CheckCapture(__FUNCTION__))
@@ -948,7 +948,7 @@ static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest
         return;
     }
 
-    ResourceInfo dstInfo{};
+    ResourceInfo dstInfo {};
     FillResourceInfo(Dest, &dstInfo);
 
     if (CheckForHudless(__FUNCTION__, &dstInfo) && CheckCapture(__FUNCTION__))
@@ -968,7 +968,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
     if (!IsHudFixActive())
         return;
 
-    ResourceInfo srcInfo{};
+    ResourceInfo srcInfo {};
     FillResourceInfo(pSrc->pResource, &srcInfo);
 
     if (CheckForHudless(__FUNCTION__, &srcInfo) && CheckCapture(__FUNCTION__))
@@ -977,7 +977,7 @@ static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_C
         return;
     }
 
-    ResourceInfo dstInfo{};
+    ResourceInfo dstInfo {};
     FillResourceInfo(pDst->pResource, &dstInfo);
 
     if (CheckForHudless(__FUNCTION__, &dstInfo) && CheckCapture(__FUNCTION__))
@@ -1609,7 +1609,7 @@ void ResTrack_Dx12::hkOMSetRenderTargets(ID3D12GraphicsCommandList* This, UINT N
         for (size_t i = 0; i < NumRenderTargetDescriptors; i++)
         {
             HeapInfo* heap = nullptr;
-            D3D12_CPU_DESCRIPTOR_HANDLE handle{};
+            D3D12_CPU_DESCRIPTOR_HANDLE handle {};
 
             if (RTsSingleHandleToDescriptorRange)
             {

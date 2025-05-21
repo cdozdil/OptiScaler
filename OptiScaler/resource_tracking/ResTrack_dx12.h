@@ -118,7 +118,7 @@ typedef struct HeapInfo
             if (_trackedResources.contains(setInfo.buffer))
                 _trackedResources[setInfo.buffer].push_back(&info[index]);
             else
-                _trackedResources[setInfo.buffer] = {&info[index]};
+                _trackedResources[setInfo.buffer] = { &info[index] };
 
             _trMutex.unlock();
         }
@@ -143,7 +143,7 @@ typedef struct HeapInfo
             if (_trackedResources.contains(setInfo.buffer))
                 _trackedResources[setInfo.buffer].push_back(&info[index]);
             else
-                _trackedResources[setInfo.buffer] = {&info[index]};
+                _trackedResources[setInfo.buffer] = { &info[index] };
 
             _trMutex.unlock();
         }

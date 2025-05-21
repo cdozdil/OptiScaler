@@ -3581,8 +3581,8 @@ void ImGui::TableAngledHeadersRow()
             if ((column->Flags & ImGuiTableColumnFlags_AngledHeader) ==
                 0) // Note: can't rely on ImGuiTableColumnFlags_IsVisible test here.
                 continue;
-            ImGuiTableHeaderData request = {(ImGuiTableColumnIdx) column_n, col_text, col_header_bg,
-                                            (column_n == highlight_column_n) ? GetColorU32(ImGuiCol_Header) : 0};
+            ImGuiTableHeaderData request = { (ImGuiTableColumnIdx) column_n, col_text, col_header_bg,
+                                             (column_n == highlight_column_n) ? GetColorU32(ImGuiCol_Header) : 0 };
             temp_data->AngledHeadersRequests.push_back(request);
         }
 

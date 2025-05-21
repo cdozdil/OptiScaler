@@ -51,7 +51,7 @@ static bool _nvnxgInited = false;
 static bool _skipCreate = false;
 static bool _skipDispatch = false;
 static bool _skipDestroy = false;
-static float qualityRatios[] = {1.0, 1.5, 1.7, 2.0, 3.0};
+static float qualityRatios[] = { 1.0, 1.5, 1.7, 2.0, 3.0 };
 
 static bool CreateDLSSContext(Fsr3::FfxFsr3UpscalerContext* handle,
                               const Fsr3::FfxFsr3UpscalerDispatchDescription* pExecParams)
@@ -223,7 +223,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
 
     if (!State::Instance().NvngxDx12Inited)
     {
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
 
         auto dllPath = Util::DllPath().remove_filename();
         auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
@@ -273,7 +273,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
 
     _nvParams[pContext] = params;
 
-    Fsr3::FfxFsr3UpscalerContextDescription ccd{};
+    Fsr3::FfxFsr3UpscalerContextDescription ccd {};
     ccd.flags = pContextDescription->flags;
     ccd.maxRenderSize = pContextDescription->maxRenderSize;
     ccd.displaySize = pContextDescription->displaySize;
@@ -427,7 +427,7 @@ ffxFsr3ContextCreate_Pattern_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext,
 
     if (!State::Instance().NvngxDx12Inited)
     {
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
 
         auto dllPath = Util::DllPath().remove_filename();
         auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
@@ -477,7 +477,7 @@ ffxFsr3ContextCreate_Pattern_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext,
 
     _nvParams[pContext] = params;
 
-    Fsr3::FfxFsr3UpscalerContextDescription ccd{};
+    Fsr3::FfxFsr3UpscalerContextDescription ccd {};
     ccd.flags = pContextDescription->flags;
     ccd.maxRenderSize = pContextDescription->maxRenderSize;
     ccd.displaySize = pContextDescription->displaySize;

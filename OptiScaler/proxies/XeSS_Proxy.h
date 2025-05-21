@@ -99,8 +99,8 @@ class XeSSProxy
     inline static HMODULE _dll = nullptr;
     inline static HMODULE _dlldx11 = nullptr;
 
-    inline static xess_version_t _xessVersion{};
-    inline static xess_version_t _xessVersionDx11{};
+    inline static xess_version_t _xessVersion {};
+    inline static xess_version_t _xessVersionDx11 {};
 
     inline static PFN_xessD3D12CreateContext _xessD3D12CreateContext = nullptr;
     inline static PFN_xessD3D12BuildPipelines _xessD3D12BuildPipelines = nullptr;
@@ -167,7 +167,7 @@ class XeSSProxy
         // Step 1: Get the size of the version information
         DWORD handle = 0;
         DWORD versionSize = GetFileVersionInfoSizeW(dllPath.c_str(), &handle);
-        xess_version_t version{0, 0, 0};
+        xess_version_t version { 0, 0, 0 };
 
         if (versionSize == 0)
         {

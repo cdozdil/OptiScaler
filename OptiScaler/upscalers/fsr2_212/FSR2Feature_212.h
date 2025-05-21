@@ -50,7 +50,7 @@ class FSR2Feature212 : public virtual IFeature
     double _lastFrameTime;
     unsigned int _lastWidth = 0;
     unsigned int _lastHeight = 0;
-    static inline feature_version _version{2, 1, 2};
+    static inline feature_version _version { 2, 1, 2 };
 
   protected:
     Fsr212::FfxFsr2Context _context = {};

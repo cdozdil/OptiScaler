@@ -10,7 +10,7 @@
 
 inline void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
-    spdlog::log((spdlog::level::level_enum) ((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
+    spdlog::log((spdlog::level::level_enum)((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
 bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InParameters)
@@ -48,7 +48,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     ret = XeSSProxy::SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
     LOG_DEBUG("xessSetLoggingCallback : {0}", ResultToString(ret));
 
-    xess_d3d12_init_params_t xessParams{};
+    xess_d3d12_init_params_t xessParams {};
 
     xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
@@ -175,7 +175,7 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
     if (Config::Instance()->CreateHeaps.value_or(true))
     {
         HRESULT hr;
-        xess_properties_t xessProps{};
+        xess_properties_t xessProps {};
         ret = XeSSProxy::GetProperties()(_xessContext, &xessParams.outputResolution, &xessProps);
 
         if (ret == XESS_RESULT_SUCCESS)
@@ -187,11 +187,11 @@ bool XeSSFeature::InitXeSS(ID3D12Device* device, const NVSDK_NGX_Parameter* InPa
 
             if (SUCCEEDED(hr))
             {
-                D3D12_HEAP_DESC textureHeapDesc{
-                    xessProps.tempTextureHeapSize,
-                    {D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0},
-                    0,
-                    D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES};
+                D3D12_HEAP_DESC textureHeapDesc { xessProps.tempTextureHeapSize,
+                                                  { D3D12_HEAP_TYPE_DEFAULT, D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                                    D3D12_MEMORY_POOL_UNKNOWN, 0, 0 },
+                                                  0,
+                                                  D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES };
 
                 State::Instance().skipHeapCapture = true;
                 hr = device->CreateHeap(&textureHeapDesc, IID_PPV_ARGS(&_localTextureHeap));

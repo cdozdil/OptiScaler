@@ -51,7 +51,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     {
         LOG_ERROR("xessDebug");
 
-        xess_dump_parameters_t dumpParams{};
+        xess_dump_parameters_t dumpParams {};
         dumpParams.frame_count = State::Instance().xessDebugFrames;
         dumpParams.frame_idx = dumpCount;
         dumpParams.path = Util::DllPath().string().c_str();
@@ -67,7 +67,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         dumpCount += State::Instance().xessDebugFrames;
     }
 
-    xess_d3d12_execute_params_t params{};
+    xess_d3d12_execute_params_t params {};
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
@@ -243,10 +243,10 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
     ID3D12Resource* paramReactiveMask = nullptr;
 
-    if (isVersionOrBetter(Version(), {2, 0, 1}) &&
+    if (isVersionOrBetter(Version(), { 2, 0, 1 }) &&
         InParameters->Get("FSR.reactive", &paramReactiveMask) == NVSDK_NGX_Result_Success)
     {
-        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), {2, 0, 1})))
+        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })))
             params.pResponsivePixelMaskTexture = paramReactiveMask;
     }
     else
@@ -255,7 +255,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
             NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**) &paramReactiveMask);
 
-        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), {2, 0, 1})) &&
+        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })) &&
             paramReactiveMask)
         {
             LOG_DEBUG("Input Bias mask exist..");
@@ -350,7 +350,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
         RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-        RcasConstants rcasConstants{};
+        RcasConstants rcasConstants {};
 
         rcasConstants.Sharpness = _sharpness;
         rcasConstants.DisplayWidth = TargetWidth();

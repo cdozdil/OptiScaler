@@ -173,7 +173,7 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
         return true;
     }
 
-    DXGI_SWAP_CHAIN_DESC scDesc{};
+    DXGI_SWAP_CHAIN_DESC scDesc {};
     if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
     {
         LOG_WARN("Can't get swapchain desc!");
@@ -538,7 +538,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
         }
         else
         {
-            _hudlessList[resource->buffer] = {_upscaleCounter, 0, 0, 0, 0, 1, false, false};
+            _hudlessList[resource->buffer] = { _upscaleCounter, 0, 0, 0, 0, 1, false, false };
         }
 
         if (!CheckCapture())
@@ -546,7 +546,7 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
 
         auto fIndex = GetIndex();
 
-        DXGI_SWAP_CHAIN_DESC scDesc{};
+        DXGI_SWAP_CHAIN_DESC scDesc {};
         if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
         {
             LOG_WARN("Can't get swapchain desc!");

@@ -127,7 +127,7 @@ static void ImGui_ImplDX11_SetupRenderState(ImDrawData* draw_data, ID3D11DeviceC
                      0); // In theory we should backup and restore this as well.. very infrequently used..
 
     // Setup blend state
-    const float blend_factor[4] = {0.f, 0.f, 0.f, 0.f};
+    const float blend_factor[4] = { 0.f, 0.f, 0.f, 0.f };
     ctx->OMSetBlendState(bd->pBlendState, blend_factor, 0xffffffff);
     ctx->OMSetDepthStencilState(bd->pDepthStencilState, 0);
     ctx->RSSetState(bd->pRasterizerState);
@@ -212,10 +212,10 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
         float T = draw_data->DisplayPos.y;
         float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
         float mvp[4][4] = {
-            {2.0f / (R - L), 0.0f, 0.0f, 0.0f},
-            {0.0f, 2.0f / (T - B), 0.0f, 0.0f},
-            {0.0f, 0.0f, 0.5f, 0.0f},
-            {(R + L) / (L - R), (T + B) / (B - T), 0.5f, 1.0f},
+            { 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
+            { 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
+            { 0.0f, 0.0f, 0.5f, 0.0f },
+            { (R + L) / (L - R), (T + B) / (B - T), 0.5f, 1.0f },
         };
         memcpy(&constant_buffer->mvp, mvp, sizeof(mvp));
         ctx->Unmap(bd->pVertexConstantBuffer, 0);
@@ -301,7 +301,7 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
                     continue;
 
                 // Apply scissor/clipping rectangle
-                const D3D11_RECT r = {(LONG) clip_min.x, (LONG) clip_min.y, (LONG) clip_max.x, (LONG) clip_max.y};
+                const D3D11_RECT r = { (LONG) clip_min.x, (LONG) clip_min.y, (LONG) clip_max.x, (LONG) clip_max.y };
                 ctx->RSSetScissorRects(1, &r);
 
                 // Bind texture, Draw
@@ -522,12 +522,12 @@ bool ImGui_ImplDX11_CreateDeviceObjects()
 
         // Create the input layout
         D3D11_INPUT_ELEMENT_DESC local_layout[] = {
-            {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, (UINT) offsetof(ImDrawVert, pos), D3D11_INPUT_PER_VERTEX_DATA,
-             0},
-            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, (UINT) offsetof(ImDrawVert, uv), D3D11_INPUT_PER_VERTEX_DATA,
-             0},
-            {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, (UINT) offsetof(ImDrawVert, col), D3D11_INPUT_PER_VERTEX_DATA,
-             0},
+            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, (UINT) offsetof(ImDrawVert, pos), D3D11_INPUT_PER_VERTEX_DATA,
+              0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, (UINT) offsetof(ImDrawVert, uv), D3D11_INPUT_PER_VERTEX_DATA,
+              0 },
+            { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, (UINT) offsetof(ImDrawVert, col), D3D11_INPUT_PER_VERTEX_DATA,
+              0 },
         };
         if (bd->pd3dDevice->CreateInputLayout(local_layout, 3, vertexShaderBlob->GetBufferPointer(),
                                               vertexShaderBlob->GetBufferSize(), &bd->pInputLayout) != S_OK)

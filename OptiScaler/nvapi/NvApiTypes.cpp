@@ -2,8 +2,9 @@
 
 #include <nvapi_interface.h>
 
-constexpr NVAPI_INTERFACE_TABLE fakenvapi_extra[] = {
-    {"Fake_InformFGState", 0x21382138}, {"Fake_InformPresentFG", 0x21392139}, {"Fake_GetAntiLagCtx", 0x21402140}};
+constexpr NVAPI_INTERFACE_TABLE fakenvapi_extra[] = { { "Fake_InformFGState", 0x21382138 },
+                                                      { "Fake_InformPresentFG", 0x21392139 },
+                                                      { "Fake_GetAntiLagCtx", 0x21402140 } };
 
 NvApiTypes::NvApiTypes()
 {

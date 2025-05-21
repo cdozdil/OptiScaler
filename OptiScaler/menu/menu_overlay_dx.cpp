@@ -43,7 +43,7 @@ static bool _showRenderImGuiDebugOnce = true;
 static std::mutex _dx11CleanMutex;
 static std::mutex _dx12CleanMutex;
 
-static IID streamlineRiid{};
+static IID streamlineRiid {};
 
 static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
 {
@@ -506,7 +506,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
                     return;
                 }
 
-                ID3D12CommandList* ppCommandLists[] = {g_pd3dCommandList};
+                ID3D12CommandList* ppCommandLists[] = { g_pd3dCommandList };
                 ((ID3D12CommandQueue*) currentSCCommandQueue)->ExecuteCommandLists(1, ppCommandLists);
             }
         }

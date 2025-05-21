@@ -103,7 +103,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
     bufferBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     bufferBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 
-    D3D12_RESOURCE_BARRIER barriers[] = {bufferBarrier, outBarrier};
+    D3D12_RESOURCE_BARRIER barriers[] = { bufferBarrier, outBarrier };
     pCmdList->ResourceBarrier(2, barriers);
 
     // Copy out to buffer

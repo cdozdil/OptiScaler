@@ -218,7 +218,7 @@ void ReflexHooks::setFPSLimit(float fps)
 
     if (_lastSleepDev != nullptr)
     {
-        NV_SET_SLEEP_MODE_PARAMS temp{};
+        NV_SET_SLEEP_MODE_PARAMS temp {};
         memcpy(&temp, &_lastSleepParams, sizeof(NV_SET_SLEEP_MODE_PARAMS));
         temp.minimumIntervalUs = _minimumIntervalUs;
         o_NvAPI_D3D_SetSleepMode(_lastSleepDev, &temp);

@@ -59,7 +59,7 @@ class XeSSFeature : public virtual IFeature
   public:
     feature_version Version()
     {
-        return feature_version{XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch};
+        return feature_version { XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch };
     }
     std::string Name() const { return "XeSS"; }
 

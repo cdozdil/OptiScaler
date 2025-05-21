@@ -15,7 +15,7 @@ typedef BOOL (*PFN_VerQueryValueW)(LPCVOID pBlock, LPCWSTR lpSubBlock, LPVOID* l
 std::wstring Util::GetWindowTitle(HWND hwnd)
 {
     const int maxLength = 512;
-    wchar_t buffer[maxLength] = {0};
+    wchar_t buffer[maxLength] = { 0 };
 
     // First, check if the window is valid and visible
     if (!IsWindow(hwnd) || !IsWindowVisible(hwnd))
@@ -350,7 +350,7 @@ std::optional<std::filesystem::path> Util::FindFilePath(const std::filesystem::p
 
     // 3) Unreal-Engine/WinGDK fallback: check for Win64 or WinGDK in parent
     std::filesystem::path parent = startDir.parent_path().parent_path();
-    for (const char* folder : {"Win64", "WinGDK"})
+    for (const char* folder : { "Win64", "WinGDK" })
     {
         if (std::filesystem::exists(parent / folder) && std::filesystem::is_directory(parent / folder))
         {

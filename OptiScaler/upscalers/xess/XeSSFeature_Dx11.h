@@ -18,8 +18,8 @@ class XeSSFeature_Dx11 : public virtual IFeature_Dx11
     // version is above 1.3 if we can use vulkan
     feature_version Version() final
     {
-        return feature_version{XeSSProxy::VersionDx11().major, XeSSProxy::VersionDx11().minor,
-                               XeSSProxy::VersionDx11().patch};
+        return feature_version { XeSSProxy::VersionDx11().major, XeSSProxy::VersionDx11().minor,
+                                 XeSSProxy::VersionDx11().patch };
     }
     std::string Name() const { return "XeSS"; }
 

@@ -7,7 +7,7 @@
 class DLSSFeature : public virtual IFeature
 {
   private:
-    feature_version _version = {0, 0, 0};
+    feature_version _version = { 0, 0, 0 };
 
   protected:
     NVSDK_NGX_Handle _dlssHandle = {};
@@ -21,7 +21,7 @@ class DLSSFeature : public virtual IFeature
     float GetSharpness(const NVSDK_NGX_Parameter* InParameters);
 
   public:
-    feature_version Version() final { return feature_version{_version.major, _version.minor, _version.patch}; }
+    feature_version Version() final { return feature_version { _version.major, _version.minor, _version.patch }; }
     std::string Name() const { return "DLSS"; }
     void ReadVersion();
 

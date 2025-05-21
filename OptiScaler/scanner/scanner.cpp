@@ -13,7 +13,7 @@ std::pair<uintptr_t, uintptr_t> GetModule(const std::wstring_view moduleName)
         return static_cast<uintptr_t>(moduleBase + ntHeaders->OptionalHeader.SizeOfImage);
     }();
 
-    return {moduleBase, moduleEnd};
+    return { moduleBase, moduleEnd };
 }
 
 uintptr_t FindPattern(uintptr_t startAddress, uintptr_t maxSize, const char* mask)

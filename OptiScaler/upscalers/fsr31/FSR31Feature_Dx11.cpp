@@ -75,7 +75,7 @@ bool FSR31FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_R
                                    UINT bindFlags, bool InCopy)
 {
     ID3D11Texture2D* originalTexture = nullptr;
-    D3D11_TEXTURE2D_DESC desc{};
+    D3D11_TEXTURE2D_DESC desc {};
 
     auto result = InResource->QueryInterface(IID_PPV_ARGS(&originalTexture));
 
@@ -178,7 +178,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         DeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
     }
 
-    Fsr31::FfxFsr3DispatchUpscaleDescription params{};
+    Fsr31::FfxFsr3DispatchUpscaleDescription params {};
 
     if (Config::Instance()->FsrDebugView.value_or_default())
         params.flags = Fsr31::FFX_FSR3_UPSCALER_FLAG_DRAW_DEBUG_VIEW;
@@ -445,7 +445,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     params.upscaleSize.width = TargetWidth();
     params.upscaleSize.height = TargetHeight();
 
-    if (isVersionOrBetter(Version(), {3, 1, 1}) && _velocity != Config::Instance()->FsrVelocity.value_or_default())
+    if (isVersionOrBetter(Version(), { 3, 1, 1 }) && _velocity != Config::Instance()->FsrVelocity.value_or_default())
     {
         _velocity = Config::Instance()->FsrVelocity.value_or_default();
         auto result = ffxFsr3SetUpscalerConstant(
@@ -479,7 +479,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
                                Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
         RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
     {
-        RcasConstants rcasConstants{};
+        RcasConstants rcasConstants {};
 
         rcasConstants.Sharpness = _sharpness;
         rcasConstants.DisplayWidth = TargetWidth();

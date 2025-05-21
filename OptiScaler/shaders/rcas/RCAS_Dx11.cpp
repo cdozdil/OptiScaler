@@ -164,7 +164,7 @@ bool RCAS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext,
     if (!InitializeViews(InResource, InMotionVectors, OutResource))
         return false;
 
-    InternalConstants constants{};
+    InternalConstants constants {};
 
     if (Config::Instance()->ContrastEnabled.value_or_default())
         constants.Contrast = Config::Instance()->Contrast.value_or_default() * -1.0f;
@@ -217,7 +217,7 @@ bool RCAS_Dx11::Dispatch(ID3D11Device* InDevice, ID3D11DeviceContext* InContext,
     // Unbind resources
     ID3D11UnorderedAccessView* nullUAV = nullptr;
     InContext->CSSetUnorderedAccessViews(0, 1, &nullUAV, nullptr);
-    ID3D11ShaderResourceView* nullSRV[2] = {nullptr, nullptr};
+    ID3D11ShaderResourceView* nullSRV[2] = { nullptr, nullptr };
     InContext->CSSetShaderResources(0, 2, nullSRV);
 
     return true;

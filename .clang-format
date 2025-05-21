@@ -11,3 +11,5 @@ SpaceBeforeParens: ControlStatements
 SortIncludes: false
 PointerAlignment: Left
 DerivePointerAlignment: false
+Cpp11BracedListStyle: false
+SpaceBeforeCpp11BracedList: true

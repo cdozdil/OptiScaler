@@ -235,7 +235,7 @@ class DLSSGMod
     {
         if (isDx12Available() && InHandle->Id >= DLSSG_MOD_ID_OFFSET)
         {
-            NVSDK_NGX_Handle TempHandle = {.Id = InHandle->Id - DLSSG_MOD_ID_OFFSET};
+            NVSDK_NGX_Handle TempHandle = { .Id = InHandle->Id - DLSSG_MOD_ID_OFFSET };
             return _DLSSG_D3D12_ReleaseFeature(&TempHandle);
         }
         return NVSDK_NGX_Result_Fail;
@@ -257,7 +257,7 @@ class DLSSGMod
     {
         if (isDx12Available() && InFeatureHandle->Id >= DLSSG_MOD_ID_OFFSET)
         {
-            NVSDK_NGX_Handle TempHandle = {.Id = InFeatureHandle->Id - DLSSG_MOD_ID_OFFSET};
+            NVSDK_NGX_Handle TempHandle = { .Id = InFeatureHandle->Id - DLSSG_MOD_ID_OFFSET };
             return _DLSSG_D3D12_EvaluateFeature(InCmdList, &TempHandle, InParameters, InCallback);
         }
         return NVSDK_NGX_Result_Fail;
@@ -362,7 +362,7 @@ class DLSSGMod
     {
         if (isVulkanAvailable() && InHandle->Id >= DLSSG_MOD_ID_OFFSET)
         {
-            NVSDK_NGX_Handle TempHandle = {.Id = InHandle->Id - DLSSG_MOD_ID_OFFSET};
+            NVSDK_NGX_Handle TempHandle = { .Id = InHandle->Id - DLSSG_MOD_ID_OFFSET };
             return _DLSSG_VULKAN_ReleaseFeature(&TempHandle);
         }
         return NVSDK_NGX_Result_Fail;
@@ -385,7 +385,7 @@ class DLSSGMod
     {
         if (isVulkanAvailable() && InFeatureHandle->Id >= DLSSG_MOD_ID_OFFSET)
         {
-            NVSDK_NGX_Handle TempHandle = {.Id = InFeatureHandle->Id - DLSSG_MOD_ID_OFFSET};
+            NVSDK_NGX_Handle TempHandle = { .Id = InFeatureHandle->Id - DLSSG_MOD_ID_OFFSET };
             return _DLSSG_VULKAN_EvaluateFeature(InCmdList, &TempHandle, InParameters, InCallback);
         }
         return NVSDK_NGX_Result_Fail;

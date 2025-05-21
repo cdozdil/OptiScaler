@@ -16,7 +16,7 @@ class FSR31Feature : public virtual IFeature
     double _lastFrameTime;
     unsigned int _lastWidth = 0;
     unsigned int _lastHeight = 0;
-    static inline feature_version _version{3, 1, 2};
+    static inline feature_version _version { 3, 1, 2 };
 
   protected:
     std::string _name = "FSR";

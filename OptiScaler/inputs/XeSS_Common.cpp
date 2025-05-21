@@ -133,7 +133,7 @@ xess_result_t hk_xessSetVelocityScale(xess_context_handle_t hContext, float x, f
 {
     LOG_DEBUG("hContext: {}, x: {}, y: {}", (size_t) hContext, x, y);
 
-    _motionScales[hContext] = {x, y};
+    _motionScales[hContext] = { x, y };
 
     return XESS_RESULT_SUCCESS;
 }

@@ -4,7 +4,7 @@
 
 void IFeature::SetHandle(unsigned int InHandleId)
 {
-    _handle = new NVSDK_NGX_Handle{InHandleId};
+    _handle = new NVSDK_NGX_Handle { InHandleId };
     LOG_INFO("Handle: {0}", _handle->Id);
 }
 

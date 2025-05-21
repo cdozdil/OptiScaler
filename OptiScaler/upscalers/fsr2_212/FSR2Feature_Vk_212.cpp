@@ -137,7 +137,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     if (!IsInited())
         return false;
 
-    Fsr212::FfxFsr2DispatchDescription params{};
+    Fsr212::FfxFsr2DispatchDescription params {};
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);

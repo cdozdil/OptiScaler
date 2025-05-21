@@ -128,7 +128,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
     if (dc != nullptr)
         dc->Release();
 
-    FfxFsr2DispatchDescription params{};
+    FfxFsr2DispatchDescription params {};
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
@@ -319,7 +319,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
             RCAS->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-            RcasConstants rcasConstants{};
+            RcasConstants rcasConstants {};
 
             rcasConstants.Sharpness = _sharpness;
             rcasConstants.DisplayWidth = TargetWidth();
@@ -369,7 +369,7 @@ bool FSR2FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_N
 
     // Execute dx12 commands to process fsr
     cmdList->Close();
-    ID3D12CommandList* ppCommandLists[] = {cmdList};
+    ID3D12CommandList* ppCommandLists[] = { cmdList };
     Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
     Dx12CommandQueue->Signal(dx12FenceTextureCopy, _fenceValue);
 

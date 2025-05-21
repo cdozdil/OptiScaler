@@ -191,7 +191,7 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
                                    Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
             RCAS->CanRender())
         {
-            RcasConstants rcasConstants{};
+            RcasConstants rcasConstants {};
 
             rcasConstants.Sharpness = _sharpness;
             rcasConstants.DisplayWidth = TargetWidth();

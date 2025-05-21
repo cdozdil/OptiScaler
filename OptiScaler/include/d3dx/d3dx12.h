@@ -170,8 +170,8 @@ struct CD3DX12_DEPTH_STENCIL_DESC : public D3D12_DEPTH_STENCIL_DESC
         StencilEnable = FALSE;
         StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
         StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-        const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp = {D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP,
-                                                             D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS};
+        const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP,
+                                                              D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
         FrontFace = defaultStencilOp;
         BackFace = defaultStencilOp;
     }
@@ -231,8 +231,8 @@ struct CD3DX12_DEPTH_STENCIL_DESC1 : public D3D12_DEPTH_STENCIL_DESC1
         StencilEnable = FALSE;
         StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
         StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-        const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp = {D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP,
-                                                             D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS};
+        const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP,
+                                                              D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
         FrontFace = defaultStencilOp;
         BackFace = defaultStencilOp;
         DepthBoundsTestEnable = FALSE;
@@ -1379,7 +1379,7 @@ inline void D3D12DecomposeSubresource(UINT Subresource, UINT MipLevels, UINT Arr
 //------------------------------------------------------------------------------------------------
 inline UINT8 D3D12GetFormatPlaneCount(_In_ ID3D12Device* pDevice, DXGI_FORMAT Format)
 {
-    D3D12_FEATURE_DATA_FORMAT_INFO formatInfo = {Format, 0};
+    D3D12_FEATURE_DATA_FORMAT_INFO formatInfo = { Format, 0 };
     if (FAILED(pDevice->CheckFeatureSupport(D3D12_FEATURE_FORMAT_INFO, &formatInfo, sizeof(formatInfo))))
     {
         return 0;
@@ -1554,8 +1554,8 @@ inline UINT64 UpdateSubresources(_In_ ID3D12GraphicsCommandList* pCmdList, _In_ 
     {
         if (pRowSizesInBytes[i] > SIZE_T(-1))
             return 0;
-        D3D12_MEMCPY_DEST DestData = {pData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch,
-                                      SIZE_T(pLayouts[i].Footprint.RowPitch) * SIZE_T(pNumRows[i])};
+        D3D12_MEMCPY_DEST DestData = { pData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch,
+                                       SIZE_T(pLayouts[i].Footprint.RowPitch) * SIZE_T(pNumRows[i]) };
         MemcpySubresource(&DestData, &pSrcData[i], static_cast<SIZE_T>(pRowSizesInBytes[i]), pNumRows[i],
                           pLayouts[i].Footprint.Depth);
     }
@@ -1813,7 +1813,7 @@ struct DefaultSampleMask
 };
 struct DefaultSampleDesc
 {
-    operator DXGI_SAMPLE_DESC() { return DXGI_SAMPLE_DESC{1, 0}; }
+    operator DXGI_SAMPLE_DESC() { return DXGI_SAMPLE_DESC { 1, 0 }; }
 };
 
 #pragma warning(push)

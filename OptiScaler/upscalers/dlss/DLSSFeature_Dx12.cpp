@@ -99,7 +99,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         return false;
     }
 
-    bool rcasEnabled = isVersionOrBetter(Version(), {2, 5, 1});
+    bool rcasEnabled = isVersionOrBetter(Version(), { 2, 5, 1 });
 
     if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
         (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))
@@ -186,7 +186,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
 
             RCAS->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-            RcasConstants rcasConstants{};
+            RcasConstants rcasConstants {};
 
             rcasConstants.Sharpness = _sharpness;
             rcasConstants.DisplayWidth = TargetWidth();

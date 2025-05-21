@@ -598,8 +598,8 @@ static void ImGui_ImplUwp_UpdateMouseData()
 
                 if (hr == S_OK)
                 {
-                    ABI::Windows::Foundation::Point pos = {(int) io.MousePos.x / io.DisplayFramebufferScale.x,
-                                                           (int) io.MousePos.y / io.DisplayFramebufferScale.y};
+                    ABI::Windows::Foundation::Point pos = { (int) io.MousePos.x / io.DisplayFramebufferScale.x,
+                                                            (int) io.MousePos.y / io.DisplayFramebufferScale.y };
                     coreWindow2->put_PointerPosition(pos);
                 }
             }

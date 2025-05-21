@@ -115,7 +115,7 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory);
 static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory);
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory);
 
-static IID streamlineRiid{};
+static IID streamlineRiid {};
 static bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject)
 {
 #ifdef CHECK_FOR_SL_PROXY_OBJECTS
@@ -527,7 +527,7 @@ static void CheckAdapter(IUnknown* unkAdapter)
         return;
 
     // DXVK VkInterface GUID
-    const GUID guid = {0x907bf281, 0xea3c, 0x43b4, {0xa8, 0xe4, 0x9f, 0x23, 0x11, 0x07, 0xb4, 0xff}};
+    const GUID guid = { 0x907bf281, 0xea3c, 0x43b4, { 0xa8, 0xe4, 0x9f, 0x23, 0x11, 0x07, 0xb4, 0xff } };
 
     IDXGIAdapter* adapter = nullptr;
     bool adapterOk = unkAdapter->QueryInterface(IID_PPV_ARGS(&adapter)) == S_OK;
@@ -1961,7 +1961,7 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
     if (pDesc == nullptr || device == nullptr)
         return;
 
-    D3D12_SAMPLER_DESC newDesc{};
+    D3D12_SAMPLER_DESC newDesc {};
 
     newDesc.AddressU = pDesc->AddressU;
     newDesc.AddressV = pDesc->AddressV;
@@ -2029,7 +2029,7 @@ static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC
 
     LOG_FUNC();
 
-    D3D11_SAMPLER_DESC newDesc{};
+    D3D11_SAMPLER_DESC newDesc {};
 
     newDesc.AddressU = pSamplerDesc->AddressU;
     newDesc.AddressV = pSamplerDesc->AddressV;
@@ -2163,7 +2163,7 @@ DXGI_FORMAT HooksDx::CurrentSwapchainFormat()
     if (State::Instance().currentSwapchain == nullptr)
         return DXGI_FORMAT_UNKNOWN;
 
-    DXGI_SWAP_CHAIN_DESC scDesc{};
+    DXGI_SWAP_CHAIN_DESC scDesc {};
     if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
         return DXGI_FORMAT_UNKNOWN;
 

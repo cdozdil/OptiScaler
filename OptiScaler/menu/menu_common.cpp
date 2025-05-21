@@ -503,7 +503,7 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     bool rawRead = false;
     ImGuiKey imguiKey;
-    RAWINPUT rawData{};
+    RAWINPUT rawData {};
     UINT rawDataSize = sizeof(rawData);
 
     if (msg == WM_INPUT && GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, &rawData, &rawDataSize,
@@ -873,37 +873,37 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
 
 template <HasDefaultValue B> void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value)
 {
-    const char* states[] = {"AUTO",
-                            "COMMON",
-                            "VERTEX_AND_CONSTANT_BUFFER",
-                            "INDEX_BUFFER",
-                            "RENDER_TARGET",
-                            "UNORDERED_ACCESS",
-                            "DEPTH_WRITE",
-                            "DEPTH_READ",
-                            "NON_PIXEL_SHADER_RESOURCE",
-                            "PIXEL_SHADER_RESOURCE",
-                            "STREAM_OUT",
-                            "INDIRECT_ARGUMENT",
-                            "COPY_DEST",
-                            "COPY_SOURCE",
-                            "RESOLVE_DEST",
-                            "RESOLVE_SOURCE",
-                            "RAYTRACING_ACCELERATION_STRUCTURE",
-                            "SHADING_RATE_SOURCE",
-                            "GENERIC_READ",
-                            "ALL_SHADER_RESOURCE",
-                            "PRESENT",
-                            "PREDICATION",
-                            "VIDEO_DECODE_READ",
-                            "VIDEO_DECODE_WRITE",
-                            "VIDEO_PROCESS_READ",
-                            "VIDEO_PROCESS_WRITE",
-                            "VIDEO_ENCODE_READ",
-                            "VIDEO_ENCODE_WRITE"};
-    const int values[] = {-1,  0,   1,     2,      4,      8,      16,      32,       64,   128,
-                          256, 512, 1024,  2048,   4096,   8192,   4194304, 16777216, 2755, 192,
-                          0,   310, 65536, 131072, 262144, 524288, 2097152, 8388608};
+    const char* states[] = { "AUTO",
+                             "COMMON",
+                             "VERTEX_AND_CONSTANT_BUFFER",
+                             "INDEX_BUFFER",
+                             "RENDER_TARGET",
+                             "UNORDERED_ACCESS",
+                             "DEPTH_WRITE",
+                             "DEPTH_READ",
+                             "NON_PIXEL_SHADER_RESOURCE",
+                             "PIXEL_SHADER_RESOURCE",
+                             "STREAM_OUT",
+                             "INDIRECT_ARGUMENT",
+                             "COPY_DEST",
+                             "COPY_SOURCE",
+                             "RESOLVE_DEST",
+                             "RESOLVE_SOURCE",
+                             "RAYTRACING_ACCELERATION_STRUCTURE",
+                             "SHADING_RATE_SOURCE",
+                             "GENERIC_READ",
+                             "ALL_SHADER_RESOURCE",
+                             "PRESENT",
+                             "PREDICATION",
+                             "VIDEO_DECODE_READ",
+                             "VIDEO_DECODE_WRITE",
+                             "VIDEO_PROCESS_READ",
+                             "VIDEO_PROCESS_WRITE",
+                             "VIDEO_ENCODE_READ",
+                             "VIDEO_ENCODE_WRITE" };
+    const int values[] = { -1,  0,   1,     2,      4,      8,      16,      32,       64,   128,
+                           256, 512, 1024,  2048,   4096,   8192,   4194304, 16777216, 2755, 192,
+                           0,   310, 65536, 131072, 262144, 524288, 2097152, 8388608 };
 
     int selected = value->value_or(-1);
 
@@ -935,9 +935,9 @@ template <HasDefaultValue B> void MenuCommon::AddResourceBarrier(std::string nam
 
 template <HasDefaultValue B> void MenuCommon::AddDLSSRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
-    const char* presets[] = {"DEFAULT",  "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E",
-                             "PRESET F", "PRESET G", "PRESET H", "PRESET I", "PRESET J", "PRESET K",
-                             "PRESET L", "PRESET M", "PRESET N", "PRESET O", "Latest"};
+    const char* presets[] = { "DEFAULT",  "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E",
+                              "PRESET F", "PRESET G", "PRESET H", "PRESET I", "PRESET J", "PRESET K",
+                              "PRESET L", "PRESET M", "PRESET N", "PRESET O", "Latest" };
     const std::string presetsDesc[] = {
         "Whatever the game uses",
         "Intended for Performance/Balanced/Quality modes.\nAn older variant best suited to combat ghosting for "
@@ -959,7 +959,8 @@ template <HasDefaultValue B> void MenuCommon::AddDLSSRenderPreset(std::string na
         "Unused",
         "Unused",
 
-        "Latest supported by the dll"};
+        "Latest supported by the dll"
+    };
 
     if (value->value_or_default() == 0x00FFFFFF)
         *value = 16;
@@ -973,28 +974,28 @@ template <HasDefaultValue B> void MenuCommon::AddDLSSRenderPreset(std::string na
 
 template <HasDefaultValue B> void MenuCommon::AddDLSSDRenderPreset(std::string name, CustomOptional<uint32_t, B>* value)
 {
-    const char* presets[] = {"DEFAULT",  "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E",
-                             "PRESET F", "PRESET G", "PRESET H", "PRESET I", "PRESET J", "PRESET K",
-                             "PRESET L", "PRESET M", "PRESET N", "PRESET O", "Latest"};
-    const std::string presetsDesc[] = {"Whatever the game uses",
-                                       "CNN 1",
-                                       "CNN 2",
-                                       "CNN 3",
-                                       "Transformers",
-                                       "Transformers 2",
-                                       "Unused",
-                                       "Unused",
+    const char* presets[] = { "DEFAULT",  "PRESET A", "PRESET B", "PRESET C", "PRESET D", "PRESET E",
+                              "PRESET F", "PRESET G", "PRESET H", "PRESET I", "PRESET J", "PRESET K",
+                              "PRESET L", "PRESET M", "PRESET N", "PRESET O", "Latest" };
+    const std::string presetsDesc[] = { "Whatever the game uses",
+                                        "CNN 1",
+                                        "CNN 2",
+                                        "CNN 3",
+                                        "Transformers",
+                                        "Transformers 2",
+                                        "Unused",
+                                        "Unused",
 
-                                       "Unused",
-                                       "Unused",
-                                       "Unused",
-                                       "Unused",
-                                       "Unused",
-                                       "Unused",
-                                       "Unused",
-                                       "Unused",
+                                        "Unused",
+                                        "Unused",
+                                        "Unused",
+                                        "Unused",
+                                        "Unused",
+                                        "Unused",
+                                        "Unused",
+                                        "Unused",
 
-                                       "Latest supported by the dll"};
+                                        "Latest supported by the dll" };
 
     if (value->value_or_default() == 0x00FFFFFF)
         *value = 16;
@@ -1252,7 +1253,7 @@ bool MenuCommon::RenderMenu()
         }
         else if (!newFrame)
         {
-            ImVec2 displaySize{State::Instance().screenWidth, State::Instance().screenHeight};
+            ImVec2 displaySize { State::Instance().screenWidth, State::Instance().screenHeight };
             ImGui_ImplUwp_NewFrame(displaySize);
         }
 
@@ -1290,7 +1291,7 @@ bool MenuCommon::RenderMenu()
         else
             ImGui::PushStyleColor(ImGuiCol_PlotLines, green);
 
-        auto size = ImVec2{0.0f, 0.0f};
+        auto size = ImVec2 { 0.0f, 0.0f };
         ImGui::SetNextWindowSize(size);
 
         if (ImGui::Begin("Performance Overlay", nullptr,
@@ -1386,9 +1387,9 @@ bool MenuCommon::RenderMenu()
             ImVec2 plotSize;
 
             if (Config::Instance()->FpsOverlayHorizontal.value_or_default())
-                plotSize = {Config::Instance()->MenuScale.value() * 150, Config::Instance()->MenuScale.value() * 16};
+                plotSize = { Config::Instance()->MenuScale.value() * 150, Config::Instance()->MenuScale.value() * 16 };
             else
-                plotSize = {Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30};
+                plotSize = { Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30 };
 
             if (Config::Instance()->FpsOverlayType.value_or_default() > 1)
             {
@@ -1481,7 +1482,7 @@ bool MenuCommon::RenderMenu()
             }
             else if (!newFrame)
             {
-                ImVec2 displaySize{State::Instance().screenWidth, State::Instance().screenHeight};
+                ImVec2 displaySize { State::Instance().screenWidth, State::Instance().screenHeight };
                 ImGui_ImplUwp_NewFrame(displaySize);
             }
 
@@ -1521,7 +1522,7 @@ bool MenuCommon::RenderMenu()
             CopyMemory(style.Colors, styleold.Colors, sizeof(style.Colors)); // Restore colors
         }
 
-        auto size = ImVec2{0.0f, 0.0f};
+        auto size = ImVec2 { 0.0f, 0.0f };
         ImGui::SetNextWindowSize(size);
 
         // Main menu window
@@ -1674,9 +1675,9 @@ bool MenuCommon::RenderMenu()
                     }
                 }
 
-                const char* fgOptions[] = {"No Frame Generation", "OptiFG", "FSR-FG via Nukem's DLSSG"};
-                std::vector<std::string> fgDesc = {"", "", "Select DLSS FG in-game"};
-                std::vector<uint8_t> disabledMask = {false, false, false};
+                const char* fgOptions[] = { "No Frame Generation", "OptiFG", "FSR-FG via Nukem's DLSSG" };
+                std::vector<std::string> fgDesc = { "", "", "Select DLSS FG in-game" };
+                std::vector<uint8_t> disabledMask = { false, false, false };
 
                 // OptiFG requirements
                 if (!Config::Instance()->OverlayMenu.value_or_default())
@@ -1890,7 +1891,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Advanced OptiFG Settings"))
                         {
-                            ScopedIndent indent{};
+                            ScopedIndent indent {};
                             ImGui::Spacing();
                             ImGui::Checkbox("FG Only Generated", &State::Instance().FGonlyGenerated);
                             ShowHelpMarker("Display only FSR 3.1 generated frames");
@@ -2056,7 +2057,7 @@ bool MenuCommon::RenderMenu()
                             if (State::Instance().currentFG != nullptr)
                                 fsrFG = reinterpret_cast<FSRFG_Dx12*>(State::Instance().currentFG);
 
-                            if (fsrFG != nullptr && isVersionOrBetter(FfxApiProxy::VersionDx12(), {3, 1, 3}))
+                            if (fsrFG != nullptr && isVersionOrBetter(FfxApiProxy::VersionDx12(), { 3, 1, 3 }))
                             {
                                 ImGui::Spacing();
                                 if (ImGui::TreeNode("Frame Pacing Tuning"))
@@ -2126,7 +2127,7 @@ bool MenuCommon::RenderMenu()
                     }
                     else if (!FfxApiProxy::InitFfxDx12())
                     {
-                        ImGui::TextColored({1.0f, 0.0f, 0.0f, 1.0f},
+                        ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 1.0f },
                                            "amd_fidelityfx_dx12.dll is missing!"); // Probably never will be visible
                     }
                 }
@@ -2276,9 +2277,9 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("XeSS Settings"))
                         {
-                            ScopedIndent indent{};
+                            ScopedIndent indent {};
                             ImGui::Spacing();
-                            const char* models[] = {"KPSS", "SPLAT", "MODEL_3", "MODEL_4", "MODEL_5", "MODEL_6"};
+                            const char* models[] = { "KPSS", "SPLAT", "MODEL_3", "MODEL_4", "MODEL_5", "MODEL_6" };
                             auto configModes = Config::Instance()->NetworkModel.value_or_default();
 
                             if (configModes < 0 || configModes > 5)
@@ -2427,7 +2428,7 @@ bool MenuCommon::RenderMenu()
                             }
 
                             ImGui::Spacing();
-                            if (isVersionOrBetter(currentFeature->Version(), {3, 1, 1}) &&
+                            if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 1 }) &&
                                 ImGui::CollapsingHeader("Upscaler Settings"))
                             {
                                 ImGui::PushItemWidth(280.0f * Config::Instance()->MenuScale.value_or_default());
@@ -2441,7 +2442,7 @@ bool MenuCommon::RenderMenu()
                                                "Lower values are more stable with ghosting\n"
                                                "Higher values are more pixelly but less ghosting.");
 
-                                if (isVersionOrBetter(currentFeature->Version(), {3, 1, 4}))
+                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
                                 {
                                     float reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
                                     if (ImGui::SliderFloat("Reactive Scale", &reactiveScale, 0.0f, 100.0f, "%.1f",
@@ -2452,7 +2453,7 @@ bool MenuCommon::RenderMenu()
                                                    "writing a larger value to reactive mask, reduces ghosting.");
                                 }
 
-                                if (isVersionOrBetter(currentFeature->Version(), {3, 1, 4}))
+                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
                                 {
                                     float shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
                                     if (ImGui::SliderFloat("Shading Scale", &shadingScale, 0.0f, 100.0f, "%.1f",
@@ -2463,7 +2464,7 @@ bool MenuCommon::RenderMenu()
                                                    "change value at read to have higher reactiveness.");
                                 }
 
-                                if (isVersionOrBetter(currentFeature->Version(), {3, 1, 4}))
+                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
                                 {
                                     float accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
                                     if (ImGui::SliderFloat("Acc. Added Per Frame", &accAddPerFrame, 0.00f, 1.0f, "%.2f",
@@ -2479,7 +2480,7 @@ bool MenuCommon::RenderMenu()
                                         "Decreasing this could result in more thin feature pixels flickering.");
                                 }
 
-                                if (isVersionOrBetter(currentFeature->Version(), {3, 1, 4}))
+                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
                                 {
                                     float minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
                                     if (ImGui::SliderFloat("Min. Disocclusion Acc.", &minDisOccAcc, -1.0f, 1.0f, "%.2f",
@@ -2657,7 +2658,7 @@ bool MenuCommon::RenderMenu()
 
                         if (ImGui::CollapsingHeader(usesDlssd ? "Advanced DLSSD Settings" : "Advanced DLSS Settings"))
                         {
-                            ScopedIndent indent{};
+                            ScopedIndent indent {};
                             ImGui::Spacing();
                             bool appIdOverride = Config::Instance()->UseGenericAppIdWithDlss.value_or_default();
                             if (ImGui::Checkbox("Use Generic App Id with DLSS", &appIdOverride))
@@ -2705,7 +2706,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::SeparatorText("RCAS Settings");
 
                         // xess or dlss version >= 2.5.1
-                        constexpr feature_version requiredDlssVersion = {2, 5, 1};
+                        constexpr feature_version requiredDlssVersion = { 2, 5, 1 };
                         rcasEnabled =
                             (currentBackend == "xess" ||
                              (currentBackend == "dlss" &&
@@ -2746,7 +2747,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Motion Adaptive Sharpness##2"))
                         {
-                            ScopedIndent indent{};
+                            ScopedIndent indent {};
                             ImGui::Spacing();
                             if (bool overrideMotionSharpness =
                                     Config::Instance()->MotionSharpnessEnabled.value_or_default();
@@ -2826,7 +2827,7 @@ bool MenuCommon::RenderMenu()
 
                         if (ImGui::CollapsingHeader("Advanced Enabler Settings"))
                         {
-                            ScopedIndent indent{};
+                            ScopedIndent indent {};
                             ImGui::Spacing();
                             std::string selected;
 
@@ -2984,8 +2985,8 @@ bool MenuCommon::RenderMenu()
 
                             ImGui::BeginDisabled(_ssUseFsr || _ssRatio < 1.0f);
                             {
-                                const char* ds_modes[] = {"Bicubic", "Lanczos", "Catmull-Rom", "MAGC"};
-                                const std::string ds_modesDesc[] = {"", "", "", ""};
+                                const char* ds_modes[] = { "Bicubic", "Lanczos", "Catmull-Rom", "MAGC" };
+                                const std::string ds_modesDesc[] = { "", "", "", "" };
 
                                 ImGui::PushItemWidth(75.0f * Config::Instance()->MenuScale.value());
                                 PopulateCombo("Downscaler", &Config::Instance()->OutputScalingDownscaler, ds_modes,
@@ -3191,7 +3192,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Advanced Init Flags"))
                         {
-                            ScopedIndent indent{};
+                            ScopedIndent indent {};
                             ImGui::Spacing();
                             if (ImGui::BeginTable("init2", 2, ImGuiTableFlags_SizingStretchSame))
                             {
@@ -3241,7 +3242,7 @@ bool MenuCommon::RenderMenu()
                                 bool rm = Config::Instance()->DisableReactiveMask.value_or(
                                     !accessToReactiveMask || currentBackend == "dlss" ||
                                     (currentBackend == "xess" &&
-                                     !isVersionOrBetter(currentFeature->Version(), {2, 0, 1})));
+                                     !isVersionOrBetter(currentFeature->Version(), { 2, 0, 1 })));
                                 if (ImGui::Checkbox("Disable Reactive Mask", &rm))
                                 {
                                     Config::Instance()->DisableReactiveMask = rm;
@@ -3321,18 +3322,19 @@ bool MenuCommon::RenderMenu()
                         Config::Instance()->FN_ForceLatencyFlex = forceLFX;
                     ShowHelpMarker("When possible AntiLag 2 is used, this setting let's you force LatencyFlex instead");
 
-                    const char* lfx_modes[] = {"Conservative", "Aggressive", "Reflex ID"};
+                    const char* lfx_modes[] = { "Conservative", "Aggressive", "Reflex ID" };
                     const std::string lfx_modesDesc[] = {
                         "The safest but might not reduce latency well",
                         "Improves latency but in some cases will lower fps more than expected",
                         "Best when can be used, some games are not compatible (i.e. cyberpunk) and will fallback to "
-                        "aggressive"};
+                        "aggressive"
+                    };
 
                     PopulateCombo("LatencyFlex mode", &Config::Instance()->FN_LatencyFlexMode, lfx_modes, lfx_modesDesc,
                                   3);
 
-                    const char* rfx_modes[] = {"Follow in-game", "Force Disable", "Force Enable"};
-                    const std::string rfx_modesDesc[] = {"", "", ""};
+                    const char* rfx_modes[] = { "Follow in-game", "Force Disable", "Force Enable" };
+                    const std::string rfx_modesDesc[] = { "", "", "" };
 
                     PopulateCombo("Force Reflex", &Config::Instance()->FN_ForceReflex, rfx_modes, rfx_modesDesc, 3);
 
@@ -3345,7 +3347,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("Advanced Settings"))
                 {
-                    ScopedIndent indent{};
+                    ScopedIndent indent {};
                     ImGui::Spacing();
                     if (currentFeature != nullptr)
                     {
@@ -3372,7 +3374,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("Logging"))
                 {
-                    ScopedIndent indent{};
+                    ScopedIndent indent {};
                     ImGui::Spacing();
                     if (Config::Instance()->LogToConsole.value_or_default() ||
                         Config::Instance()->LogToFile.value_or_default() ||
@@ -3397,7 +3399,7 @@ bool MenuCommon::RenderMenu()
                         PrepareLogger();
                     }
 
-                    const char* logLevels[] = {"Trace", "Debug", "Information", "Warning", "Error"};
+                    const char* logLevels[] = { "Trace", "Debug", "Information", "Warning", "Error" };
                     const char* selectedLevel = logLevels[Config::Instance()->LogLevel.value_or_default()];
 
                     if (ImGui::BeginCombo("Log Level", selectedLevel))
@@ -3420,7 +3422,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("FPS Overlay"))
                 {
-                    ScopedIndent indent{};
+                    ScopedIndent indent {};
                     ImGui::Spacing();
                     bool fpsEnabled = Config::Instance()->ShowFps.value_or_default();
                     if (ImGui::Checkbox("FPS Overlay Enabled", &fpsEnabled))
@@ -3432,7 +3434,7 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::Checkbox("Horizontal", &fpsHorizontal))
                         Config::Instance()->FpsOverlayHorizontal = fpsHorizontal;
 
-                    const char* fpsPosition[] = {"Top Left", "Top Right", "Bottom Left", "Bottom Right"};
+                    const char* fpsPosition[] = { "Top Left", "Top Right", "Bottom Left", "Bottom Right" };
                     const char* selectedPosition = fpsPosition[Config::Instance()->FpsOverlayPos.value_or_default()];
 
                     if (ImGui::BeginCombo("Overlay Position", selectedPosition))
@@ -3447,7 +3449,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::EndCombo();
                     }
 
-                    const char* fpsType[] = {"Simple", "Detailed", "Detailed + Graph", "Full", "Full + Graph"};
+                    const char* fpsType[] = { "Simple", "Detailed", "Detailed + Graph", "Full", "Full + Graph" };
                     const char* selectedType = fpsType[Config::Instance()->FpsOverlayType.value_or_default()];
 
                     if (ImGui::BeginCombo("Overlay Type", selectedType))
@@ -3473,7 +3475,7 @@ bool MenuCommon::RenderMenu()
                 if (ImGui::CollapsingHeader("Upscaler Inputs",
                                             currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
                 {
-                    ScopedIndent indent{};
+                    ScopedIndent indent {};
                     ImGui::Spacing();
                     bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
                     bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
@@ -3507,7 +3509,7 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::CollapsingHeader("Mipmap Bias",
                                                 currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
                     {
-                        ScopedIndent indent{};
+                        ScopedIndent indent {};
                         ImGui::Spacing();
                         if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
                             _mipBias = Config::Instance()->MipmapBiasOverride.value();
@@ -3631,7 +3633,7 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::CollapsingHeader("Anisotropic Filtering",
                                                 currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
                     {
-                        ScopedIndent indent{};
+                        ScopedIndent indent {};
                         ImGui::Spacing();
                         ImGui::PushItemWidth(65.0f * Config::Instance()->MenuScale.value());
 
@@ -3675,7 +3677,7 @@ bool MenuCommon::RenderMenu()
                             ImGui::Spacing();
                             if (ImGui::CollapsingHeader("Resource Barriers"))
                             {
-                                ScopedIndent indent{};
+                                ScopedIndent indent {};
                                 ImGui::Spacing();
                                 AddResourceBarrier("Color", &Config::Instance()->ColorResourceBarrier);
                                 AddResourceBarrier("Depth", &Config::Instance()->DepthResourceBarrier);
@@ -3691,7 +3693,7 @@ bool MenuCommon::RenderMenu()
                                 ImGui::Spacing();
                                 if (ImGui::CollapsingHeader("Root Signatures"))
                                 {
-                                    ScopedIndent indent{};
+                                    ScopedIndent indent {};
                                     ImGui::Spacing();
                                     if (bool crs = Config::Instance()->RestoreComputeSignature.value_or_default();
                                         ImGui::Checkbox("Restore Compute Root Signature", &crs))
@@ -3759,8 +3761,8 @@ bool MenuCommon::RenderMenu()
 
                 ImGui::PushItemWidth(55.0f * Config::Instance()->MenuScale.value());
 
-                const char* uiScales[] = {"0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2",
-                                          "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0"};
+                const char* uiScales[] = { "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2",
+                                           "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
                 const char* selectedScaleName = uiScales[_selectedScale];
 
                 if (ImGui::BeginCombo("UI Scale", selectedScaleName))
@@ -3849,7 +3851,7 @@ bool MenuCommon::RenderMenu()
                         posY = 50;
                     }
 
-                    ImGui::SetWindowPos(ImVec2{posX, posY});
+                    ImGui::SetWindowPos(ImVec2 { posX, posY });
                 }
 
                 ImGui::End();
@@ -3861,8 +3863,8 @@ bool MenuCommon::RenderMenu()
                 auto posX = (State::Instance().currentFeature->DisplayWidth() - 450.0f) / 2.0f;
                 auto posY = (State::Instance().currentFeature->DisplayHeight() - 200.0f) / 2.0f;
 
-                ImGui::SetNextWindowPos(ImVec2{posX, posY}, ImGuiCond_FirstUseEver);
-                ImGui::SetNextWindowSize(ImVec2{450.0f, 200.0f}, ImGuiCond_FirstUseEver);
+                ImGui::SetNextWindowPos(ImVec2 { posX, posY }, ImGuiCond_FirstUseEver);
+                ImGui::SetNextWindowSize(ImVec2 { 450.0f, 200.0f }, ImGuiCond_FirstUseEver);
 
                 if (_displayWidth == 0)
                 {
@@ -3898,9 +3900,9 @@ bool MenuCommon::RenderMenu()
                         _mipBiasCalculated = log2((float) _renderWidth / (float) _displayWidth);
                     }
 
-                    const char* q[] = {"Ultra Performance", "Performance",   "Balanced",
-                                       "Quality",           "Ultra Quality", "DLAA"};
-                    float fr[] = {3.0f, 2.0f, 1.7f, 1.5f, 1.3f, 1.0f};
+                    const char* q[] = { "Ultra Performance", "Performance",   "Balanced",
+                                        "Quality",           "Ultra Quality", "DLAA" };
+                    float fr[] = { 3.0f, 2.0f, 1.7f, 1.5f, 1.3f, 1.0f };
                     auto configQ = _mipmapUpscalerQuality;
 
                     const char* selectedQ = q[configQ];

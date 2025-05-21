@@ -686,7 +686,7 @@ extern "C"
         wchar_t name[64];
     } FfxViewDescription;
 
-    static FfxViewDescription s_FfxViewDescInit = {false, FFX_RESOURCE_VIEW_DIMENSION_TEXTURE_2D, -1, -1, -1, L""};
+    static FfxViewDescription s_FfxViewDescInit = { false, FFX_RESOURCE_VIEW_DIMENSION_TEXTURE_2D, -1, -1, -1, L"" };
 
     /// A structure defining a resource bind point
     ///
@@ -912,36 +912,36 @@ extern "C"
     ///
     /// @ingroup SDKTypes
 #define POPULATE_SHADER_BLOB_FFX(info, index)                                                                          \
-    {info[index].blobData,                                                                                             \
-     info[index].blobSize,                                                                                             \
-     info[index].numConstantBuffers,                                                                                   \
-     info[index].numSRVTextures,                                                                                       \
-     info[index].numUAVTextures,                                                                                       \
-     info[index].numSRVBuffers,                                                                                        \
-     info[index].numUAVBuffers,                                                                                        \
-     info[index].numSamplers,                                                                                          \
-     info[index].numRTAccelerationStructures,                                                                          \
-     info[index].constantBufferNames,                                                                                  \
-     info[index].constantBufferBindings,                                                                               \
-     info[index].constantBufferCounts,                                                                                 \
-     info[index].srvTextureNames,                                                                                      \
-     info[index].srvTextureBindings,                                                                                   \
-     info[index].srvTextureCounts,                                                                                     \
-     info[index].uavTextureNames,                                                                                      \
-     info[index].uavTextureBindings,                                                                                   \
-     info[index].uavTextureCounts,                                                                                     \
-     info[index].srvBufferNames,                                                                                       \
-     info[index].srvBufferBindings,                                                                                    \
-     info[index].srvBufferCounts,                                                                                      \
-     info[index].uavBufferNames,                                                                                       \
-     info[index].uavBufferBindings,                                                                                    \
-     info[index].uavBufferCounts,                                                                                      \
-     info[index].samplerNames,                                                                                         \
-     info[index].samplerBindings,                                                                                      \
-     info[index].samplerCounts,                                                                                        \
-     info[index].rtAccelerationStructureNames,                                                                         \
-     info[index].rtAccelerationStructureBindings,                                                                      \
-     info[index].rtAccelerationStructureCounts}
+    { info[index].blobData,                                                                                            \
+      info[index].blobSize,                                                                                            \
+      info[index].numConstantBuffers,                                                                                  \
+      info[index].numSRVTextures,                                                                                      \
+      info[index].numUAVTextures,                                                                                      \
+      info[index].numSRVBuffers,                                                                                       \
+      info[index].numUAVBuffers,                                                                                       \
+      info[index].numSamplers,                                                                                         \
+      info[index].numRTAccelerationStructures,                                                                         \
+      info[index].constantBufferNames,                                                                                 \
+      info[index].constantBufferBindings,                                                                              \
+      info[index].constantBufferCounts,                                                                                \
+      info[index].srvTextureNames,                                                                                     \
+      info[index].srvTextureBindings,                                                                                  \
+      info[index].srvTextureCounts,                                                                                    \
+      info[index].uavTextureNames,                                                                                     \
+      info[index].uavTextureBindings,                                                                                  \
+      info[index].uavTextureCounts,                                                                                    \
+      info[index].srvBufferNames,                                                                                      \
+      info[index].srvBufferBindings,                                                                                   \
+      info[index].srvBufferCounts,                                                                                     \
+      info[index].uavBufferNames,                                                                                      \
+      info[index].uavBufferBindings,                                                                                   \
+      info[index].uavBufferCounts,                                                                                     \
+      info[index].samplerNames,                                                                                        \
+      info[index].samplerBindings,                                                                                     \
+      info[index].samplerCounts,                                                                                       \
+      info[index].rtAccelerationStructureNames,                                                                        \
+      info[index].rtAccelerationStructureBindings,                                                                     \
+      info[index].rtAccelerationStructureCounts }
 
     // A single shader blob and a description of its resources.
     ///

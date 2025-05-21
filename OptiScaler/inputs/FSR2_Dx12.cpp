@@ -117,7 +117,7 @@ static bool _nvnxgInited = false;
 static bool _skipCreate = false;
 static bool _skipDispatch = false;
 static bool _skipDestroy = false;
-static float qualityRatios[] = {1.0, 1.5, 1.7, 2.0, 3.0};
+static float qualityRatios[] = { 1.0, 1.5, 1.7, 2.0, 3.0 };
 
 static bool CreateDLSSContext(Fsr212::FfxFsr2Context* handle, const Fsr212::FfxFsr2DispatchDescription* pExecParams)
 {
@@ -401,7 +401,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
 
     if (!State::Instance().NvngxDx12Inited)
     {
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
 
         auto dllPath = Util::DllPath().remove_filename();
         auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
@@ -451,7 +451,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Dx12(Fsr212::FfxFsr2Context* co
 
     _nvParams[context] = params;
 
-    Fsr212::FfxFsr2ContextDescription ccd{};
+    Fsr212::FfxFsr2ContextDescription ccd {};
     ccd.flags = contextDescription->flags;
     ccd.maxRenderSize = contextDescription->maxRenderSize;
     ccd.displaySize = contextDescription->displaySize;
@@ -510,7 +510,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
 
     if (!State::Instance().NvngxDx12Inited)
     {
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
 
         auto dllPath = Util::DllPath().remove_filename();
         auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
@@ -560,7 +560,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextCreate_Pattern_Dx12(Fsr212::FfxFsr2Con
 
     _nvParams[context] = params;
 
-    Fsr212::FfxFsr2ContextDescription ccd{};
+    Fsr212::FfxFsr2ContextDescription ccd {};
     ccd.flags = contextDescription->flags;
     ccd.maxRenderSize = contextDescription->maxRenderSize;
     ccd.displaySize = contextDescription->displaySize;

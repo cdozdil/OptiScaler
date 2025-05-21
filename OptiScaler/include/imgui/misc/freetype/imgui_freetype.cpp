@@ -849,8 +849,8 @@ static bool ImFontAtlasBuildWithFreeType(ImFontAtlas* atlas)
     // Install svg hooks for FreeType
     // https://freetype.org/freetype2/docs/reference/ft2-properties.html#svg-hooks
     // https://freetype.org/freetype2/docs/reference/ft2-svg_fonts.html#svg_fonts
-    SVG_RendererHooks hooks = {ImGuiLunasvgPortInit, ImGuiLunasvgPortFree, ImGuiLunasvgPortRender,
-                               ImGuiLunasvgPortPresetSlot};
+    SVG_RendererHooks hooks = { ImGuiLunasvgPortInit, ImGuiLunasvgPortFree, ImGuiLunasvgPortRender,
+                                ImGuiLunasvgPortPresetSlot };
     FT_Property_Set(ft_library, "ot-svg", "svg-hooks", &hooks);
 #endif // IMGUI_ENABLE_FREETYPE_LUNASVG
 

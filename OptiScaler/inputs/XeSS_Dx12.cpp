@@ -96,7 +96,7 @@ xess_result_t hk_xessD3D12CreateContext(ID3D12Device* pDevice, xess_context_hand
 
     if (!State::Instance().NvngxDx12Inited)
     {
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
 
         auto dllPath = Util::DllPath().remove_filename();
         auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
@@ -146,7 +146,7 @@ xess_result_t hk_xessD3D12CreateContext(ID3D12Device* pDevice, xess_context_hand
         return XESS_RESULT_ERROR_INVALID_ARGUMENT;
 
     _nvParams[*phContext] = params;
-    _motionScales[*phContext] = {1.0, 1.0};
+    _motionScales[*phContext] = { 1.0, 1.0 };
 
     return XESS_RESULT_SUCCESS;
 }
@@ -162,7 +162,7 @@ xess_result_t hk_xessD3D12Init(xess_context_handle_t hContext, const xess_d3d12_
 {
     LOG_DEBUG("");
 
-    xess_d3d12_init_params_t ip{};
+    xess_d3d12_init_params_t ip {};
     ip.bufferHeapOffset = pInitParams->bufferHeapOffset;
     ip.creationNodeMask = pInitParams->creationNodeMask;
     ip.initFlags = pInitParams->initFlags;
@@ -235,8 +235,8 @@ xess_result_t hk_xessD3D12Execute(xess_context_handle_t hContext, ID3D12Graphics
     params->Set(NVSDK_NGX_Parameter_Depth, pExecParams->pDepthTexture);
     params->Set(NVSDK_NGX_Parameter_ExposureTexture, pExecParams->pExposureScaleTexture);
 
-    if (!isVersionOrBetter({XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch},
-                           {2, 0, 1}))
+    if (!isVersionOrBetter({ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch },
+                           { 2, 0, 1 }))
         params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, pExecParams->pResponsivePixelMaskTexture);
     else
         params->Set("FSR.reactive", pExecParams->pResponsivePixelMaskTexture);

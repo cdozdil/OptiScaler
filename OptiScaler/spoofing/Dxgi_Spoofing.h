@@ -604,7 +604,7 @@ inline static bool SkipSpoofing()
         if (o_GetDesc != nullptr && o_GetDesc1 != nullptr && o_GetDesc2 != nullptr && o_GetDesc3 != nullptr)
             return;
 
-        const GUID guid = {0x907bf281, 0xea3c, 0x43b4, {0xa8, 0xe4, 0x9f, 0x23, 0x11, 0x07, 0xb4, 0xff}};
+        const GUID guid = { 0x907bf281, 0xea3c, 0x43b4, { 0xa8, 0xe4, 0x9f, 0x23, 0x11, 0x07, 0xb4, 0xff } };
 
         PVOID* pVTable = *(PVOID**) unkAdapter;
 

@@ -7,7 +7,7 @@ class ReflexHooks
 {
     inline static bool _inited = false;
     inline static uint32_t _minimumIntervalUs = 0;
-    inline static NV_SET_SLEEP_MODE_PARAMS _lastSleepParams{};
+    inline static NV_SET_SLEEP_MODE_PARAMS _lastSleepParams {};
     inline static IUnknown* _lastSleepDev = nullptr;
     inline static bool _dlssgDetected = false;
     inline static uint64_t _lastAsyncMarkerFrameId = 0;

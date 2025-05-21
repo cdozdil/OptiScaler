@@ -2852,19 +2852,20 @@ static const char
         "                                                      -   X.X           X.X   -                               "
         "            "
         "                                                      -    XX           XX    -                               "
-        "            "};
+        "            "
+    };
 
 static const ImVec2 FONT_ATLAS_DEFAULT_TEX_CURSOR_DATA[ImGuiMouseCursor_COUNT][3] = {
     // Pos ........ Size ......... Offset ......
-    {ImVec2(0, 3), ImVec2(12, 19), ImVec2(0, 0)},    // ImGuiMouseCursor_Arrow
-    {ImVec2(13, 0), ImVec2(7, 16), ImVec2(1, 8)},    // ImGuiMouseCursor_TextInput
-    {ImVec2(31, 0), ImVec2(23, 23), ImVec2(11, 11)}, // ImGuiMouseCursor_ResizeAll
-    {ImVec2(21, 0), ImVec2(9, 23), ImVec2(4, 11)},   // ImGuiMouseCursor_ResizeNS
-    {ImVec2(55, 18), ImVec2(23, 9), ImVec2(11, 4)},  // ImGuiMouseCursor_ResizeEW
-    {ImVec2(73, 0), ImVec2(17, 17), ImVec2(8, 8)},   // ImGuiMouseCursor_ResizeNESW
-    {ImVec2(55, 0), ImVec2(17, 17), ImVec2(8, 8)},   // ImGuiMouseCursor_ResizeNWSE
-    {ImVec2(91, 0), ImVec2(17, 22), ImVec2(5, 0)},   // ImGuiMouseCursor_Hand
-    {ImVec2(109, 0), ImVec2(13, 15), ImVec2(6, 7)},  // ImGuiMouseCursor_NotAllowed
+    { ImVec2(0, 3), ImVec2(12, 19), ImVec2(0, 0) },    // ImGuiMouseCursor_Arrow
+    { ImVec2(13, 0), ImVec2(7, 16), ImVec2(1, 8) },    // ImGuiMouseCursor_TextInput
+    { ImVec2(31, 0), ImVec2(23, 23), ImVec2(11, 11) }, // ImGuiMouseCursor_ResizeAll
+    { ImVec2(21, 0), ImVec2(9, 23), ImVec2(4, 11) },   // ImGuiMouseCursor_ResizeNS
+    { ImVec2(55, 18), ImVec2(23, 9), ImVec2(11, 4) },  // ImGuiMouseCursor_ResizeEW
+    { ImVec2(73, 0), ImVec2(17, 17), ImVec2(8, 8) },   // ImGuiMouseCursor_ResizeNESW
+    { ImVec2(55, 0), ImVec2(17, 17), ImVec2(8, 8) },   // ImGuiMouseCursor_ResizeNWSE
+    { ImVec2(91, 0), ImVec2(17, 22), ImVec2(5, 0) },   // ImGuiMouseCursor_Hand
+    { ImVec2(109, 0), ImVec2(13, 15), ImVec2(6, 7) },  // ImGuiMouseCursor_NotAllowed
 };
 
 ImFontAtlas::ImFontAtlas()
@@ -4037,7 +4038,8 @@ const ImWchar* ImFontAtlas::GetGlyphRangesChineseSimplifiedCommon()
         1,  4,   1,   3,  4,   42,  10,  6,  1,  49, 85,  8,  1,  2,   1,   1,   4,  4,   2,  3,   6,   1,   5,   7,
         4,  3,   211, 4,  1,   2,   1,   2,  5,  1,  2,   4,  2,  2,   6,   5,   6,  10,  3,  4,   48,  100, 6,   2,
         16, 296, 5,   27, 387, 2,   2,   3,  7,  16, 8,   5,  38, 15,  39,  21,  9,  10,  3,  7,   59,  13,  27,  21,
-        47, 5,   21,  6};
+        47, 5,   21,  6
+    };
     static ImWchar base_ranges[] = // not zero-terminated
         {
             0x0020, 0x00FF, // Basic Latin + Latin Supplement
@@ -4048,7 +4050,8 @@ const ImWchar* ImFontAtlas::GetGlyphRangesChineseSimplifiedCommon()
             0xFFFD, 0xFFFD  // Invalid
         };
     static ImWchar full_ranges[IM_ARRAYSIZE(base_ranges) + IM_ARRAYSIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {
-        0};
+        0
+    };
     if (!full_ranges[0])
     {
         memcpy(full_ranges, base_ranges, sizeof(base_ranges));
@@ -4209,7 +4212,8 @@ const ImWchar* ImFontAtlas::GetGlyphRangesJapanese()
             0xFFFD, 0xFFFD  // Invalid
         };
     static ImWchar full_ranges[IM_ARRAYSIZE(base_ranges) + IM_ARRAYSIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {
-        0};
+        0
+    };
     if (!full_ranges[0])
     {
         memcpy(full_ranges, base_ranges, sizeof(base_ranges));
@@ -4384,7 +4388,7 @@ void ImFont::BuildLookupTable()
     SetGlyphVisible((ImWchar) '\t', false);
 
     // Setup Fallback character
-    const ImWchar fallback_chars[] = {(ImWchar) IM_UNICODE_CODEPOINT_INVALID, (ImWchar) '?', (ImWchar) ' '};
+    const ImWchar fallback_chars[] = { (ImWchar) IM_UNICODE_CODEPOINT_INVALID, (ImWchar) '?', (ImWchar) ' ' };
     FallbackGlyph = FindGlyphNoFallback(FallbackChar);
     if (FallbackGlyph == NULL)
     {
@@ -4405,8 +4409,8 @@ void ImFont::BuildLookupTable()
     // However some old fonts may contain ellipsis at U+0085. Here we auto-detect most suitable ellipsis character.
     // FIXME: Note that 0x2026 is rarely included in our font ranges. Because of this we are more likely to use three
     // individual dots.
-    const ImWchar ellipsis_chars[] = {(ImWchar) 0x2026, (ImWchar) 0x0085};
-    const ImWchar dots_chars[] = {(ImWchar) '.', (ImWchar) 0xFF0E};
+    const ImWchar ellipsis_chars[] = { (ImWchar) 0x2026, (ImWchar) 0x0085 };
+    const ImWchar dots_chars[] = { (ImWchar) '.', (ImWchar) 0xFF0E };
     if (EllipsisChar == (ImWchar) -1)
         EllipsisChar = FindFirstExistingGlyph(this, ellipsis_chars, IM_ARRAYSIZE(ellipsis_chars));
     const ImWchar dot_char = FindFirstExistingGlyph(this, dots_chars, IM_ARRAYSIZE(dots_chars));

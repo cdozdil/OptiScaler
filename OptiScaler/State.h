@@ -84,10 +84,10 @@ class State
     uint64_t NVNGX_ApplicationId = 1337;
     std::wstring NVNGX_ApplicationDataPath;
     std::string NVNGX_ProjectId;
-    NVSDK_NGX_Version NVNGX_Version{};
+    NVSDK_NGX_Version NVNGX_Version {};
     const NVSDK_NGX_FeatureCommonInfo* NVNGX_FeatureInfo = nullptr;
     std::vector<std::wstring> NVNGX_FeatureInfo_Paths;
-    NVSDK_NGX_LoggingInfo NVNGX_Logger{nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false};
+    NVSDK_NGX_LoggingInfo NVNGX_Logger { nullptr, NVSDK_NGX_LOGGING_LEVEL_OFF, false };
     NVSDK_NGX_EngineType NVNGX_Engine = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
     std::string NVNGX_EngineVersion;
 
@@ -125,8 +125,8 @@ class State
     bool skipDxgiLoadChecks = false;
 
     // FSR3.x
-    std::vector<const char*> fsr3xVersionNames{};
-    std::vector<uint64_t> fsr3xVersionIds{};
+    std::vector<const char*> fsr3xVersionNames {};
+    std::vector<uint64_t> fsr3xVersionIds {};
 
     // Linux check
     bool isRunningOnLinux = false;

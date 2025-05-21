@@ -40,7 +40,7 @@ static std::string ResultToString(xess_result_t result)
 
 static void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
-    spdlog::log((spdlog::level::level_enum) ((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
+    spdlog::log((spdlog::level::level_enum)((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
 bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
@@ -87,7 +87,7 @@ bool XeSSFeature_Dx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
     ret = XeSSProxy::D3D11SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
     LOG_DEBUG("xessSetLoggingCallback : {0}", ResultToString(ret));
 
-    xess_d3d11_init_params_t xessParams{};
+    xess_d3d11_init_params_t xessParams {};
 
     xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
@@ -282,7 +282,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     {
         LOG_ERROR("xessDebug");
 
-        xess_dump_parameters_t dumpParams{};
+        xess_dump_parameters_t dumpParams {};
         dumpParams.frame_count = State::Instance().xessDebugFrames;
         dumpParams.frame_idx = dumpCount;
         dumpParams.path = ".";
@@ -298,7 +298,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     }
 
     xess_result_t xessResult;
-    xess_d3d11_execute_params_t params{};
+    xess_d3d11_execute_params_t params {};
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
@@ -497,7 +497,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
                                Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
         RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
     {
-        RcasConstants rcasConstants{};
+        RcasConstants rcasConstants {};
 
         rcasConstants.Sharpness = _sharpness;
         rcasConstants.DisplayWidth = TargetWidth();

@@ -700,7 +700,7 @@ class NVNGXProxy
         if (_dll == nullptr)
             return false;
 
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
         GetFeatureCommonInfo(&fcInfo);
         NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 
@@ -822,7 +822,7 @@ class NVNGXProxy
         if (_dll == nullptr)
             return false;
 
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
         GetFeatureCommonInfo(&fcInfo);
         NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 
@@ -945,7 +945,7 @@ class NVNGXProxy
         if (_dll == nullptr)
             return false;
 
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
         GetFeatureCommonInfo(&fcInfo);
         NVSDK_NGX_Result nvResult = NVSDK_NGX_Result_Fail;
 

@@ -23,15 +23,15 @@ class IFGFeature_Dx12 : public virtual IFGFeature
     ID3D12CommandQueue* _gameCommandQueue = nullptr;
     HWND _hwnd = NULL;
 
-    ID3D12Resource* _paramVelocity[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
-    ID3D12Resource* _paramVelocityCopy[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
-    ID3D12Resource* _paramDepth[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
-    ID3D12Resource* _paramDepthCopy[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
-    ID3D12Resource* _paramHudless[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
-    ID3D12Resource* _paramHudlessCopy[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
+    ID3D12Resource* _paramVelocity[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12Resource* _paramVelocityCopy[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12Resource* _paramDepth[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12Resource* _paramDepthCopy[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12Resource* _paramHudless[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12Resource* _paramHudlessCopy[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
 
-    ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
-    ID3D12CommandAllocator* _commandAllocators[BUFFER_COUNT] = {nullptr, nullptr, nullptr, nullptr};
+    ID3D12GraphicsCommandList* _commandList[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D12CommandAllocator* _commandAllocators[BUFFER_COUNT] = { nullptr, nullptr, nullptr, nullptr };
 
     bool CreateBufferResource(ID3D12Device* InDevice, ID3D12Resource* InSource, D3D12_RESOURCE_STATES InState,
                               ID3D12Resource** OutResource, bool UAV = false, bool depth = false);

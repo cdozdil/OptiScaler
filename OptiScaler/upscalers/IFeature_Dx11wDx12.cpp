@@ -35,7 +35,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
                                                bool InCopy, bool InDontUseNTShared)
 {
     ID3D11Texture2D* originalTexture = nullptr;
-    D3D11_TEXTURE2D_DESC desc{};
+    D3D11_TEXTURE2D_DESC desc {};
 
     auto result = InResource->QueryInterface(IID_PPV_ARGS(&originalTexture));
 

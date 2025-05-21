@@ -47,7 +47,7 @@ inline int FrameLimit::busywait_sleep(int64_t ns)
 inline int FrameLimit::combined_sleep(int64_t ns)
 {
     constexpr int64_t busywait_threshold = 2'000'000; // 2ms
-    int status{};
+    int status {};
     auto current_time = get_timestamp();
     if (ns <= busywait_threshold)
         status = busywait_sleep(ns);

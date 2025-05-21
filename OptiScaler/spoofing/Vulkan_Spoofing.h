@@ -373,17 +373,17 @@ inline static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
         if (count == vkEnumerateDeviceExtensionPropertiesCount)
             *pPropertyCount = count;
 
-        VkExtensionProperties bi{VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION};
+        VkExtensionProperties bi { VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 1], &bi, sizeof(VkExtensionProperties));
 
-        VkExtensionProperties ivh{VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION};
+        VkExtensionProperties ivh { VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
 
-        VkExtensionProperties mpva{VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME,
-                                   VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_SPEC_VERSION};
+        VkExtensionProperties mpva { VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME,
+                                     VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 3], &mpva, sizeof(VkExtensionProperties));
 
-        VkExtensionProperties ll{VK_NV_LOW_LATENCY_EXTENSION_NAME, VK_NV_LOW_LATENCY_SPEC_VERSION};
+        VkExtensionProperties ll { VK_NV_LOW_LATENCY_EXTENSION_NAME, VK_NV_LOW_LATENCY_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 4], &ll, sizeof(VkExtensionProperties));
 
         LOG_DEBUG("Extensions returned:");

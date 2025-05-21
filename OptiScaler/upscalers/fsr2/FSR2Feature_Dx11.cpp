@@ -49,7 +49,7 @@ bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RE
                                   bool InCopy)
 {
     ID3D11Texture2D* originalTexture = nullptr;
-    D3D11_TEXTURE2D_DESC desc{};
+    D3D11_TEXTURE2D_DESC desc {};
 
     auto result = InResource->QueryInterface(IID_PPV_ARGS(&originalTexture));
 
@@ -277,7 +277,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         InContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
     }
 
-    FfxFsr2DispatchDescription params{};
+    FfxFsr2DispatchDescription params {};
     params.commandList = InContext;
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
@@ -535,7 +535,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
                                Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
         RCAS != nullptr && RCAS.get() != nullptr && RCAS->CanRender())
     {
-        RcasConstants rcasConstants{};
+        RcasConstants rcasConstants {};
 
         rcasConstants.Sharpness = _sharpness;
         rcasConstants.DisplayWidth = TargetWidth();

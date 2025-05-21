@@ -41,7 +41,7 @@ static std::string ResultToString(xess_result_t result)
 
 static xess_vk_image_view_info NV_to_XeSS(NVSDK_NGX_Resource_VK* nvResource)
 {
-    xess_vk_image_view_info xessResource{};
+    xess_vk_image_view_info xessResource {};
 
     xessResource.format = nvResource->Resource.ImageViewInfo.Format;
     xessResource.height = nvResource->Resource.ImageViewInfo.Height;
@@ -55,7 +55,7 @@ static xess_vk_image_view_info NV_to_XeSS(NVSDK_NGX_Resource_VK* nvResource)
 
 static void XeSSLogCallback(const char* Message, xess_logging_level_t Level)
 {
-    spdlog::log((spdlog::level::level_enum) ((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
+    spdlog::log((spdlog::level::level_enum)((int) Level + 1), "XeSSFeature::LogCallback XeSS Runtime ({0})", Message);
 }
 
 bool XeSSFeature_Vk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice InDevice, VkCommandBuffer InCmdList,
@@ -113,7 +113,7 @@ bool XeSSFeature_Vk::Init(VkInstance InInstance, VkPhysicalDevice InPD, VkDevice
     ret = XeSSProxy::SetLoggingCallback()(_xessContext, XESS_LOGGING_LEVEL_DEBUG, XeSSLogCallback);
     LOG_DEBUG("xessSetLoggingCallback : {0}", ResultToString(ret));
 
-    xess_vk_init_params_t xessParams{};
+    xess_vk_init_params_t xessParams {};
 
     xessParams.initFlags = XESS_INIT_FLAG_NONE;
 
@@ -383,7 +383,7 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     {
         LOG_ERROR("xessDebug");
 
-        xess_dump_parameters_t dumpParams{};
+        xess_dump_parameters_t dumpParams {};
         dumpParams.frame_count = State::Instance().xessDebugFrames;
         dumpParams.frame_idx = dumpCount;
         dumpParams.path = ".";
@@ -399,7 +399,7 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     }
 
     xess_result_t xessResult;
-    xess_vk_execute_params_t params{};
+    xess_vk_execute_params_t params {};
 
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffsetX);
     InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffsetY);
@@ -495,7 +495,7 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         LOG_DEBUG("AutoExposure enabled!");
 
     NVSDK_NGX_Resource_VK* paramReactiveMask = nullptr;
-    if (isVersionOrBetter(Version(), {2, 0, 1}) &&
+    if (isVersionOrBetter(Version(), { 2, 0, 1 }) &&
         InParameters->Get("FSR.reactive", (void**) &paramReactiveMask) == NVSDK_NGX_Result_Success)
     {
         if (!Config::Instance()->DisableReactiveMask.value_or(true))
@@ -510,7 +510,7 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
             LOG_DEBUG("Input Bias mask exist..");
             Config::Instance()->DisableReactiveMask = false;
 
-            if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), {2, 0, 1})))
+            if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })))
                 params.responsivePixelMaskTexture = NV_to_XeSS(paramReactiveMask);
         }
         else

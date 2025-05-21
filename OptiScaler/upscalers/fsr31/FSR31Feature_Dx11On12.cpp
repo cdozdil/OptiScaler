@@ -146,7 +146,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     if (dc != nullptr)
         dc->Release();
 
-    struct ffxDispatchDescUpscale params = {0};
+    struct ffxDispatchDescUpscale params = { 0 };
     params.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
 
     if (Config::Instance()->FsrDebugView.value_or_default())
@@ -318,10 +318,11 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
         params.viewSpaceToMetersFactor = 1.0f;
 
         // Version 3.1.1 check
-        if (isVersionOrBetter(Version(), {3, 1, 1}) && _velocity != Config::Instance()->FsrVelocity.value_or_default())
+        if (isVersionOrBetter(Version(), { 3, 1, 1 }) &&
+            _velocity != Config::Instance()->FsrVelocity.value_or_default())
         {
             _velocity = Config::Instance()->FsrVelocity.value_or_default();
-            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
             m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
             m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FVELOCITYFACTOR;
             m_upscalerKeyValueConfig.ptr = &_velocity;
@@ -331,11 +332,11 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
                 LOG_WARN("Velocity configure result: {}", (UINT) result);
         }
 
-        if (isVersionOrBetter(Version(), {3, 1, 4}) &&
+        if (isVersionOrBetter(Version(), { 3, 1, 4 }) &&
             _reactiveScale != Config::Instance()->FsrReactiveScale.value_or_default())
         {
             _reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
-            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
             m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
             m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FREACTIVENESSSCALE;
             m_upscalerKeyValueConfig.ptr = &_reactiveScale;
@@ -345,11 +346,11 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
                 LOG_WARN("Reactive Scale configure result: {}", (UINT) result);
         }
 
-        if (isVersionOrBetter(Version(), {3, 1, 4}) &&
+        if (isVersionOrBetter(Version(), { 3, 1, 4 }) &&
             _shadingScale != Config::Instance()->FsrShadingScale.value_or_default())
         {
             _shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
-            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
             m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
             m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FSHADINGCHANGESCALE;
             m_upscalerKeyValueConfig.ptr = &_shadingScale;
@@ -359,11 +360,11 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
                 LOG_WARN("Shading Scale configure result: {}", (UINT) result);
         }
 
-        if (isVersionOrBetter(Version(), {3, 1, 4}) &&
+        if (isVersionOrBetter(Version(), { 3, 1, 4 }) &&
             _accAddPerFrame != Config::Instance()->FsrAccAddPerFrame.value_or_default())
         {
             _accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
-            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
             m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
             m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FACCUMULATIONADDEDPERFRAME;
             m_upscalerKeyValueConfig.ptr = &_accAddPerFrame;
@@ -373,11 +374,11 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
                 LOG_WARN("Acc. Add Per Frame configure result: {}", (UINT) result);
         }
 
-        if (isVersionOrBetter(Version(), {3, 1, 4}) &&
+        if (isVersionOrBetter(Version(), { 3, 1, 4 }) &&
             _minDisOccAcc != Config::Instance()->FsrMinDisOccAcc.value_or_default())
         {
             _minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
-            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig{};
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
             m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
             m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FMINDISOCCLUSIONACCUMULATION;
             m_upscalerKeyValueConfig.ptr = &_minDisOccAcc;
@@ -417,7 +418,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
 
             RCAS->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-            RcasConstants rcasConstants{};
+            RcasConstants rcasConstants {};
 
             rcasConstants.Sharpness = _sharpness;
             rcasConstants.DisplayWidth = TargetWidth();
@@ -467,7 +468,7 @@ bool FSR31FeatureDx11on12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_
     } while (false);
 
     cmdList->Close();
-    ID3D12CommandList* ppCommandLists[] = {cmdList};
+    ID3D12CommandList* ppCommandLists[] = { cmdList };
     Dx12CommandQueue->ExecuteCommandLists(1, ppCommandLists);
     Dx12CommandQueue->Signal(dx12FenceTextureCopy, _fenceValue);
 
@@ -535,7 +536,7 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 
     State::Instance().skipSpoofing = true;
 
-    ffxQueryDescGetVersions versionQuery{};
+    ffxQueryDescGetVersions versionQuery {};
     versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
     versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
     versionQuery.device = Dx12Device; // only for DirectX 12 applications
@@ -638,7 +639,7 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         _contextDesc.maxUpscaleSize.height = TargetHeight();
     }
 
-    ffxCreateBackendDX12Desc backendDesc = {0};
+    ffxCreateBackendDX12Desc backendDesc = { 0 };
     backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
     backendDesc.device = Dx12Device;
     _contextDesc.header.pNext = &backendDesc.header;
@@ -647,7 +648,7 @@ bool FSR31FeatureDx11on12::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
         Config::Instance()->Fsr3xIndex.value_or_default() >= State::Instance().fsr3xVersionIds.size())
         Config::Instance()->Fsr3xIndex.set_volatile_value(0);
 
-    ffxOverrideVersion ov = {0};
+    ffxOverrideVersion ov = { 0 };
     ov.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;
     ov.versionId = State::Instance().fsr3xVersionIds[Config::Instance()->Fsr3xIndex.value_or_default()];
     backendDesc.header.pNext = &ov.header;

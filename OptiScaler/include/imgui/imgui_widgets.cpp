@@ -2348,14 +2348,14 @@ static const char* ImGuiGetNameFromIndexOldToNewCallback(void* user_data, int id
 bool ImGui::ListBox(const char* label, int* current_item, bool (*old_getter)(void*, int, const char**), void* user_data,
                     int items_count, int height_in_items)
 {
-    ImGuiGetNameFromIndexOldToNewCallbackData old_to_new_data = {user_data, old_getter};
+    ImGuiGetNameFromIndexOldToNewCallbackData old_to_new_data = { user_data, old_getter };
     return ListBox(label, current_item, ImGuiGetNameFromIndexOldToNewCallback, &old_to_new_data, items_count,
                    height_in_items);
 }
 bool ImGui::Combo(const char* label, int* current_item, bool (*old_getter)(void*, int, const char**), void* user_data,
                   int items_count, int popup_max_height_in_items)
 {
-    ImGuiGetNameFromIndexOldToNewCallbackData old_to_new_data = {user_data, old_getter};
+    ImGuiGetNameFromIndexOldToNewCallbackData old_to_new_data = { user_data, old_getter };
     return Combo(label, current_item, ImGuiGetNameFromIndexOldToNewCallback, &old_to_new_data, items_count,
                  popup_max_height_in_items);
 }
@@ -2376,22 +2376,22 @@ bool ImGui::Combo(const char* label, int* current_item, bool (*old_getter)(void*
 //-------------------------------------------------------------------------
 
 static const ImGuiDataTypeInfo GDataTypeInfo[] = {
-    {sizeof(char), "S8", "%d", "%d"}, // ImGuiDataType_S8
-    {sizeof(unsigned char), "U8", "%u", "%u"},
-    {sizeof(short), "S16", "%d", "%d"}, // ImGuiDataType_S16
-    {sizeof(unsigned short), "U16", "%u", "%u"},
-    {sizeof(int), "S32", "%d", "%d"}, // ImGuiDataType_S32
-    {sizeof(unsigned int), "U32", "%u", "%u"},
+    { sizeof(char), "S8", "%d", "%d" }, // ImGuiDataType_S8
+    { sizeof(unsigned char), "U8", "%u", "%u" },
+    { sizeof(short), "S16", "%d", "%d" }, // ImGuiDataType_S16
+    { sizeof(unsigned short), "U16", "%u", "%u" },
+    { sizeof(int), "S32", "%d", "%d" }, // ImGuiDataType_S32
+    { sizeof(unsigned int), "U32", "%u", "%u" },
 #ifdef _MSC_VER
-    {sizeof(ImS64), "S64", "%I64d", "%I64d"}, // ImGuiDataType_S64
-    {sizeof(ImU64), "U64", "%I64u", "%I64u"},
+    { sizeof(ImS64), "S64", "%I64d", "%I64d" }, // ImGuiDataType_S64
+    { sizeof(ImU64), "U64", "%I64u", "%I64u" },
 #else
-    {sizeof(ImS64), "S64", "%lld", "%lld"}, // ImGuiDataType_S64
-    {sizeof(ImU64), "U64", "%llu", "%llu"},
+    { sizeof(ImS64), "S64", "%lld", "%lld" }, // ImGuiDataType_S64
+    { sizeof(ImU64), "U64", "%llu", "%llu" },
 #endif
-    {sizeof(float), "float", "%.3f", "%f"},  // ImGuiDataType_Float (float are promoted to double in va_arg)
-    {sizeof(double), "double", "%f", "%lf"}, // ImGuiDataType_Double
-    {sizeof(bool), "bool", "%d", "%d"},      // ImGuiDataType_Bool
+    { sizeof(float), "float", "%.3f", "%f" },  // ImGuiDataType_Float (float are promoted to double in va_arg)
+    { sizeof(double), "double", "%f", "%lf" }, // ImGuiDataType_Double
+    { sizeof(bool), "bool", "%d", "%d" },      // ImGuiDataType_Bool
 };
 IM_STATIC_ASSERT(IM_ARRAYSIZE(GDataTypeInfo) == ImGuiDataType_COUNT);
 
@@ -2679,8 +2679,8 @@ bool ImGui::DataTypeClamp(ImGuiDataType data_type, void* p_data, const void* p_m
 
 static float GetMinimumStepAtDecimalPrecision(int decimal_precision)
 {
-    static const float min_steps[10] = {1.0f,     0.1f,      0.01f,      0.001f,      0.0001f,
-                                        0.00001f, 0.000001f, 0.0000001f, 0.00000001f, 0.000000001f};
+    static const float min_steps[10] = { 1.0f,     0.1f,      0.01f,      0.001f,      0.0001f,
+                                         0.00001f, 0.000001f, 0.0000001f, 0.00000001f, 0.000000001f };
     if (decimal_precision < 0)
         return FLT_MIN;
     return (decimal_precision < IM_ARRAYSIZE(min_steps)) ? min_steps[decimal_precision]
@@ -6282,7 +6282,7 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
     w_full = w_inputs + w_button;
 
     // Convert to the formats we need
-    float f[4] = {col[0], col[1], col[2], alpha ? col[3] : 1.0f};
+    float f[4] = { col[0], col[1], col[2], alpha ? col[3] : 1.0f };
     if ((flags & ImGuiColorEditFlags_InputHSV) && (flags & ImGuiColorEditFlags_DisplayRGB))
         ColorConvertHSVtoRGB(f[0], f[1], f[2], f[0], f[1], f[2]);
     else if ((flags & ImGuiColorEditFlags_InputRGB) && (flags & ImGuiColorEditFlags_DisplayHSV))
@@ -6291,8 +6291,8 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
         ColorConvertRGBtoHSV(f[0], f[1], f[2], f[0], f[1], f[2]);
         ColorEditRestoreHS(col, &f[0], &f[1], &f[2]);
     }
-    int i[4] = {IM_F32_TO_INT8_UNBOUND(f[0]), IM_F32_TO_INT8_UNBOUND(f[1]), IM_F32_TO_INT8_UNBOUND(f[2]),
-                IM_F32_TO_INT8_UNBOUND(f[3])};
+    int i[4] = { IM_F32_TO_INT8_UNBOUND(f[0]), IM_F32_TO_INT8_UNBOUND(f[1]), IM_F32_TO_INT8_UNBOUND(f[2]),
+                 IM_F32_TO_INT8_UNBOUND(f[3]) };
 
     bool value_changed = false;
     bool value_changed_as_float = false;
@@ -6309,16 +6309,16 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
 
         const bool hide_prefix = (IM_TRUNC(w_items / components) <=
                                   CalcTextSize((flags & ImGuiColorEditFlags_Float) ? "M:0.000" : "M:000").x);
-        static const char* ids[4] = {"##X", "##Y", "##Z", "##W"};
+        static const char* ids[4] = { "##X", "##Y", "##Z", "##W" };
         static const char* fmt_table_int[3][4] = {
-            {"%3d", "%3d", "%3d", "%3d"},         // Short display
-            {"R:%3d", "G:%3d", "B:%3d", "A:%3d"}, // Long display for RGBA
-            {"H:%3d", "S:%3d", "V:%3d", "A:%3d"}  // Long display for HSVA
+            { "%3d", "%3d", "%3d", "%3d" },         // Short display
+            { "R:%3d", "G:%3d", "B:%3d", "A:%3d" }, // Long display for RGBA
+            { "H:%3d", "S:%3d", "V:%3d", "A:%3d" }  // Long display for HSVA
         };
         static const char* fmt_table_float[3][4] = {
-            {"%0.3f", "%0.3f", "%0.3f", "%0.3f"},         // Short display
-            {"R:%0.3f", "G:%0.3f", "B:%0.3f", "A:%0.3f"}, // Long display for RGBA
-            {"H:%0.3f", "S:%0.3f", "V:%0.3f", "A:%0.3f"}  // Long display for HSVA
+            { "%0.3f", "%0.3f", "%0.3f", "%0.3f" },         // Short display
+            { "R:%0.3f", "G:%0.3f", "B:%0.3f", "A:%0.3f" }, // Long display for RGBA
+            { "H:%0.3f", "S:%0.3f", "V:%0.3f", "A:%0.3f" }  // Long display for HSVA
         };
         const int fmt_idx = hide_prefix ? 0 : (flags & ImGuiColorEditFlags_DisplayHSV) ? 2 : 1;
 
@@ -6502,7 +6502,7 @@ bool ImGui::ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flag
 
 bool ImGui::ColorPicker3(const char* label, float col[3], ImGuiColorEditFlags flags)
 {
-    float col4[4] = {col[0], col[1], col[2], 1.0f};
+    float col4[4] = { col[0], col[1], col[2], 1.0f };
     if (!ColorPicker4(label, col4, flags | ImGuiColorEditFlags_NoAlpha))
         return false;
     col[0] = col4[0];
@@ -6821,10 +6821,10 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
     const ImU32 col_black = IM_COL32(0, 0, 0, style_alpha8);
     const ImU32 col_white = IM_COL32(255, 255, 255, style_alpha8);
     const ImU32 col_midgrey = IM_COL32(128, 128, 128, style_alpha8);
-    const ImU32 col_hues[6 + 1] = {IM_COL32(255, 0, 0, style_alpha8), IM_COL32(255, 255, 0, style_alpha8),
-                                   IM_COL32(0, 255, 0, style_alpha8), IM_COL32(0, 255, 255, style_alpha8),
-                                   IM_COL32(0, 0, 255, style_alpha8), IM_COL32(255, 0, 255, style_alpha8),
-                                   IM_COL32(255, 0, 0, style_alpha8)};
+    const ImU32 col_hues[6 + 1] = { IM_COL32(255, 0, 0, style_alpha8), IM_COL32(255, 255, 0, style_alpha8),
+                                    IM_COL32(0, 255, 0, style_alpha8), IM_COL32(0, 255, 255, style_alpha8),
+                                    IM_COL32(0, 0, 255, style_alpha8), IM_COL32(255, 0, 255, style_alpha8),
+                                    IM_COL32(255, 0, 0, style_alpha8) };
 
     ImVec4 hue_color_f(1, 1, 1, style.Alpha);
     ColorConvertHSVtoRGB(H, 1, 1, hue_color_f.x, hue_color_f.y, hue_color_f.z);
@@ -9026,8 +9026,8 @@ void ImGui::MultiSelectItemFooter(ImGuiID id, bool* p_selected, bool* p_pressed)
 
 void ImGui::MultiSelectAddSetAll(ImGuiMultiSelectTempData* ms, bool selected)
 {
-    ImGuiSelectionRequest req = {ImGuiSelectionRequestType_SetAll, selected, 0, ImGuiSelectionUserData_Invalid,
-                                 ImGuiSelectionUserData_Invalid};
+    ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetAll, selected, 0, ImGuiSelectionUserData_Invalid,
+                                  ImGuiSelectionUserData_Invalid };
     ms->IO.Requests.resize(0);      // Can always clear previous requests
     ms->IO.Requests.push_back(req); // Add new request
 }
@@ -9047,8 +9047,8 @@ void ImGui::MultiSelectAddSetRange(ImGuiMultiSelectTempData* ms, bool selected, 
         }
     }
 
-    ImGuiSelectionRequest req = {ImGuiSelectionRequestType_SetRange, selected, (ImS8) range_dir,
-                                 (range_dir > 0) ? first_item : last_item, (range_dir > 0) ? last_item : first_item};
+    ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetRange, selected, (ImS8) range_dir,
+                                  (range_dir > 0) ? first_item : last_item, (range_dir > 0) ? last_item : first_item };
     ms->IO.Requests.push_back(req); // Add new request
 }
 
@@ -10614,7 +10614,7 @@ static void ImGui::TabBarLayout(ImGuiTabBar* tab_bar)
 
     // Leading/Trailing tabs will be shrink only if central one aren't visible anymore, so layout the shrink data as:
     // leading, trailing, central (whereas our tabs are stored as: leading, central, trailing)
-    int shrink_buffer_indexes[3] = {0, sections[0].TabCount + sections[2].TabCount, sections[0].TabCount};
+    int shrink_buffer_indexes[3] = { 0, sections[0].TabCount + sections[2].TabCount, sections[0].TabCount };
     g.ShrinkWidthBuffer.resize(tab_bar->Tabs.Size);
 
     // Compute ideal tabs widths + store them into shrink buffer

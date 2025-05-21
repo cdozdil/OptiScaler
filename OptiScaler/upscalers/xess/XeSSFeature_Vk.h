@@ -20,7 +20,7 @@ class XeSSFeature_Vk : public virtual IFeature_Vk
     // version is above 1.3 if we can use vulkan
     feature_version Version() final
     {
-        return feature_version{XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch};
+        return feature_version { XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch };
     }
     std::string Name() const { return "XeSS"; }
 

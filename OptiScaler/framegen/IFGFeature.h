@@ -25,7 +25,7 @@ class IFGFeature
     bool _isActive = false;
     UINT64 _targetFrame = 0;
 
-    IID streamlineRiid{};
+    IID streamlineRiid {};
 
     bool CheckForRealObject(std::string functionName, IUnknown* pObject, IUnknown** ppRealObject);
 

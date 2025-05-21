@@ -2180,12 +2180,12 @@ struct ImGuiListClipperRange
 
     static ImGuiListClipperRange FromIndices(int min, int max)
     {
-        ImGuiListClipperRange r = {min, max, false, 0, 0};
+        ImGuiListClipperRange r = { min, max, false, 0, 0 };
         return r;
     }
     static ImGuiListClipperRange FromPositions(float y1, float y2, int off_min, int off_max)
     {
-        ImGuiListClipperRange r = {(int) y1, (int) y2, true, (ImS8) off_min, (ImS8) off_max};
+        ImGuiListClipperRange r = { (int) y1, (int) y2, true, (ImS8) off_min, (ImS8) off_max };
         return r;
     }
 };

@@ -42,8 +42,8 @@ class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
     // D3D11with12
     ID3D12Device* Dx12Device = nullptr;
     ID3D12CommandQueue* Dx12CommandQueue = nullptr;
-    ID3D12CommandAllocator* Dx12CommandAllocator[2] = {nullptr, nullptr};
-    ID3D12GraphicsCommandList* Dx12CommandList[2] = {nullptr, nullptr};
+    ID3D12CommandAllocator* Dx12CommandAllocator[2] = { nullptr, nullptr };
+    ID3D12GraphicsCommandList* Dx12CommandList[2] = { nullptr, nullptr };
     ID3D12Fence* Dx12Fence = nullptr;
     HANDLE Dx12FenceEvent = nullptr;
 
@@ -54,7 +54,7 @@ class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
     D3D11_TEXTURE2D_RESOURCE_C dx11Exp = {};
     D3D11_TEXTURE2D_RESOURCE_C dx11Out = {};
 
-    ID3D11Resource* paramOutput[2] = {nullptr, nullptr};
+    ID3D11Resource* paramOutput[2] = { nullptr, nullptr };
 
     ID3D11Fence* dx11FenceTextureCopy = nullptr;
     ID3D12Fence* dx12FenceTextureCopy = nullptr;

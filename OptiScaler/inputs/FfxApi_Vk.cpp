@@ -20,19 +20,19 @@ static VkDevice _vkDevice = nullptr;
 static VkPhysicalDevice _vkPhysicalDevice = nullptr;
 static PFN_vkGetDeviceProcAddr _vkDeviceProcAddress = nullptr;
 static bool _nvnxgInited = false;
-static float qualityRatios[] = {1.0f, 1.5f, 1.7f, 2.0f, 3.0f};
+static float qualityRatios[] = { 1.0f, 1.5f, 1.7f, 2.0f, 3.0f };
 static VkImageView depthImageView = nullptr;
 static VkImageView expImageView = nullptr;
 static VkImageView biasImageView = nullptr;
 static VkImageView colorImageView = nullptr;
 static VkImageView mvImageView = nullptr;
 static VkImageView outputImageView = nullptr;
-static NVSDK_NGX_Resource_VK depthNVRes{};
-static NVSDK_NGX_Resource_VK expNVRes{};
-static NVSDK_NGX_Resource_VK biasNVRes{};
-static NVSDK_NGX_Resource_VK colorNVRes{};
-static NVSDK_NGX_Resource_VK mvNVRes{};
-static NVSDK_NGX_Resource_VK outputNVRes{};
+static NVSDK_NGX_Resource_VK depthNVRes {};
+static NVSDK_NGX_Resource_VK expNVRes {};
+static NVSDK_NGX_Resource_VK biasNVRes {};
+static NVSDK_NGX_Resource_VK colorNVRes {};
+static NVSDK_NGX_Resource_VK mvNVRes {};
+static NVSDK_NGX_Resource_VK outputNVRes {};
 
 static VkFormat ffxApiGetVkFormat(uint32_t fmt)
 {
@@ -105,7 +105,7 @@ static VkFormat ffxApiGetVkFormat(uint32_t fmt)
 
 static bool CreateIVandNVRes(FfxApiResource resource, VkImageView* imageView, NVSDK_NGX_Resource_VK* nvResource)
 {
-    VkImageViewCreateInfo createInfo{};
+    VkImageViewCreateInfo createInfo {};
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     createInfo.image = (VkImage) resource.resource;
     createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -325,7 +325,7 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
 
     if (!State::Instance().NvngxVkInited)
     {
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
 
         auto dllPath = Util::DllPath().remove_filename();
         auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
@@ -376,7 +376,7 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
 
     _nvParams[*context] = params;
 
-    ffxCreateContextDescUpscale ccd{};
+    ffxCreateContextDescUpscale ccd {};
     ccd.flags = createDesc->flags;
     ccd.maxRenderSize = createDesc->maxRenderSize;
     ccd.maxUpscaleSize = createDesc->maxUpscaleSize;

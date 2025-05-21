@@ -2880,12 +2880,12 @@ IM_MSVC_RUNTIME_CHECKS_OFF
 // We handle UTF-8 decoding error by skipping forward.
 int ImTextCharFromUtf8(unsigned int* out_char, const char* in_text, const char* in_text_end)
 {
-    static const char lengths[32] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                     0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0};
-    static const int masks[] = {0x00, 0x7f, 0x1f, 0x0f, 0x07};
-    static const uint32_t mins[] = {0x400000, 0, 0x80, 0x800, 0x10000};
-    static const int shiftc[] = {0, 18, 12, 6, 0};
-    static const int shifte[] = {0, 6, 4, 2, 0};
+    static const char lengths[32] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                      0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0 };
+    static const int masks[] = { 0x00, 0x7f, 0x1f, 0x0f, 0x07 };
+    static const uint32_t mins[] = { 0x400000, 0, 0x80, 0x800, 0x10000 };
+    static const int shiftc[] = { 0, 18, 12, 6, 0 };
+    static const int shifte[] = { 0, 6, 4, 2, 0 };
     int len = lengths[*(const unsigned char*) in_text >> 3];
     int wanted = len + (len ? 0 : 1);
 
@@ -3440,7 +3440,7 @@ bool ImGuiTextFilter::PassFilter(const char* text, const char* text_end) const
 #endif
 #endif
 
-char ImGuiTextBuffer::EmptyString[1] = {0};
+char ImGuiTextBuffer::EmptyString[1] = { 0 };
 
 void ImGuiTextBuffer::append(const char* str, const char* str_end)
 {
@@ -3933,42 +3933,43 @@ void ImGui::PopStyleColor(int count)
 }
 
 static const ImGuiDataVarInfo GStyleVarInfo[] = {
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, Alpha)},              // ImGuiStyleVar_Alpha
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, DisabledAlpha)},      // ImGuiStyleVar_DisabledAlpha
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, WindowPadding)},      // ImGuiStyleVar_WindowPadding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, WindowRounding)},     // ImGuiStyleVar_WindowRounding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, WindowBorderSize)},   // ImGuiStyleVar_WindowBorderSize
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, WindowMinSize)},      // ImGuiStyleVar_WindowMinSize
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, WindowTitleAlign)},   // ImGuiStyleVar_WindowTitleAlign
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, ChildRounding)},      // ImGuiStyleVar_ChildRounding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, ChildBorderSize)},    // ImGuiStyleVar_ChildBorderSize
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, PopupRounding)},      // ImGuiStyleVar_PopupRounding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, PopupBorderSize)},    // ImGuiStyleVar_PopupBorderSize
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, FramePadding)},       // ImGuiStyleVar_FramePadding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, FrameRounding)},      // ImGuiStyleVar_FrameRounding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, FrameBorderSize)},    // ImGuiStyleVar_FrameBorderSize
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, ItemSpacing)},        // ImGuiStyleVar_ItemSpacing
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, ItemInnerSpacing)},   // ImGuiStyleVar_ItemInnerSpacing
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, IndentSpacing)},      // ImGuiStyleVar_IndentSpacing
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, CellPadding)},        // ImGuiStyleVar_CellPadding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, ScrollbarSize)},      // ImGuiStyleVar_ScrollbarSize
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, ScrollbarRounding)},  // ImGuiStyleVar_ScrollbarRounding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, GrabMinSize)},        // ImGuiStyleVar_GrabMinSize
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, GrabRounding)},       // ImGuiStyleVar_GrabRounding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, TabRounding)},        // ImGuiStyleVar_TabRounding
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, TabBorderSize)},      // ImGuiStyleVar_TabBorderSize
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, TabBarBorderSize)},   // ImGuiStyleVar_TabBarBorderSize
-    {ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, TabBarOverlineSize)}, // ImGuiStyleVar_TabBarOverlineSize
-    {ImGuiDataType_Float, 1,
-     (ImU32) offsetof(ImGuiStyle, TableAngledHeadersAngle)}, // ImGuiStyleVar_TableAngledHeadersAngle
-    {ImGuiDataType_Float, 2,
-     (ImU32) offsetof(ImGuiStyle, TableAngledHeadersTextAlign)}, // ImGuiStyleVar_TableAngledHeadersTextAlign
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, ButtonTextAlign)},     // ImGuiStyleVar_ButtonTextAlign
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, SelectableTextAlign)}, // ImGuiStyleVar_SelectableTextAlign
-    {ImGuiDataType_Float, 1,
-     (ImU32) offsetof(ImGuiStyle, SeparatorTextBorderSize)},                    // ImGuiStyleVar_SeparatorTextBorderSize
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, SeparatorTextAlign)}, // ImGuiStyleVar_SeparatorTextAlign
-    {ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, SeparatorTextPadding)}, // ImGuiStyleVar_SeparatorTextPadding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, Alpha) },              // ImGuiStyleVar_Alpha
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, DisabledAlpha) },      // ImGuiStyleVar_DisabledAlpha
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, WindowPadding) },      // ImGuiStyleVar_WindowPadding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, WindowRounding) },     // ImGuiStyleVar_WindowRounding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, WindowBorderSize) },   // ImGuiStyleVar_WindowBorderSize
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, WindowMinSize) },      // ImGuiStyleVar_WindowMinSize
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, WindowTitleAlign) },   // ImGuiStyleVar_WindowTitleAlign
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, ChildRounding) },      // ImGuiStyleVar_ChildRounding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, ChildBorderSize) },    // ImGuiStyleVar_ChildBorderSize
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, PopupRounding) },      // ImGuiStyleVar_PopupRounding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, PopupBorderSize) },    // ImGuiStyleVar_PopupBorderSize
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, FramePadding) },       // ImGuiStyleVar_FramePadding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, FrameRounding) },      // ImGuiStyleVar_FrameRounding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, FrameBorderSize) },    // ImGuiStyleVar_FrameBorderSize
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, ItemSpacing) },        // ImGuiStyleVar_ItemSpacing
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, ItemInnerSpacing) },   // ImGuiStyleVar_ItemInnerSpacing
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, IndentSpacing) },      // ImGuiStyleVar_IndentSpacing
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, CellPadding) },        // ImGuiStyleVar_CellPadding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, ScrollbarSize) },      // ImGuiStyleVar_ScrollbarSize
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, ScrollbarRounding) },  // ImGuiStyleVar_ScrollbarRounding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, GrabMinSize) },        // ImGuiStyleVar_GrabMinSize
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, GrabRounding) },       // ImGuiStyleVar_GrabRounding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, TabRounding) },        // ImGuiStyleVar_TabRounding
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, TabBorderSize) },      // ImGuiStyleVar_TabBorderSize
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, TabBarBorderSize) },   // ImGuiStyleVar_TabBarBorderSize
+    { ImGuiDataType_Float, 1, (ImU32) offsetof(ImGuiStyle, TabBarOverlineSize) }, // ImGuiStyleVar_TabBarOverlineSize
+    { ImGuiDataType_Float, 1,
+      (ImU32) offsetof(ImGuiStyle, TableAngledHeadersAngle) }, // ImGuiStyleVar_TableAngledHeadersAngle
+    { ImGuiDataType_Float, 2,
+      (ImU32) offsetof(ImGuiStyle, TableAngledHeadersTextAlign) }, // ImGuiStyleVar_TableAngledHeadersTextAlign
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, ButtonTextAlign) },     // ImGuiStyleVar_ButtonTextAlign
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, SelectableTextAlign) }, // ImGuiStyleVar_SelectableTextAlign
+    { ImGuiDataType_Float, 1,
+      (ImU32) offsetof(ImGuiStyle, SeparatorTextBorderSize) }, // ImGuiStyleVar_SeparatorTextBorderSize
+    { ImGuiDataType_Float, 2, (ImU32) offsetof(ImGuiStyle, SeparatorTextAlign) }, // ImGuiStyleVar_SeparatorTextAlign
+    { ImGuiDataType_Float, 2,
+      (ImU32) offsetof(ImGuiStyle, SeparatorTextPadding) }, // ImGuiStyleVar_SeparatorTextPadding
 };
 
 const ImGuiDataVarInfo* ImGui::GetStyleVarInfo(ImGuiStyleVar idx)
@@ -4529,16 +4530,16 @@ void ImGui::DestroyContext(ImGuiContext* ctx)
 // IMPORTANT: interactive elements requires a fixed ###xxx suffix, it must be same in ALL languages to allow for
 // automation.
 static const ImGuiLocEntry GLocalizationEntriesEnUS[] = {
-    {ImGuiLocKey_VersionStr, "Dear ImGui " IMGUI_VERSION " (" IM_STRINGIFY(IMGUI_VERSION_NUM) ")"},
-    {ImGuiLocKey_TableSizeOne, "Size column to fit###SizeOne"},
-    {ImGuiLocKey_TableSizeAllFit, "Size all columns to fit###SizeAll"},
-    {ImGuiLocKey_TableSizeAllDefault, "Size all columns to default###SizeAll"},
-    {ImGuiLocKey_TableResetOrder, "Reset order###ResetOrder"},
-    {ImGuiLocKey_WindowingMainMenuBar, "(Main menu bar)"},
-    {ImGuiLocKey_WindowingPopup, "(Popup)"},
-    {ImGuiLocKey_WindowingUntitled, "(Untitled)"},
-    {ImGuiLocKey_OpenLink_s, "Open '%s'"},
-    {ImGuiLocKey_CopyLink, "Copy Link###CopyLink"},
+    { ImGuiLocKey_VersionStr, "Dear ImGui " IMGUI_VERSION " (" IM_STRINGIFY(IMGUI_VERSION_NUM) ")" },
+    { ImGuiLocKey_TableSizeOne, "Size column to fit###SizeOne" },
+    { ImGuiLocKey_TableSizeAllFit, "Size all columns to fit###SizeAll" },
+    { ImGuiLocKey_TableSizeAllDefault, "Size all columns to default###SizeAll" },
+    { ImGuiLocKey_TableResetOrder, "Reset order###ResetOrder" },
+    { ImGuiLocKey_WindowingMainMenuBar, "(Main menu bar)" },
+    { ImGuiLocKey_WindowingPopup, "(Popup)" },
+    { ImGuiLocKey_WindowingUntitled, "(Untitled)" },
+    { ImGuiLocKey_OpenLink_s, "Open '%s'" },
+    { ImGuiLocKey_CopyLink, "Copy Link###CopyLink" },
 };
 
 void ImGui::Initialize()
@@ -7007,10 +7008,10 @@ struct ImGuiResizeGripDef
     int AngleMin12, AngleMax12;
 };
 static const ImGuiResizeGripDef resize_grip_def[4] = {
-    {ImVec2(1, 1), ImVec2(-1, -1), 0, 3}, // Lower-right
-    {ImVec2(0, 1), ImVec2(+1, -1), 3, 6}, // Lower-left
-    {ImVec2(0, 0), ImVec2(+1, +1), 6, 9}, // Upper-left (Unused)
-    {ImVec2(1, 0), ImVec2(-1, +1), 9, 12} // Upper-right (Unused)
+    { ImVec2(1, 1), ImVec2(-1, -1), 0, 3 }, // Lower-right
+    { ImVec2(0, 1), ImVec2(+1, -1), 3, 6 }, // Lower-left
+    { ImVec2(0, 0), ImVec2(+1, +1), 6, 9 }, // Upper-left (Unused)
+    { ImVec2(1, 0), ImVec2(-1, +1), 9, 12 } // Upper-right (Unused)
 };
 
 // Data for resizing from borders
@@ -7021,10 +7022,10 @@ struct ImGuiResizeBorderDef
     float OuterAngle;            // Angle toward outside
 };
 static const ImGuiResizeBorderDef resize_border_def[4] = {
-    {ImVec2(+1, 0), ImVec2(0, 1), ImVec2(0, 0), IM_PI * 1.00f}, // Left
-    {ImVec2(-1, 0), ImVec2(1, 0), ImVec2(1, 1), IM_PI * 0.00f}, // Right
-    {ImVec2(0, +1), ImVec2(0, 0), ImVec2(1, 0), IM_PI * 1.50f}, // Up
-    {ImVec2(0, -1), ImVec2(1, 1), ImVec2(0, 1), IM_PI * 0.50f}  // Down
+    { ImVec2(+1, 0), ImVec2(0, 1), ImVec2(0, 0), IM_PI * 1.00f }, // Left
+    { ImVec2(-1, 0), ImVec2(1, 0), ImVec2(1, 1), IM_PI * 0.00f }, // Right
+    { ImVec2(0, +1), ImVec2(0, 0), ImVec2(1, 0), IM_PI * 1.50f }, // Up
+    { ImVec2(0, -1), ImVec2(1, 1), ImVec2(0, 1), IM_PI * 0.50f }  // Down
 };
 
 static ImRect GetResizeBorderRect(ImGuiWindow* window, int border_n, float perp_padding, float thickness)
@@ -9449,14 +9450,14 @@ void ImGui::SetNavFocusScope(ImGuiID focus_scope_id)
             g.NavFocusRoute.push_back(g.FocusScopeStack.Data[n]);
     }
     else if (focus_scope_id == g.NavWindow->NavRootFocusScopeId)
-        g.NavFocusRoute.push_back({focus_scope_id, g.NavWindow->ID});
+        g.NavFocusRoute.push_back({ focus_scope_id, g.NavWindow->ID });
     else
         return;
 
     // Then follow on manually set ParentWindowForFocusRoute field (#6798)
     for (ImGuiWindow* window = g.NavWindow->ParentWindowForFocusRoute; window != NULL;
          window = window->ParentWindowForFocusRoute)
-        g.NavFocusRoute.push_back({window->NavRootFocusScopeId, window->ID});
+        g.NavFocusRoute.push_back({ window->NavRootFocusScopeId, window->ID });
     IM_ASSERT(g.NavFocusRoute.Size < 100); // Maximum depth is technically 251 as per CalcRoutingScore(): 254 - 3
 }
 
@@ -10995,7 +10996,7 @@ static ImGuiWindow* FindBestWheelingWindow(const ImVec2& wheel)
 {
     // For each axis, find window in the hierarchy that may want to use scrolling
     ImGuiContext& g = *GImGui;
-    ImGuiWindow* windows[2] = {NULL, NULL};
+    ImGuiWindow* windows[2] = { NULL, NULL };
     for (int axis = 0; axis < 2; axis++)
         if (wheel[axis] != 0.0f)
             for (ImGuiWindow* window = windows[axis] = g.HoveredWindow; window->Flags & ImGuiWindowFlags_ChildWindow;
@@ -11106,8 +11107,8 @@ void ImGui::UpdateMouseWheel()
     if (ImGuiWindow* window = (g.WheelingWindow ? g.WheelingWindow : FindBestWheelingWindow(wheel)))
         if (!(window->Flags & ImGuiWindowFlags_NoScrollWithMouse) && !(window->Flags & ImGuiWindowFlags_NoMouseInputs))
         {
-            bool do_scroll[2] = {wheel.x != 0.0f && window->ScrollMax.x != 0.0f,
-                                 wheel.y != 0.0f && window->ScrollMax.y != 0.0f};
+            bool do_scroll[2] = { wheel.x != 0.0f && window->ScrollMax.x != 0.0f,
+                                  wheel.y != 0.0f && window->ScrollMax.y != 0.0f };
             if (do_scroll[ImGuiAxis_X] && do_scroll[ImGuiAxis_Y])
                 do_scroll[(g.WheelingAxisAvg.x > g.WheelingAxisAvg.y) ? ImGuiAxis_Y : ImGuiAxis_X] = false;
             if (do_scroll[ImGuiAxis_X])
@@ -11144,14 +11145,14 @@ void ImGui::SetNextFrameWantCaptureMouse(bool want_capture_mouse)
 #ifndef IMGUI_DISABLE_DEBUG_TOOLS
 static const char* GetInputSourceName(ImGuiInputSource source)
 {
-    const char* input_source_names[] = {"None", "Mouse", "Keyboard", "Gamepad"};
+    const char* input_source_names[] = { "None", "Mouse", "Keyboard", "Gamepad" };
     IM_ASSERT(IM_ARRAYSIZE(input_source_names) == ImGuiInputSource_COUNT && source >= 0 &&
               source < ImGuiInputSource_COUNT);
     return input_source_names[source];
 }
 static const char* GetMouseSourceName(ImGuiMouseSource source)
 {
-    const char* mouse_source_names[] = {"Mouse", "TouchScreen", "Pen"};
+    const char* mouse_source_names[] = { "Mouse", "TouchScreen", "Pen" };
     IM_ASSERT(IM_ARRAYSIZE(mouse_source_names) == ImGuiMouseSource_COUNT && source >= 0 &&
               source < ImGuiMouseSource_COUNT);
     return mouse_source_names[source];
@@ -13326,7 +13327,8 @@ ImVec2 ImGui::FindBestWindowPosForPopupEx(const ImVec2& ref_pos, const ImVec2& s
     // Combo Box policy (we want a connecting edge)
     if (policy == ImGuiPopupPositionPolicy_ComboBox)
     {
-        const ImGuiDir dir_prefered_order[ImGuiDir_COUNT] = {ImGuiDir_Down, ImGuiDir_Right, ImGuiDir_Left, ImGuiDir_Up};
+        const ImGuiDir dir_prefered_order[ImGuiDir_COUNT] = { ImGuiDir_Down, ImGuiDir_Right, ImGuiDir_Left,
+                                                              ImGuiDir_Up };
         for (int n = (*last_dir != ImGuiDir_None) ? -1 : 0; n < ImGuiDir_COUNT; n++)
         {
             const ImGuiDir dir = (n == -1) ? *last_dir : dir_prefered_order[n];
@@ -13352,7 +13354,8 @@ ImVec2 ImGui::FindBestWindowPosForPopupEx(const ImVec2& ref_pos, const ImVec2& s
     // (Always first try the direction we used on the last frame, if any)
     if (policy == ImGuiPopupPositionPolicy_Tooltip || policy == ImGuiPopupPositionPolicy_Default)
     {
-        const ImGuiDir dir_prefered_order[ImGuiDir_COUNT] = {ImGuiDir_Right, ImGuiDir_Down, ImGuiDir_Up, ImGuiDir_Left};
+        const ImGuiDir dir_prefered_order[ImGuiDir_COUNT] = { ImGuiDir_Right, ImGuiDir_Down, ImGuiDir_Up,
+                                                              ImGuiDir_Left };
         for (int n = (*last_dir != ImGuiDir_None) ? -1 : 0; n < ImGuiDir_COUNT; n++)
         {
             const ImGuiDir dir = (n == -1) ? *last_dir : dir_prefered_order[n];
@@ -14190,17 +14193,18 @@ static void ImGui::NavUpdate()
     // FIXME-NAV: Now that keys are separated maybe we can get rid of NavInputSource?
     const bool nav_gamepad_active = (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) != 0 &&
                                     (io.BackendFlags & ImGuiBackendFlags_HasGamepad) != 0;
-    const ImGuiKey nav_gamepad_keys_to_change_source[] = {
-        ImGuiKey_GamepadFaceRight, ImGuiKey_GamepadFaceLeft, ImGuiKey_GamepadFaceUp, ImGuiKey_GamepadFaceDown,
-        ImGuiKey_GamepadDpadRight, ImGuiKey_GamepadDpadLeft, ImGuiKey_GamepadDpadUp, ImGuiKey_GamepadDpadDown};
+    const ImGuiKey nav_gamepad_keys_to_change_source[] = { ImGuiKey_GamepadFaceRight, ImGuiKey_GamepadFaceLeft,
+                                                           ImGuiKey_GamepadFaceUp,    ImGuiKey_GamepadFaceDown,
+                                                           ImGuiKey_GamepadDpadRight, ImGuiKey_GamepadDpadLeft,
+                                                           ImGuiKey_GamepadDpadUp,    ImGuiKey_GamepadDpadDown };
     if (nav_gamepad_active)
         for (ImGuiKey key : nav_gamepad_keys_to_change_source)
             if (IsKeyDown(key))
                 g.NavInputSource = ImGuiInputSource_Gamepad;
     const bool nav_keyboard_active = (io.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard) != 0;
-    const ImGuiKey nav_keyboard_keys_to_change_source[] = {ImGuiKey_Space,      ImGuiKey_Enter,     ImGuiKey_Escape,
-                                                           ImGuiKey_RightArrow, ImGuiKey_LeftArrow, ImGuiKey_UpArrow,
-                                                           ImGuiKey_DownArrow};
+    const ImGuiKey nav_keyboard_keys_to_change_source[] = { ImGuiKey_Space,      ImGuiKey_Enter,     ImGuiKey_Escape,
+                                                            ImGuiKey_RightArrow, ImGuiKey_LeftArrow, ImGuiKey_UpArrow,
+                                                            ImGuiKey_DownArrow };
     if (nav_keyboard_active)
         for (ImGuiKey key : nav_keyboard_keys_to_change_source)
             if (IsKeyDown(key))
@@ -15119,7 +15123,7 @@ static void ImGui::NavUpdateWindowing()
     }
 
     // Keyboard: Press and Release ALT to toggle menu layer
-    const ImGuiKey windowing_toggle_keys[] = {ImGuiKey_LeftAlt, ImGuiKey_RightAlt};
+    const ImGuiKey windowing_toggle_keys[] = { ImGuiKey_LeftAlt, ImGuiKey_RightAlt };
     bool windowing_toggle_layer_start = false;
     for (ImGuiKey windowing_toggle_key : windowing_toggle_keys)
         if (nav_keyboard_active && IsKeyPressed(windowing_toggle_key, 0, ImGuiKeyOwner_NoOwner))
@@ -16525,9 +16529,9 @@ static bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext*, const char* path)
 static bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext*, const char* path)
 {
 #if defined(__APPLE__)
-    const char* args[]{"open", "--", path, NULL};
+    const char* args[] { "open", "--", path, NULL };
 #else
-    const char* args[]{"xdg-open", path, NULL};
+    const char* args[] { "xdg-open", path, NULL };
 #endif
     pid_t pid = fork();
     if (pid < 0)
@@ -16695,11 +16699,12 @@ void ImGui::DebugRenderKeyboardPreview(ImDrawList* draw_list)
         ImGuiKey Key;
     };
     const KeyLayoutData keys_to_display[] = {
-        {0, 0, "", ImGuiKey_Tab}, {0, 1, "Q", ImGuiKey_Q},        {0, 2, "W", ImGuiKey_W},
-        {0, 3, "E", ImGuiKey_E},  {0, 4, "R", ImGuiKey_R},        {1, 0, "", ImGuiKey_CapsLock},
-        {1, 1, "A", ImGuiKey_A},  {1, 2, "S", ImGuiKey_S},        {1, 3, "D", ImGuiKey_D},
-        {1, 4, "F", ImGuiKey_F},  {2, 0, "", ImGuiKey_LeftShift}, {2, 1, "Z", ImGuiKey_Z},
-        {2, 2, "X", ImGuiKey_X},  {2, 3, "C", ImGuiKey_C},        {2, 4, "V", ImGuiKey_V}};
+        { 0, 0, "", ImGuiKey_Tab }, { 0, 1, "Q", ImGuiKey_Q },        { 0, 2, "W", ImGuiKey_W },
+        { 0, 3, "E", ImGuiKey_E },  { 0, 4, "R", ImGuiKey_R },        { 1, 0, "", ImGuiKey_CapsLock },
+        { 1, 1, "A", ImGuiKey_A },  { 1, 2, "S", ImGuiKey_S },        { 1, 3, "D", ImGuiKey_D },
+        { 1, 4, "F", ImGuiKey_F },  { 2, 0, "", ImGuiKey_LeftShift }, { 2, 1, "Z", ImGuiKey_Z },
+        { 2, 2, "X", ImGuiKey_X },  { 2, 3, "C", ImGuiKey_C },        { 2, 4, "V", ImGuiKey_V }
+    };
 
     // Elements rendered manually via ImDrawList API are not clipped automatically.
     // While not strictly necessary, here IsItemVisible() is used to avoid rendering these shapes when they are out of
@@ -16884,8 +16889,8 @@ void ImGui::ShowMetricsWindow(bool* p_open)
         WRT_ContentRegionRect,
         WRT_Count
     }; // Windows Rect Type
-    const char* wrt_rects_names[WRT_Count] = {"OuterRect", "OuterRectClipped", "InnerRect",    "InnerClipRect",
-                                              "WorkRect",  "Content",          "ContentIdeal", "ContentRegionRect"};
+    const char* wrt_rects_names[WRT_Count] = { "OuterRect", "OuterRectClipped", "InnerRect",    "InnerClipRect",
+                                               "WorkRect",  "Content",          "ContentIdeal", "ContentRegionRect" };
     enum
     {
         TRT_OuterRect,
@@ -16903,19 +16908,19 @@ void ImGui::ShowMetricsWindow(bool* p_open)
         TRT_ColumnsContentUnfrozen,
         TRT_Count
     }; // Tables Rect Type
-    const char* trt_rects_names[TRT_Count] = {"OuterRect",
-                                              "InnerRect",
-                                              "WorkRect",
-                                              "HostClipRect",
-                                              "InnerClipRect",
-                                              "BackgroundClipRect",
-                                              "ColumnsRect",
-                                              "ColumnsWorkRect",
-                                              "ColumnsClipRect",
-                                              "ColumnsContentHeadersUsed",
-                                              "ColumnsContentHeadersIdeal",
-                                              "ColumnsContentFrozen",
-                                              "ColumnsContentUnfrozen"};
+    const char* trt_rects_names[TRT_Count] = { "OuterRect",
+                                               "InnerRect",
+                                               "WorkRect",
+                                               "HostClipRect",
+                                               "InnerClipRect",
+                                               "BackgroundClipRect",
+                                               "ColumnsRect",
+                                               "ColumnsWorkRect",
+                                               "ColumnsClipRect",
+                                               "ColumnsContentHeadersUsed",
+                                               "ColumnsContentHeadersIdeal",
+                                               "ColumnsContentFrozen",
+                                               "ColumnsContentUnfrozen" };
     if (cfg->ShowWindowsRectsType < 0)
         cfg->ShowWindowsRectsType = WRT_WorkRect;
     if (cfg->ShowTablesRectsType < 0)
@@ -18521,7 +18526,7 @@ void ImGui::UpdateDebugToolItemPicker()
         return;
     Text("HoveredId: 0x%08X", hovered_id);
     Text("Press ESC to abort picking.");
-    const char* mouse_button_names[] = {"Left", "Right", "Middle"};
+    const char* mouse_button_names[] = { "Left", "Right", "Middle" };
     if (change_mapping)
         Text("Remap w/ Ctrl+Shift: click anywhere to select new mouse button.");
     else

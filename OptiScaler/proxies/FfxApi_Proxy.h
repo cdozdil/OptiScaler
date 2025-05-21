@@ -17,7 +17,7 @@ class FfxApiProxy
 {
   private:
     inline static HMODULE _dllDx12 = nullptr;
-    inline static feature_version _versionDx12{0, 0, 0};
+    inline static feature_version _versionDx12 { 0, 0, 0 };
     inline static PfnFfxCreateContext _D3D12_CreateContext = nullptr;
     inline static PfnFfxDestroyContext _D3D12_DestroyContext = nullptr;
     inline static PfnFfxConfigure _D3D12_Configure = nullptr;
@@ -25,7 +25,7 @@ class FfxApiProxy
     inline static PfnFfxDispatch _D3D12_Dispatch = nullptr;
 
     inline static HMODULE _dllVk = nullptr;
-    inline static feature_version _versionVk{0, 0, 0};
+    inline static feature_version _versionVk { 0, 0, 0 };
     inline static PfnFfxCreateContext _VULKAN_CreateContext = nullptr;
     inline static PfnFfxDestroyContext _VULKAN_DestroyContext = nullptr;
     inline static PfnFfxConfigure _VULKAN_Configure = nullptr;
@@ -130,7 +130,7 @@ class FfxApiProxy
     {
         if (_versionDx12.major == 0 && _D3D12_Query != nullptr /* && device != nullptr*/)
         {
-            ffxQueryDescGetVersions versionQuery{};
+            ffxQueryDescGetVersions versionQuery {};
             versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
             versionQuery.createDescType = 0x00010000u; // FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE
             uint64_t versionCount = 0;
@@ -269,7 +269,7 @@ class FfxApiProxy
     {
         if (_versionVk.major == 0 && _VULKAN_Query != nullptr)
         {
-            ffxQueryDescGetVersions versionQuery{};
+            ffxQueryDescGetVersions versionQuery {};
             versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
             versionQuery.createDescType = 0x00010000u; // FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE
             uint64_t versionCount = 0;

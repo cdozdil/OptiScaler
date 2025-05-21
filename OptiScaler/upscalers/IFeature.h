@@ -22,7 +22,7 @@ class IFeature
   private:
     bool _isInited = false;
     int _featureFlags = 0;
-    InitFlags _initFlags{};
+    InitFlags _initFlags {};
 
     NVSDK_NGX_PerfQuality_Value _perfQualityValue;
 

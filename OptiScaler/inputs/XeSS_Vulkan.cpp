@@ -13,12 +13,12 @@ static xess_context_handle_t _currentContext = nullptr;
 static VkDevice _device = nullptr;
 static VkInstance _instance = nullptr;
 static VkPhysicalDevice _physicalDevice = nullptr;
-static NVSDK_NGX_Resource_VK expNVRes[3]{};
-static NVSDK_NGX_Resource_VK depthNVRes[3]{};
-static NVSDK_NGX_Resource_VK biasNVRes[3]{};
-static NVSDK_NGX_Resource_VK colorNVRes[3]{};
-static NVSDK_NGX_Resource_VK outputNVRes[3]{};
-static NVSDK_NGX_Resource_VK mvNVRes[3]{};
+static NVSDK_NGX_Resource_VK expNVRes[3] {};
+static NVSDK_NGX_Resource_VK depthNVRes[3] {};
+static NVSDK_NGX_Resource_VK biasNVRes[3] {};
+static NVSDK_NGX_Resource_VK colorNVRes[3] {};
+static NVSDK_NGX_Resource_VK outputNVRes[3] {};
+static NVSDK_NGX_Resource_VK mvNVRes[3] {};
 
 static bool CreateDLSSContext(xess_context_handle_t handle, VkCommandBuffer commandList,
                               const xess_vk_execute_params_t* pExecParams)
@@ -124,7 +124,7 @@ xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physi
 
     if (!State::Instance().NvngxVkInited)
     {
-        NVSDK_NGX_FeatureCommonInfo fcInfo{};
+        NVSDK_NGX_FeatureCommonInfo fcInfo {};
 
         auto dllPath = Util::DllPath().remove_filename();
         auto nvngxDlssPath = Util::FindFilePath(dllPath, "nvngx_dlss.dll");
@@ -174,7 +174,7 @@ xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physi
         return XESS_RESULT_ERROR_INVALID_ARGUMENT;
 
     _nvParams[*phContext] = params;
-    _motionScales[*phContext] = {1.0f, 1.0f};
+    _motionScales[*phContext] = { 1.0f, 1.0f };
 
     LOG_DEBUG("Created context: {}", (size_t) *phContext);
 
@@ -192,7 +192,7 @@ xess_result_t hk_xessVKInit(xess_context_handle_t hContext, const xess_vk_init_p
 {
     LOG_DEBUG("initFlags: {:X}", pInitParams->initFlags);
 
-    xess_vk_init_params_t ip{};
+    xess_vk_init_params_t ip {};
     ip.bufferHeapOffset = pInitParams->bufferHeapOffset;
     ip.creationNodeMask = pInitParams->creationNodeMask;
     ip.initFlags = pInitParams->initFlags;
@@ -288,8 +288,8 @@ xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer c
     {
         CreateNVRes(&pExecParams->responsivePixelMaskTexture, &biasNVRes[index]);
 
-        if (!isVersionOrBetter({XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch},
-                               {2, 0, 1}))
+        if (!isVersionOrBetter({ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch },
+                               { 2, 0, 1 }))
             params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &biasNVRes[index]);
         else
             params->Set("FSR.reactive", &biasNVRes[index]);

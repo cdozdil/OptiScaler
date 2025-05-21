@@ -334,7 +334,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount
     }
 
     HRESULT result;
-    DXGI_SWAP_CHAIN_DESC desc{};
+    DXGI_SWAP_CHAIN_DESC desc {};
     m_pReal->GetDesc(&desc);
 
     if (Config::Instance()->FGEnabled.value_or_default())
@@ -413,7 +413,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers(UINT BufferCount
     UINT bc = BufferCount;
     if (bc == 0 && m_pReal1 != nullptr)
     {
-        DXGI_SWAP_CHAIN_DESC1 desc{};
+        DXGI_SWAP_CHAIN_DESC1 desc {};
 
         if (m_pReal1->GetDesc1(&desc) == S_OK)
             bc = desc.BufferCount;
@@ -608,7 +608,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCoun
     }
 
     HRESULT result;
-    DXGI_SWAP_CHAIN_DESC desc{};
+    DXGI_SWAP_CHAIN_DESC desc {};
     m_pReal->GetDesc(&desc);
 
     if (Config::Instance()->FGEnabled.value_or_default())
@@ -686,7 +686,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCoun
     UINT bc = BufferCount;
     if (bc == 0 && m_pReal1 != nullptr)
     {
-        DXGI_SWAP_CHAIN_DESC1 desc{};
+        DXGI_SWAP_CHAIN_DESC1 desc {};
 
         if (m_pReal1->GetDesc1(&desc) == S_OK)
             bc = desc.BufferCount;
