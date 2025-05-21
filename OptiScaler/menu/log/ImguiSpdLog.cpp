@@ -114,15 +114,15 @@ class ImGuiSpdLogAdaptor : public spdlog::sinks::base_sink<std::mutex>
 
                     for (auto i = 0; i < LogMetaDataEntry.FormattedStringRanges.size(); ++i)
                     {
-                        static const ImVec4 BrightColorsToVec[]{
-                            {0, 0, 0, 1}, // COLOR_BRIGHTBLACK
-                            {1, 0, 0, 1}, // COLOR_BRIGHTRED
-                            {0, 1, 0, 1}, // COLOR_BRIGHTGREEN
-                            {1, 1, 0, 1}, // COLOR_BRIGHTYELLOW
-                            {0, 0, 1, 1}, // COLOR_BRIGHTBLUE
-                            {1, 0, 1, 1}, // COLOR_BRIGHTMAGENTA
-                            {0, 1, 1, 1}, // COLOR_BRIGHTCYAN
-                            {1, 1, 1, 1}  // COLOR_BRIGHTWHITE
+                        static const ImVec4 BrightColorsToVec[] {
+                            { 0, 0, 0, 1 }, // COLOR_BRIGHTBLACK
+                            { 1, 0, 0, 1 }, // COLOR_BRIGHTRED
+                            { 0, 1, 0, 1 }, // COLOR_BRIGHTGREEN
+                            { 1, 1, 0, 1 }, // COLOR_BRIGHTYELLOW
+                            { 0, 0, 1, 1 }, // COLOR_BRIGHTBLUE
+                            { 1, 0, 1, 1 }, // COLOR_BRIGHTMAGENTA
+                            { 0, 1, 1, 1 }, // COLOR_BRIGHTCYAN
+                            { 1, 1, 1, 1 }  // COLOR_BRIGHTWHITE
                         };
 
                         ImGui::PushStyleColor(ImGuiCol_Text,
@@ -188,8 +188,8 @@ class ImGuiSpdLogAdaptor : public spdlog::sinks::base_sink<std::mutex>
 
         // Process string by converting the color range passed to an escape sequence first,
         // yes may not be the nicest way of doing this but its way easier to process later.
-        const char* ColorToEscapeSequence[]{ESC_BRIGHTMAGENTA, ESC_CYAN,      ESC_BRIGHTGREEN,
-                                            ESC_BRIGHTYELLOW,  ESC_BRIGHTRED, ESC_RED};
+        const char* ColorToEscapeSequence[] { ESC_BRIGHTMAGENTA, ESC_CYAN,      ESC_BRIGHTGREEN,
+                                              ESC_BRIGHTYELLOW,  ESC_BRIGHTRED, ESC_RED };
 
         FormattedText.insert(LogMessage.color_range_start, ColorToEscapeSequence[LogMessage.level]);
         FormattedText.insert(LogMessage.color_range_end + 5, "\x1b[0m");
@@ -200,7 +200,7 @@ class ImGuiSpdLogAdaptor : public spdlog::sinks::base_sink<std::mutex>
 
         // Parse formatted logged string for ansi escape sequences
         auto OldTextBufferSize = LoggedContent.size();
-        SinkLineContent MessageData2{LogMessage.level, OldTextBufferSize};
+        SinkLineContent MessageData2 { LogMessage.level, OldTextBufferSize };
 
         AnsiEscapeSequenceTag LastSequenceTagSinceBegin = FORMAT_RESET_COLORS;
 
@@ -214,7 +214,7 @@ class ImGuiSpdLogAdaptor : public spdlog::sinks::base_sink<std::mutex>
 
         default:
 
-            SinkLineContent::ColorDataRanges FormatPush{0, 0, LastSequenceTagSinceBegin};
+            SinkLineContent::ColorDataRanges FormatPush { 0, 0, LastSequenceTagSinceBegin };
             MessageData2.FormattedStringRanges.push_back(FormatPush);
             break;
         }
@@ -242,7 +242,7 @@ class ImGuiSpdLogAdaptor : public spdlog::sinks::base_sink<std::mutex>
                 MessageData2.FormattedStringRanges.clear();
 
                 // Continue previous escape sequences pushed in the previous line
-                SinkLineContent::ColorDataRanges FormatPush{i + 1, 0, LastSequenceTagSinceBegin};
+                SinkLineContent::ColorDataRanges FormatPush { i + 1, 0, LastSequenceTagSinceBegin };
                 MessageData2.FormattedStringRanges.push_back(FormatPush);
             }
             break;
@@ -263,7 +263,7 @@ class ImGuiSpdLogAdaptor : public spdlog::sinks::base_sink<std::mutex>
                 ++PositionProcessed;
                 LastSequenceTagSinceBegin = EscapeSequenceCode;
 
-                SinkLineContent::ColorDataRanges FormatPush{i, 0, EscapeSequenceCode};
+                SinkLineContent::ColorDataRanges FormatPush { i, 0, EscapeSequenceCode };
                 if (MessageData2.FormattedStringRanges.size())
                     MessageData2.FormattedStringRanges.back().SubStringEnd = FormatPush.SubStringBegin;
                 MessageData2.FormattedStringRanges.push_back(FormatPush);
@@ -359,5 +359,5 @@ class ImGuiSpdLogAdaptor : public spdlog::sinks::base_sink<std::mutex>
 
     // Previous Frame's filterdata, if any of these change to the new values the filter has to be recalculated
     int32_t PreviousFilterLevel = spdlog::level::trace;
-    decltype(ImGuiTextFilter::InputBuf) PreviousFilterText{};
+    decltype(ImGuiTextFilter::InputBuf) PreviousFilterText {};
 };

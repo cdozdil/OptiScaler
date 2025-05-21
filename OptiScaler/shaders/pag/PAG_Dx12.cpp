@@ -266,13 +266,13 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     }
 
     // RVs for SRVs
-    ID3D12Resource* srvResources[6] = {InColor, InDepth, InDepth, InMotionVectors, nullptr, _historyDepth};
-    DXGI_FORMAT srvResourceFmts[6] = {inColorDesc.Format,
-                                      GetDepthFormat(inDepthDesc.Format),
-                                      GetStencilFormat(inDepthDesc.Format),
-                                      inMvDesc.Format,
-                                      DXGI_FORMAT_R16_FLOAT,
-                                      GetStencilFormat(_histDepthDesc.Format)};
+    ID3D12Resource* srvResources[6] = { InColor, InDepth, InDepth, InMotionVectors, nullptr, _historyDepth };
+    DXGI_FORMAT srvResourceFmts[6] = { inColorDesc.Format,
+                                       GetDepthFormat(inDepthDesc.Format),
+                                       GetStencilFormat(inDepthDesc.Format),
+                                       inMvDesc.Format,
+                                       DXGI_FORMAT_R16_FLOAT,
+                                       GetStencilFormat(_histDepthDesc.Format) };
 
     for (size_t i = 0; i < 6; i++)
     {
@@ -292,8 +292,8 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     }
 
     // RVs for UAVs
-    ID3D12Resource* uavResources[3] = {_reactiveMask, _motionVector, _debug};
-    D3D12_RESOURCE_DESC* uavResourceDescs[3] = {&_rMaskhDesc, &_mvhDesc, &_debugDesc};
+    ID3D12Resource* uavResources[3] = { _reactiveMask, _motionVector, _debug };
+    D3D12_RESOURCE_DESC* uavResourceDescs[3] = { &_rMaskhDesc, &_mvhDesc, &_debugDesc };
 
     for (size_t i = 0; i < 3; i++)
     {
@@ -306,10 +306,10 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     }
 
     // CBV's for CB's
-    InternalJitterBuff constants{};
-    constants.Scale = {1, 1, 0, INFINITY};
-    constants.MoreData = {0, 0, 0, 0};
-    constants.Jitter = {InJitter.x, InJitter.y};
+    InternalJitterBuff constants {};
+    constants.Scale = { 1, 1, 0, INFINITY };
+    constants.MoreData = { 0, 0, 0, 0 };
+    constants.Jitter = { InJitter.x, InJitter.y };
     constants.VelocityScaler = 0;
     constants.JitterMotion = 0;
 
@@ -339,7 +339,7 @@ bool PAG_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmd
     cbvDesc.SizeInBytes = sizeof(constants);
     InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
-    ID3D12DescriptorHeap* heaps[] = {_srvHeap[_counter]};
+    ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     // Signature & PSO

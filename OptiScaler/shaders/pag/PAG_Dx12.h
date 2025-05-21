@@ -24,17 +24,17 @@ class PAG_Dx12
 
     ID3D12RootSignature* _rootSignature = nullptr;
     ID3D12PipelineState* _pipelineState = nullptr;
-    ID3D12DescriptorHeap* _srvHeap[2] = {nullptr, nullptr};
+    ID3D12DescriptorHeap* _srvHeap[2] = { nullptr, nullptr };
 
-    D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[6][2] = {{NULL, NULL}, {NULL, NULL}, {NULL, NULL},
-                                                       {NULL, NULL}, {NULL, NULL}, {NULL, NULL}};
-    D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[3][2] = {{NULL, NULL}, {NULL, NULL}, {NULL, NULL}};
-    D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2] = {NULL, NULL};
+    D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[6][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL },
+                                                        { NULL, NULL }, { NULL, NULL }, { NULL, NULL } };
+    D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[3][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL } };
+    D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2] = { NULL, NULL };
 
-    D3D12_GPU_DESCRIPTOR_HANDLE _gpuSrvHandle[6][2] = {{NULL, NULL}, {NULL, NULL}, {NULL, NULL},
-                                                       {NULL, NULL}, {NULL, NULL}, {NULL, NULL}};
-    D3D12_GPU_DESCRIPTOR_HANDLE _gpuUavHandle[3][2] = {{NULL, NULL}, {NULL, NULL}, {NULL, NULL}};
-    D3D12_GPU_DESCRIPTOR_HANDLE _gpuCbvHandle[2] = {NULL, NULL};
+    D3D12_GPU_DESCRIPTOR_HANDLE _gpuSrvHandle[6][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL },
+                                                        { NULL, NULL }, { NULL, NULL }, { NULL, NULL } };
+    D3D12_GPU_DESCRIPTOR_HANDLE _gpuUavHandle[3][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL } };
+    D3D12_GPU_DESCRIPTOR_HANDLE _gpuCbvHandle[2] = { NULL, NULL };
 
     ID3D12Device* _device = nullptr;
 
