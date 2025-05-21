@@ -349,24 +349,24 @@ class Config
     CustomOptional<bool> FGResourceFlip{false};
 
     // OptiFG - Hudfix
-    CustomOptional<bool> FGHUDFix{ false };
-    CustomOptional<int> FGHUDLimit{ 1 };
-    CustomOptional<bool> FGHUDFixExtended{ false };
-    CustomOptional<bool> FGImmediateCapture{ false };
-    CustomOptional<bool> FGHudfixHalfSync{ false };
-    CustomOptional<bool> FGHudfixFullSync{ false };
-    CustomOptional<bool> FGImmediatelyExecute{ true };
-    CustomOptional<bool> FGWaitForNextExecute{ false };
-    CustomOptional<bool> FGExecuteAfterCallback { false };
+    CustomOptional<bool> FGHUDFix{false};
+    CustomOptional<int> FGHUDLimit{1};
+    CustomOptional<bool> FGHUDFixExtended{false};
+    CustomOptional<bool> FGImmediateCapture{false};
+    CustomOptional<bool> FGHudfixHalfSync{false};
+    CustomOptional<bool> FGHudfixFullSync{false};
+    CustomOptional<bool> FGImmediatelyExecute{true};
+    CustomOptional<bool> FGWaitForNextExecute{false};
+    CustomOptional<bool> FGExecuteAfterCallback{false};
 
     // OptiFG - Resource Tracking
     CustomOptional<bool> FGAlwaysTrackHeaps{false};
 
     // OptiFG - DLSS-D Depth scale
-    CustomOptional<bool> FGEnableDepthScale{ false };
-    CustomOptional<float> FGDepthScaleMax{ 10000.0f };
+    CustomOptional<bool> FGEnableDepthScale{false};
+    CustomOptional<float> FGDepthScaleMax{10000.0f};
 
-    // OptiFG - FSR-FG 
+    // OptiFG - FSR-FG
     CustomOptional<int, NoDefault> FGRectLeft;
     CustomOptional<int, NoDefault> FGRectTop;
     CustomOptional<int, NoDefault> FGRectWidth;

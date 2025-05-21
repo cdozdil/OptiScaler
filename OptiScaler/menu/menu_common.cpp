@@ -1262,7 +1262,8 @@ bool MenuCommon::RenderMenu()
 
         State::Instance().frameTimeMutex.lock();
         std::vector<float> frameTimeArray(State::Instance().frameTimes.begin(), State::Instance().frameTimes.end());
-        std::vector<float> upscalerFrameTimeArray(State::Instance().upscaleTimes.begin(), State::Instance().upscaleTimes.end());
+        std::vector<float> upscalerFrameTimeArray(State::Instance().upscaleTimes.begin(),
+                                                  State::Instance().upscaleTimes.end());
         State::Instance().frameTimeMutex.unlock();
         float averageFrameTime = 0.0f;
         float averageUpscalerFT = 0.0f;

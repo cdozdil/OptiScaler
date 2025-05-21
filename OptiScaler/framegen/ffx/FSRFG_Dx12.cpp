@@ -292,16 +292,20 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
     {
         if (State::Instance().currentFeature != nullptr)
         {
-            m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(
-                (scDesc1.BufferDesc.Width - State::Instance().currentFeature->DisplayWidth()) / 2);
-            m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(
-                (scDesc1.BufferDesc.Height - State::Instance().currentFeature->DisplayHeight()) / 2);
+            auto calculatedLeft = (scDesc1.BufferDesc.Width - State::Instance().currentFeature->DisplayWidth()) / 2;
+            auto finalLeft = Config::Instance()->FGRectLeft.value_or(calculatedLeft);
+            m_FrameGenerationConfig.generationRect.left = finalLeft;
+
+            auto calculatedTop = (scDesc1.BufferDesc.Height - State::Instance().currentFeature->DisplayHeight()) / 2;
+            auto finalTop = Config::Instance()->FGRectTop.value_or(calculatedTop);
+            m_FrameGenerationConfig.generationRect.top = finalTop;
         }
         else
         {
             m_FrameGenerationConfig.generationRect.left = Config::Instance()->FGRectLeft.value_or(0);
             m_FrameGenerationConfig.generationRect.top = Config::Instance()->FGRectTop.value_or(0);
         }
+
         m_FrameGenerationConfig.generationRect.width =
             Config::Instance()->FGRectWidth.value_or(State::Instance().currentFeature->DisplayWidth());
         m_FrameGenerationConfig.generationRect.height =
