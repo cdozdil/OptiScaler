@@ -310,7 +310,6 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     if (io.BackendRendererUserData == nullptr)
     {
@@ -381,7 +380,6 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
-    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     // Generate ImGui resources
     if (!io.BackendRendererUserData && currentSCCommandQueue != nullptr)

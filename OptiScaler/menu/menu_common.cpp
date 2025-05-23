@@ -1231,6 +1231,9 @@ bool MenuCommon::RenderMenu()
         inputFpsCycle = false;
     }
 
+    // FPS Overlay font
+    ImGui::PushFontSize(Config::Instance()->MenuScale.value_or_default() * 14.0f);
+
     // If Fps overlay is visible
     if (Config::Instance()->ShowFps.value_or_default())
     {
@@ -1456,10 +1459,15 @@ bool MenuCommon::RenderMenu()
         }
     }
 
+    ImGui::PopFontSize();
+
     if (!_isVisible)
         return false;
 
     {
+        // Overlay font
+        ImGui::PushFontSize(Config::Instance()->MenuScale.value_or_default() * 14.0f);
+
         // If overlay is not visible frame needs to be inited
         if (!Config::Instance()->ShowFps.value_or_default())
         {
@@ -1546,7 +1554,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
 
                 if (Config::Instance()->UseHQFont.value_or_default())
-                    ImGui::PushFont(MenuBase::scaledFont);
+                    ImGui::PushFontSize(14.0f * Config::Instance()->MenuScale.value_or(1.0) * 3.0); // TODO: round?
                 else
                     ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0) * 3.0);
 
@@ -1571,7 +1579,7 @@ bool MenuCommon::RenderMenu()
                                 (State::Instance().libxessExists || XeSSProxy::Module() != nullptr) ? "XeSS" : "");
 
                     if (Config::Instance()->UseHQFont.value_or_default())
-                        ImGui::PopFont();
+                        ImGui::PopFontSize();
                     else
                         ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
 
@@ -4001,6 +4009,8 @@ bool MenuCommon::RenderMenu()
             }
         }
 
+        ImGui::PopFontSize();
+
         return true;
     }
 }
@@ -4046,7 +4056,19 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
         LOG_DEBUG("ImGui_ImplUwp_Init result: {0}", initResult);
     }
 
-    MenuBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+    if (io.Fonts->Fonts.empty())
+    {
+        ImFontAtlas* atlas = io.Fonts;
+        atlas->Clear();
+        constexpr float fontSize = 14.0f; // just changing this doesn't make other elements scale ideally
+
+        // This automatically becomes the next default font
+        ImFontConfig fontConfig;
+        // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
+        auto font =
+            atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, 14.0f, &fontConfig);
+        ImGui::PushFont(font);
+    }
 
     if (!Config::Instance()->OverlayMenu.value_or_default())
     {

@@ -89,7 +89,6 @@ bool Menu_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
-    UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     if (!_dx11Init && io.BackendRendererUserData == nullptr)
         _dx11Init = ImGui_ImplDX11_Init(_device, pCmdList);

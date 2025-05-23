@@ -105,7 +105,6 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures; 
-    UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     if (!_dx12Init && io.BackendRendererUserData == nullptr)
     {

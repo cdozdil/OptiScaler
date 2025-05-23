@@ -129,10 +129,10 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     {
         VkDescriptorPoolSize sampler_pool_size = {};
         sampler_pool_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        sampler_pool_size.descriptorCount = 1;
+        sampler_pool_size.descriptorCount = 8; // required by ImGui 1.92
         VkDescriptorPoolCreateInfo desc_pool_info = {};
         desc_pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        desc_pool_info.maxSets = 1;
+        desc_pool_info.maxSets = 8;
         desc_pool_info.poolSizeCount = 1;
         desc_pool_info.pPoolSizes = &sampler_pool_size;
         result = vkCreateDescriptorPool(device, &desc_pool_info, NULL, &pool);
@@ -466,7 +466,6 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
-    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     _frameCount++;
 

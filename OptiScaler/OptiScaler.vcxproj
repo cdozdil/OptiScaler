@@ -323,7 +323,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="inputs\XeSS_Proxy.h" />
     <ClInclude Include="inputs\XeSS_Vulkan.h" />
     <ClInclude Include="menu\font\Hack_Compressed.h" />
-    <ClInclude Include="menu\menu_base.h" />
     <ClInclude Include="misc\FrameLimit.h" />
     <ClInclude Include="OwnedMutex.h" />
     <ClInclude Include="proxies\D3D12_Proxy.h" />
@@ -467,7 +466,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="inputs\XeSS_Common.cpp" />
     <ClCompile Include="inputs\XeSS_Dbg.cpp" />
     <ClCompile Include="inputs\XeSS_Vulkan.cpp" />
-    <ClCompile Include="menu\menu_base.cpp" />
     <ClCompile Include="misc\FrameLimit.cpp" />
     <ClCompile Include="nvapi\fakenvapi.cpp" />
     <ClCompile Include="nvapi\NvApiHooks.cpp" />
