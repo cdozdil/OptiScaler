@@ -4,8 +4,8 @@
 #include <Util.h>
 #include <Config.h>
 
-#include "imgui/imgui_impl_vulkan.h"
-#include "imgui/imgui_impl_win32.h"
+#include <imgui/imgui_impl_vulkan.h>
+#include <imgui/imgui_impl_win32.h>
 
 // Vulkan overlay code adopted from here:
 // https://gist.github.com/mem99/0ec31ca302927457f86b1d6756aaa8c4
@@ -344,8 +344,8 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             return;
         }
 
-        initResult = ImGui_ImplVulkan_UpdateFontsTexture();
-        LOG_DEBUG("ImGui_ImplVulkan_UpdateFontsTexture result: {}", initResult);
+        //initResult = ImGui_ImplVulkan_CreateFontsTexture();
+        //LOG_DEBUG("ImGui_ImplVulkan_CreateFontsTexture result: {}", initResult);
 
         VkSubmitInfo end_info = {};
         end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -465,7 +465,7 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
     MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     _frameCount++;
@@ -474,9 +474,6 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
         auto semaphoreIndex = _frameCount % _scImageCount;
 
         ImGui_ImplVulkan_NewFrame();
-
-        if (io.Fonts->IsDirty())
-            ImGui_ImplVulkan_UpdateFontsTexture();
 
         if (MenuOverlayBase::RenderMenu())
         {

@@ -1,6 +1,6 @@
 #include "font/Hack_Compressed.h"
-#include "imgui/imgui.h"
-#include "imgui/misc/freetype/imgui_freetype.h"
+#include <imgui/imgui.h>
+#include <imgui/misc/freetype/imgui_freetype.h>
 #include "menu_base.h"
 #include <Config.h>
 
@@ -34,7 +34,7 @@ void MenuBase::LoadCustomFonts(ImGuiIO& io, float menuScale)
         return;
     }
 
-    io.Fonts->Build();
+    //io.Fonts->Build();
 }
 
 void MenuBase::UpdateFonts(ImGuiIO& io, float rasterizerDensity)
@@ -43,6 +43,7 @@ void MenuBase::UpdateFonts(ImGuiIO& io, float rasterizerDensity)
 
     if (lastDensity != rasterizerDensity || io.Fonts->Fonts.empty())
     {
+        // TODO: RasterizerDensity is outdated with ImGuiBackendFlags_RendererHasTextures
         if (Config::Instance()->UseHQFont.value_or_default())
             LoadCustomFonts(io, rasterizerDensity);
 

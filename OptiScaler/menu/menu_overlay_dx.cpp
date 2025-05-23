@@ -5,14 +5,61 @@
 #include <Logger.h>
 #include <Config.h>
 
-#include "imgui/imgui_impl_dx11.h"
-#include "imgui/imgui_impl_dx12.h"
-#include "imgui/imgui_impl_win32.h"
+#include <imgui/imgui_impl_dx11.h>
+#include <imgui/imgui_impl_dx12.h>
+#include <imgui/imgui_impl_win32.h>
 
 // menu
 static int const NUM_BACK_BUFFERS = 8;
+static int const SRV_HEAP_SIZE = 64;
 static bool _dx11Device = false;
 static bool _dx12Device = false;
+
+// Simple free list based allocator
+// Taken from imgui's example
+struct DescriptorHeapAllocator
+{
+    ID3D12DescriptorHeap* Heap = nullptr;
+    D3D12_DESCRIPTOR_HEAP_TYPE HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
+    D3D12_CPU_DESCRIPTOR_HANDLE HeapStartCpu;
+    D3D12_GPU_DESCRIPTOR_HANDLE HeapStartGpu;
+    UINT HeapHandleIncrement;
+    ImVector<int> FreeIndices;
+
+    void Create(ID3D12Device* device, ID3D12DescriptorHeap* heap)
+    {
+        IM_ASSERT(Heap == nullptr && FreeIndices.empty());
+        Heap = heap;
+        D3D12_DESCRIPTOR_HEAP_DESC desc = heap->GetDesc();
+        HeapType = desc.Type;
+        HeapStartCpu = Heap->GetCPUDescriptorHandleForHeapStart();
+        HeapStartGpu = Heap->GetGPUDescriptorHandleForHeapStart();
+        HeapHandleIncrement = device->GetDescriptorHandleIncrementSize(HeapType);
+        FreeIndices.reserve((int) desc.NumDescriptors);
+        for (int n = desc.NumDescriptors; n > 0; n--)
+            FreeIndices.push_back(n - 1);
+    }
+    void Destroy()
+    {
+        Heap = nullptr;
+        FreeIndices.clear();
+    }
+    void Alloc(D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_desc_handle)
+    {
+        IM_ASSERT(FreeIndices.Size > 0);
+        int idx = FreeIndices.back();
+        FreeIndices.pop_back();
+        out_cpu_desc_handle->ptr = HeapStartCpu.ptr + (idx * HeapHandleIncrement);
+        out_gpu_desc_handle->ptr = HeapStartGpu.ptr + (idx * HeapHandleIncrement);
+    }
+    void Free(D3D12_CPU_DESCRIPTOR_HANDLE out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE out_gpu_desc_handle)
+    {
+        int cpu_idx = (int) ((out_cpu_desc_handle.ptr - HeapStartCpu.ptr) / HeapHandleIncrement);
+        int gpu_idx = (int) ((out_gpu_desc_handle.ptr - HeapStartGpu.ptr) / HeapHandleIncrement);
+        IM_ASSERT(cpu_idx == gpu_idx);
+        FreeIndices.push_back(cpu_idx);
+    }
+};
 
 // for dx11
 static ID3D11Device* g_pd3dDevice = nullptr;
@@ -23,6 +70,7 @@ static ID3D11RenderTargetView* g_pd3dRenderTarget = nullptr;
 static ID3D12Device* g_pd3dDeviceParam = nullptr;
 static ID3D12DescriptorHeap* g_pd3dRtvDescHeap = nullptr;
 static ID3D12DescriptorHeap* g_pd3dSrvDescHeap = nullptr;
+static DescriptorHeapAllocator g_pd3dSrvDescHeapAlloc;
 static ID3D12CommandQueue* g_pd3dCommandQueue = nullptr;
 static ID3D12GraphicsCommandList* g_pd3dCommandList = nullptr;
 static ID3D12CommandAllocator* g_commandAllocators[NUM_BACK_BUFFERS] = {};
@@ -262,7 +310,6 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
     MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     if (io.BackendRendererUserData == nullptr)
@@ -333,7 +380,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
     MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     // Generate ImGui resources
@@ -375,7 +422,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
         {
             D3D12_DESCRIPTOR_HEAP_DESC desc = {};
             desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-            desc.NumDescriptors = 1;
+            desc.NumDescriptors = SRV_HEAP_SIZE;
             desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
             result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
@@ -389,6 +436,8 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
                 pSwapChain->Release();
                 return;
             }
+
+            g_pd3dSrvDescHeapAlloc.Create(device, g_pd3dSrvDescHeap);
         }
 
         for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
@@ -427,9 +476,21 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             return;
         }
 
-        ImGui_ImplDX12_Init(device, NUM_BACK_BUFFERS, DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap,
-                            g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
-                            g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
+        ImGui_ImplDX12_InitInfo initInfo {};
+        initInfo.Device = device;
+        initInfo.CommandQueue = (ID3D12CommandQueue*)currentSCCommandQueue;
+        initInfo.NumFramesInFlight = NUM_BACK_BUFFERS;
+        initInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+        initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
+        initInfo.SrvDescriptorHeap = g_pd3dSrvDescHeap;
+        initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
+                                            D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
+        { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
+        initInfo.SrvDescriptorFreeFn =
+            [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle)
+        { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
+
+        ImGui_ImplDX12_Init(&initInfo);
 
         pSwapChain->Release();
         return;
@@ -451,9 +512,6 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             _showRenderImGuiDebugOnce = true;
 
             ImGui_ImplDX12_NewFrame();
-
-            if (io.Fonts->IsDirty())
-                ImGui_ImplDX12_UpdateFontsTexture();
 
             if (MenuOverlayBase::RenderMenu())
             {
@@ -539,8 +597,6 @@ void MenuOverlayDx::Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
                             const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd, bool isUWP)
 {
     LOG_DEBUG("");
-
-    HRESULT presentResult;
 
     ID3D12CommandQueue* cq = nullptr;
     ID3D11Device* device = nullptr;

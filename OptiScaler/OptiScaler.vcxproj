@@ -308,7 +308,11 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="framegen\IFGFeature_Dx12.h" />
     <ClInclude Include="hooks\Kernel_Hooks.h" />
     <ClInclude Include="hudfix\Hudfix_Dx12.h" />
+    <ClInclude Include="include\imgui\imgui_impl_dx11.h" />
+    <ClInclude Include="include\imgui\imgui_impl_dx12.h" />
     <ClInclude Include="include\imgui\imgui_impl_uwp.h" />
+    <ClInclude Include="include\imgui\imgui_impl_vulkan.h" />
+    <ClInclude Include="include\imgui\imgui_impl_win32.h" />
     <ClInclude Include="inputs\FfxApiExe_Dx12.h" />
     <ClInclude Include="inputs\FfxApi_Vk.h" />
     <ClInclude Include="inputs\NVNGX_DLSS.h" />
@@ -359,10 +363,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="inputs\FSR3_Dx12.h" />
     <ClInclude Include="include\imgui\imconfig.h" />
     <ClInclude Include="include\imgui\imgui.h" />
-    <ClInclude Include="include\imgui\imgui_impl_dx11.h" />
-    <ClInclude Include="include\imgui\imgui_impl_dx12.h" />
-    <ClInclude Include="include\imgui\imgui_impl_vulkan.h" />
-    <ClInclude Include="include\imgui\imgui_impl_win32.h" />
     <ClInclude Include="include\imgui\imgui_internal.h" />
     <ClInclude Include="include\imgui\imstb_rectpack.h" />
     <ClInclude Include="include\imgui\imstb_textedit.h" />
@@ -456,7 +456,11 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="framegen\IFGFeature.cpp" />
     <ClCompile Include="framegen\IFGFeature_Dx12.cpp" />
     <ClCompile Include="hudfix\Hudfix_Dx12.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_dx12.cpp" />
     <ClCompile Include="include\imgui\imgui_impl_uwp.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="include\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="inputs\FfxApiExe_Dx12.cpp" />
     <ClCompile Include="inputs\FfxApi_Vk.cpp" />
     <ClCompile Include="inputs\XeSS_Base.cpp" />
@@ -517,10 +521,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="include\imgui\imgui.cpp" />
     <ClCompile Include="include\imgui\imgui_demo.cpp" />
     <ClCompile Include="include\imgui\imgui_draw.cpp" />
-    <ClCompile Include="include\imgui\imgui_impl_dx11.cpp" />
-    <ClCompile Include="include\imgui\imgui_impl_dx12.cpp" />
-    <ClCompile Include="include\imgui\imgui_impl_vulkan.cpp" />
-    <ClCompile Include="include\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="include\imgui\imgui_tables.cpp" />
     <ClCompile Include="include\imgui\imgui_widgets.cpp" />
     <ClCompile Include="include\imgui\misc\freetype\imgui_freetype.cpp" />

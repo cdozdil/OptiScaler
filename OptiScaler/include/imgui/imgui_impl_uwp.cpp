@@ -1,18 +1,17 @@
-// dear imgui: Platform Backend for Universal Windows Platform (standard windows API for 32-bits AND 64-bits
-// applications) This needs to be used along with a Renderer (e.g. DirectX11, DirectX12, SDL2..)
+// dear imgui: Platform Backend for Universal Windows Platform (standard windows API for 32-bits AND 64-bits applications)
+// This needs to be used along with a Renderer (e.g. DirectX11, DirectX12, SDL2..)
 
 // Implemented features:
 //  [X] Platform: Clipboard support (for Win32 & UWP this is actually part of core dear imgui)
 //  [X] Platform: Mouse support. Can discriminate Mouse/TouchScreen/Pen.
-//  [X] Platform: Keyboard support. Since 1.87 we are using the io.AddKeyEvent() function. Pass ImGuiKey values to all
-//  key functions e.g. ImGui::IsKeyPressed(ImGuiKey_Space). [X] Platform: Gamepad support. Enabled with 'io.ConfigFlags
-//  |= ImGuiConfigFlags_NavEnableGamepad'. [X] Platform: Mouse cursor shape and visibility. Disable with 'io.ConfigFlags
-//  |= ImGuiConfigFlags_NoMouseCursorChange'.
+//  [X] Platform: Keyboard support. Since 1.87 we are using the io.AddKeyEvent() function. Pass ImGuiKey values to all key functions e.g. ImGui::IsKeyPressed(ImGuiKey_Space).
+//  [X] Platform: Gamepad support. Enabled with 'io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad'.
+//  [X] Platform: Mouse cursor shape and visibility. Disable with 'io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange'.
 
 // You can use unmodified imgui_impl_* files in your project. See examples/ folder for examples of using this.
-// Prefer including the entire imgui/ repository into your project (either as a copy or as a submodule), and only build
-// the backends you need. If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of
-// imgui.cpp. Read online: https://github.com/ocornut/imgui/tree/master/docs
+// Prefer including the entire imgui/ repository into your project (either as a copy or as a submodule), and only build the backends you need.
+// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
+// Read online: https://github.com/ocornut/imgui/tree/master/docs
 
 #include "imgui.h"
 #include "imgui_impl_uwp.h"
@@ -22,48 +21,39 @@
 #include <windows.h>
 #include <sdkddkver.h>
 #include <tchar.h>
-
-// WinRT
-#pragma push_macro("GetCurrentTime")
-#pragma push_macro("TRY")
-#undef GetCurrentTime
-#undef TRY
-
 #include <wrl.h>
 
+//WinRT
+#undef GetCurrentTime // GetCurrentTime collision
 #include <Windows.UI.Core.h>
 #include <CoreWindow.h>
 #include <Windows.UI.Xaml.Controls.h>
 #include <Windows.UI.Xaml.Hosting.h>
 
-#pragma pop_macro("TRY")
-#pragma pop_macro("GetCurrentTime")
-
 using namespace Microsoft::WRL;
 using namespace Microsoft::WRL::Wrappers;
 
 // Disabling XInput on older SDKs that didn't allow LoadLibrary for the Application Family
-#if (NTDDI_VERSION < NTDDI_WIN10_CO)
+#if  (NTDDI_VERSION < NTDDI_WIN10_CO)
 #define IMGUI_IMPL_UWP_DISABLE_GAMEPAD
 #endif
 
 // Using XInput for gamepad (will load DLL dynamically)
 #ifndef IMGUI_IMPL_UWP_DISABLE_GAMEPAD
 #include <xinput.h>
-typedef DWORD(WINAPI* PFN_XInputGetCapabilities)(DWORD, DWORD, XINPUT_CAPABILITIES*);
-typedef DWORD(WINAPI* PFN_XInputGetState)(DWORD, XINPUT_STATE*);
+typedef DWORD (WINAPI *PFN_XInputGetCapabilities)(DWORD, DWORD, XINPUT_CAPABILITIES*);
+typedef DWORD (WINAPI *PFN_XInputGetState)(DWORD, XINPUT_STATE*);
 #endif
 
 // From CoreWindow.h
 
 typedef HRESULT(_cdecl* PFN_CreateControlInput)(_In_ REFIID riid, _COM_Outptr_ void** ppv);
-typedef HRESULT(_cdecl* PFN_CreateControlInputEx)(_In_ IUnknown* pCoreWindow, _In_ REFIID riid,
-                                                  _COM_Outptr_ void** ppv);
+typedef HRESULT(_cdecl* PFN_CreateControlInputEx)(_In_ IUnknown* pCoreWindow, _In_ REFIID riid, _COM_Outptr_ void** ppv);
 
 MIDL_INTERFACE("40BFE3E3-B75A-4479-AC96-475365749BB8")
 ISystemCoreInputInterop : public IUnknown
 {
-  public:
+public:
     virtual HRESULT STDMETHODCALLTYPE SetInputSource(__RPC__in_opt ::IUnknown * value) PURE;
     virtual HRESULT STDMETHODCALLTYPE put_MessageHandled(boolean value) PURE;
 };
@@ -74,58 +64,50 @@ ISystemCoreInputInterop : public IUnknown
 #include <windows.applicationmodel.datatransfer.h>
 
 static const char* ImGui_ImplUwp_GetClipboardTextFn(void* user_data_ctx);
-static void ImGui_ImplUwp_SetClipboardTextFn(void* user_data_ctx, const char* text);
+static void        ImGui_ImplUwp_SetClipboardTextFn(void* user_data_ctx, const char* text);
 #endif
 
 struct ImGui_ImplUwp_Data
 {
-    ABI::Windows::UI::Core::ICoreWindow* CoreWindow;
+    ABI::Windows::UI::Core::ICoreWindow*               CoreWindow;
     ABI::Windows::UI::Xaml::Controls::ISwapChainPanel* SwapChainPanel;
-    ABI::Windows::UI::Xaml::IFrameworkElement* SwapChainPanelElement;
-    ABI::Windows::UI::Core::ICorePointerInputSource* PointerInputSource;
-    ABI::Windows::UI::Core::ICoreKeyboardInputSource* KeyboardInputSource;
-    int MouseTrackedArea; // 0: not tracked, 1: client area, 2: non-client area
-    int MouseButtonsDown;
-    INT64 Time;
-    INT64 TicksPerSecond;
-    ImGuiMouseCursor LastMouseCursor;
+    ABI::Windows::UI::Xaml::IFrameworkElement*         SwapChainPanelElement;
+    ABI::Windows::UI::Core::ICorePointerInputSource*   PointerInputSource;
+    ABI::Windows::UI::Core::ICoreKeyboardInputSource*  KeyboardInputSource;
+    int                                                MouseTrackedArea;   // 0: not tracked, 1: client area, 2: non-client area
+    int                                                MouseButtonsDown;
+    INT64                                              Time;
+    INT64                                              TicksPerSecond;
+    ImGuiMouseCursor                                   LastMouseCursor;
 
-    ::EventRegistrationToken PointerMovedToken;
-    ::EventRegistrationToken PointerExitedToken;
-    ::EventRegistrationToken KeyDownToken;
-    ::EventRegistrationToken KeyUpToken;
-    ::EventRegistrationToken CharacterReceivedToken;
-    ::EventRegistrationToken PointerWheelChangedToken;
-    ::EventRegistrationToken WindowActivatedToken;
-    ::EventRegistrationToken PointerPressedToken;
-    ::EventRegistrationToken PointerReleasedToken;
+    ::EventRegistrationToken                           PointerMovedToken;
+    ::EventRegistrationToken                           PointerExitedToken;
+    ::EventRegistrationToken                           KeyDownToken;
+    ::EventRegistrationToken                           KeyUpToken;
+    ::EventRegistrationToken                           CharacterReceivedToken;
+    ::EventRegistrationToken                           PointerWheelChangedToken;
+    ::EventRegistrationToken                           WindowActivatedToken;
+    ::EventRegistrationToken                           PointerPressedToken;
+    ::EventRegistrationToken                           PointerReleasedToken;
 
 #ifndef IMGUI_IMPL_UWP_DISABLE_GAMEPAD
-    bool HasGamepad;
-    bool WantUpdateHasGamepad;
-    HMODULE XInputDLL;
-    PFN_XInputGetCapabilities XInputGetCapabilities;
-    PFN_XInputGetState XInputGetState;
+    bool                        HasGamepad;
+    bool                        WantUpdateHasGamepad;
+    HMODULE                     XInputDLL;
+    PFN_XInputGetCapabilities   XInputGetCapabilities;
+    PFN_XInputGetState          XInputGetState;
 #endif
 
-    ImGui_ImplUwp_Data() { memset((void*) this, 0, sizeof(*this)); }
+    ImGui_ImplUwp_Data()      { memset((void*)this, 0, sizeof(*this)); }
 };
 
-typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*>
-    PointerMoved_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*>
-    PointerExited_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::KeyEventArgs*>
-    KeyDown_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*,
-                                                     ABI::Windows::UI::Core::CharacterReceivedEventArgs*>
-    CharacterReceived_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*>
-    PointerWheelChanged_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*>
-    PointerPressed_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*>
-    PointerReleased_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*> PointerMoved_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*> PointerExited_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::KeyEventArgs*> KeyDown_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::CharacterReceivedEventArgs*> CharacterReceived_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*> PointerWheelChanged_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*> PointerPressed_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<::IInspectable*, ABI::Windows::UI::Core::PointerEventArgs*> PointerReleased_Callback;
 int PointerMoved(::IInspectable*, ABI::Windows::UI::Core::IPointerEventArgs*);
 int PointerExited(::IInspectable*, ABI::Windows::UI::Core::IPointerEventArgs*);
 int KeyDown(::IInspectable*, ABI::Windows::UI::Core::IKeyEventArgs*);
@@ -135,42 +117,25 @@ int PointerWheelChanged(::IInspectable*, ABI::Windows::UI::Core::IPointerEventAr
 int PointerPressed(::IInspectable*, ABI::Windows::UI::Core::IPointerEventArgs*);
 int PointerReleased(::IInspectable*, ABI::Windows::UI::Core::IPointerEventArgs*);
 
-typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*,
-                                                     ABI::Windows::UI::Core::PointerEventArgs*>
-    WindowPointerMoved_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*,
-                                                     ABI::Windows::UI::Core::PointerEventArgs*>
-    WindowPointerExited_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*,
-                                                     ABI::Windows::UI::Core::KeyEventArgs*>
-    WindowKeyDown_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*,
-                                                     ABI::Windows::UI::Core::CharacterReceivedEventArgs*>
-    WindowCharacterReceived_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*,
-                                                     ABI::Windows::UI::Core::PointerEventArgs*>
-    WindowPointerWheelChanged_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*,
-                                                     ABI::Windows::UI::Core::PointerEventArgs*>
-    WindowPointerPressed_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*,
-                                                     ABI::Windows::UI::Core::PointerEventArgs*>
-    WindowPointerReleased_Callback;
-typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*,
-                                                     ABI::Windows::UI::Core::WindowActivatedEventArgs*>
-    WindowActivated_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*, ABI::Windows::UI::Core::PointerEventArgs*> WindowPointerMoved_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*, ABI::Windows::UI::Core::PointerEventArgs*> WindowPointerExited_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*, ABI::Windows::UI::Core::KeyEventArgs*> WindowKeyDown_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*, ABI::Windows::UI::Core::CharacterReceivedEventArgs*> WindowCharacterReceived_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*, ABI::Windows::UI::Core::PointerEventArgs*> WindowPointerWheelChanged_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*, ABI::Windows::UI::Core::PointerEventArgs*> WindowPointerPressed_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*, ABI::Windows::UI::Core::PointerEventArgs*> WindowPointerReleased_Callback;
+typedef ABI::Windows::Foundation::ITypedEventHandler<ABI::Windows::UI::Core::CoreWindow*, ABI::Windows::UI::Core::WindowActivatedEventArgs*> WindowActivated_Callback;
 int WindowActivated(ABI::Windows::UI::Core::ICoreWindow*, ABI::Windows::UI::Core::IWindowActivatedEventArgs*);
 
 PFN_KeyUp _keyUpMethod = nullptr;
 
 // Backend data stored in io.BackendPlatformUserData to allow support for multiple Dear ImGui contexts
-// It is STRONGLY preferred that you use docking branch with multi-viewports (== single Dear ImGui context + multiple
-// windows) instead of multiple Dear ImGui contexts.
+// It is STRONGLY preferred that you use docking branch with multi-viewports (== single Dear ImGui context + multiple windows) instead of multiple Dear ImGui contexts.
 // FIXME: multi-context support is not well tested and probably dysfunctional in this backend.
 // FIXME: some shared resources (mouse cursor shape, gamepad) are mishandled when using multi-context.
 static ImGui_ImplUwp_Data* ImGui_ImplUwp_GetBackendData()
 {
-    return ImGui::GetCurrentContext() ? (ImGui_ImplUwp_Data*) ImGui::GetIO().BackendPlatformUserData : nullptr;
+    return ImGui::GetCurrentContext() ? (ImGui_ImplUwp_Data*)ImGui::GetIO().BackendPlatformUserData : nullptr;
 }
 
 static ABI::Windows::UI::Core::ICoreWindow* ImGui_ImplUwp_GetCoreWindowForCurrentThread()
@@ -178,36 +143,32 @@ static ABI::Windows::UI::Core::ICoreWindow* ImGui_ImplUwp_GetCoreWindowForCurren
     ComPtr<ABI::Windows::UI::Core::ICoreWindowStatic> windowStatic;
     ABI::Windows::UI::Core::ICoreWindow* window = nullptr;
 
-    Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Core_CoreWindow).Get(),
-                                              &windowStatic);
+    Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Core_CoreWindow).Get(), &windowStatic);
 
     if (windowStatic->GetForCurrentThread(&window) != S_OK)
         return nullptr;
 
-    return window;
+	return window;
 }
 
 // Functions
-static bool ImGui_ImplUwp_InitEx(ABI::Windows::UI::Core::ICoreWindow* core_window,
-                                 ABI::Windows::UI::Xaml::Controls::ISwapChainPanel* swapchain_panel,
-                                 bool is_for_current_view)
+static bool ImGui_ImplUwp_InitEx(ABI::Windows::UI::Core::ICoreWindow* core_window, ABI::Windows::UI::Xaml::Controls::ISwapChainPanel* swapchain_panel, bool is_for_current_view)
 {
     ImGuiIO& io = ImGui::GetIO();
     IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
 
     INT64 perf_frequency, perf_counter;
-    if (!::QueryPerformanceFrequency((LARGE_INTEGER*) &perf_frequency))
+    if (!::QueryPerformanceFrequency((LARGE_INTEGER*)&perf_frequency))
         return false;
-    if (!::QueryPerformanceCounter((LARGE_INTEGER*) &perf_counter))
+    if (!::QueryPerformanceCounter((LARGE_INTEGER*)&perf_counter))
         return false;
 
     // Setup backend capabilities flags
     ImGui_ImplUwp_Data* bd = IM_NEW(ImGui_ImplUwp_Data)();
-    io.BackendPlatformUserData = (void*) bd;
+    io.BackendPlatformUserData = (void*)bd;
     io.BackendPlatformName = "imgui_impl_uwp";
-    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors; // We can honor GetMouseCursor() values (optional)
-    io.BackendFlags |=
-        ImGuiBackendFlags_HasSetMousePos; // We can honor io.WantSetMousePos requests (optional, rarely used)
+    io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
+    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
 
     // Clipboard support
 #if !defined(IMGUI_DISABLE_UWP_DEFAULT_CLIPBOARD_FUNCTIONS)
@@ -221,7 +182,7 @@ static bool ImGui_ImplUwp_InitEx(ABI::Windows::UI::Core::ICoreWindow* core_windo
     if (swapchain_panel)
     {
         swapchain_panel->AddRef();
-        swapchain_panel->QueryInterface(&bd->SwapChainPanelElement);
+		swapchain_panel->QueryInterface(&bd->SwapChainPanelElement);
     }
 
     bd->CoreWindow = core_window;
@@ -231,12 +192,13 @@ static bool ImGui_ImplUwp_InitEx(ABI::Windows::UI::Core::ICoreWindow* core_windo
     bd->LastMouseCursor = ImGuiMouseCursor_COUNT;
 
     // Set platform dependent data in viewport
-    ImGui::GetMainViewport()->PlatformHandleRaw = (void*) core_window;
+    ImGui::GetMainViewport()->PlatformHandleRaw = (void*)core_window;
 
     // Dynamically load XInput library
 #ifndef IMGUI_IMPL_UWP_DISABLE_GAMEPAD
     bd->WantUpdateHasGamepad = true;
-    const char* xinput_dll_names[] = {
+    const char* xinput_dll_names[] =
+    {
         "xinput1_4.dll",   // Windows 8+
         "xinput1_3.dll",   // DirectX SDK
         "xinput9_1_0.dll", // Windows Vista, Windows 7
@@ -256,97 +218,79 @@ static bool ImGui_ImplUwp_InitEx(ABI::Windows::UI::Core::ICoreWindow* core_windo
 
     /*ComPtr<::IUnknown> controlInput;
 
-    auto winUI = LoadLibraryW(L"Windows.UI.dll");
-    auto SystemCreateControlInput = (PFN_CreateControlInput)GetProcAddress(winUI, "CreateControlInput");
-    auto SystemCreateControlInputEx = (PFN_CreateControlInputEx)GetProcAddress(winUI, "CreateControlInputEx");
+	auto winUI = LoadLibraryW(L"Windows.UI.dll");
+	auto SystemCreateControlInput = (PFN_CreateControlInput)GetProcAddress(winUI, "CreateControlInput");
+	auto SystemCreateControlInputEx = (PFN_CreateControlInputEx)GetProcAddress(winUI, "CreateControlInputEx");
 
     if (core_window)
     {
-        bd->CoreWindow->add_Activated(Callback<WindowActivated_Callback>(WindowActivated).Get(),
-    &bd->WindowActivatedToken); SystemCreateControlInputEx(core_window,
-    ABI::Windows::UI::Core::IID_ICoreInputSourceBase, &controlInput);
+        bd->CoreWindow->add_Activated(Callback<WindowActivated_Callback>(WindowActivated).Get(), &bd->WindowActivatedToken);
+        SystemCreateControlInputEx(core_window, ABI::Windows::UI::Core::IID_ICoreInputSourceBase, &controlInput);
     }*/
 
     if (core_window)
     {
-        bd->CoreWindow->add_PointerMoved(Callback<WindowPointerMoved_Callback>(PointerMoved).Get(),
-                                         &bd->PointerMovedToken);
-        bd->CoreWindow->add_PointerExited(Callback<WindowPointerExited_Callback>(PointerExited).Get(),
-                                          &bd->PointerExitedToken);
-        bd->CoreWindow->add_PointerWheelChanged(Callback<WindowPointerWheelChanged_Callback>(PointerWheelChanged).Get(),
-                                                &bd->PointerWheelChangedToken);
-        bd->CoreWindow->add_PointerPressed(Callback<WindowPointerPressed_Callback>(PointerPressed).Get(),
-                                           &bd->PointerPressedToken);
-        bd->CoreWindow->add_PointerReleased(Callback<WindowPointerReleased_Callback>(PointerReleased).Get(),
-                                            &bd->PointerReleasedToken);
+        bd->CoreWindow->add_PointerMoved(Callback<WindowPointerMoved_Callback>(PointerMoved).Get(), &bd->PointerMovedToken);
+        bd->CoreWindow->add_PointerExited(Callback<WindowPointerExited_Callback>(PointerExited).Get(), &bd->PointerExitedToken);
+        bd->CoreWindow->add_PointerWheelChanged(Callback<WindowPointerWheelChanged_Callback>(PointerWheelChanged).Get(), &bd->PointerWheelChangedToken);
+        bd->CoreWindow->add_PointerPressed(Callback<WindowPointerPressed_Callback>(PointerPressed).Get(), &bd->PointerPressedToken);
+        bd->CoreWindow->add_PointerReleased(Callback<WindowPointerReleased_Callback>(PointerReleased).Get(), &bd->PointerReleasedToken);
         bd->CoreWindow->add_KeyDown(Callback<WindowKeyDown_Callback>(KeyDown).Get(), &bd->KeyDownToken);
         bd->CoreWindow->add_KeyUp(Callback<WindowKeyDown_Callback>(KeyUp).Get(), &bd->KeyUpToken);
-        bd->CoreWindow->add_CharacterReceived(Callback<WindowCharacterReceived_Callback>(CharacterReceived).Get(),
-                                              &bd->CharacterReceivedToken);
-        bd->CoreWindow->add_Activated(Callback<WindowActivated_Callback>(WindowActivated).Get(),
-                                      &bd->WindowActivatedToken);
+        bd->CoreWindow->add_CharacterReceived(Callback<WindowCharacterReceived_Callback>(CharacterReceived).Get(), &bd->CharacterReceivedToken);
+        bd->CoreWindow->add_Activated(Callback<WindowActivated_Callback>(WindowActivated).Get(), &bd->WindowActivatedToken);
     }
     else if (swapchain_panel)
     {
         ComPtr<ABI::Windows::UI::Core::ICoreInputSourceBase> controlInput;
 
         auto winUI = LoadLibraryW(L"Windows.UI.dll");
-        auto SystemCreateControlInput = (PFN_CreateControlInput) GetProcAddress(winUI, "CreateControlInput");
+        auto SystemCreateControlInput = (PFN_CreateControlInput)GetProcAddress(winUI, "CreateControlInput");
 
         HRESULT result = SystemCreateControlInput(ABI::Windows::UI::Core::IID_ICoreInputSourceBase, &controlInput);
         if (SUCCEEDED(result))
         {
-            controlInput->put_IsInputEnabled(true);
+			controlInput->put_IsInputEnabled(true);
 
-            ComPtr<ISystemCoreInputInterop> coreInputInterop;
+			ComPtr<ISystemCoreInputInterop> coreInputInterop;
             if (SUCCEEDED(controlInput.As(&coreInputInterop)))
             {
-                ComPtr<ABI::Windows::UI::Xaml::Hosting::IElementCompositionPreviewStatics>
-                    elementCompositionPreviewStatics;
-                result = Windows::Foundation::GetActivationFactory(
-                    HStringReference(RuntimeClass_Windows_UI_Xaml_Hosting_ElementCompositionPreview).Get(),
-                    &elementCompositionPreviewStatics);
+				ComPtr<ABI::Windows::UI::Xaml::Hosting::IElementCompositionPreviewStatics> elementCompositionPreviewStatics;
+				result = Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Xaml_Hosting_ElementCompositionPreview).Get(), &elementCompositionPreviewStatics);
 
                 if (SUCCEEDED(result))
                 {
                     ComPtr<ABI::Windows::UI::Xaml::IUIElement> uiElement;
                     swapchain_panel->QueryInterface(uiElement.GetAddressOf());
 
-                    ComPtr<ABI::Windows::UI::Composition::IVisual> visual;
-                    elementCompositionPreviewStatics->GetElementVisual(uiElement.Get(), visual.GetAddressOf());
+					ComPtr<ABI::Windows::UI::Composition::IVisual> visual;
+					elementCompositionPreviewStatics->GetElementVisual(uiElement.Get(), visual.GetAddressOf());
 
-                    result = coreInputInterop->SetInputSource(visual.Get());
+					result = coreInputInterop->SetInputSource(visual.Get());
 
-                    if (SUCCEEDED(result) && SUCCEEDED(controlInput->QueryInterface(&bd->PointerInputSource)) &&
-                        SUCCEEDED(controlInput->QueryInterface(&bd->KeyboardInputSource)))
+                    if 
+                    (
+                        SUCCEEDED(result)
+                        && SUCCEEDED(controlInput->QueryInterface(&bd->PointerInputSource))
+                        && SUCCEEDED(controlInput->QueryInterface(&bd->KeyboardInputSource))
+                    )
                     {
-                        bd->PointerInputSource->add_PointerMoved(Callback<PointerMoved_Callback>(PointerMoved).Get(),
-                                                                 &bd->PointerMovedToken);
-                        bd->PointerInputSource->add_PointerExited(Callback<PointerExited_Callback>(PointerExited).Get(),
-                                                                  &bd->PointerExitedToken);
-                        bd->PointerInputSource->add_PointerWheelChanged(
-                            Callback<PointerWheelChanged_Callback>(PointerWheelChanged).Get(),
-                            &bd->PointerWheelChangedToken);
-                        bd->PointerInputSource->add_PointerPressed(
-                            Callback<PointerPressed_Callback>(PointerPressed).Get(), &bd->PointerPressedToken);
-                        bd->PointerInputSource->add_PointerReleased(
-                            Callback<PointerReleased_Callback>(PointerReleased).Get(), &bd->PointerReleasedToken);
+                        bd->PointerInputSource->add_PointerMoved(Callback<PointerMoved_Callback>(PointerMoved).Get(), &bd->PointerMovedToken);
+                        bd->PointerInputSource->add_PointerExited(Callback<PointerExited_Callback>(PointerExited).Get(), &bd->PointerExitedToken);
+                        bd->PointerInputSource->add_PointerWheelChanged(Callback<PointerWheelChanged_Callback>(PointerWheelChanged).Get(), &bd->PointerWheelChangedToken);
+                        bd->PointerInputSource->add_PointerPressed(Callback<PointerPressed_Callback>(PointerPressed).Get(), &bd->PointerPressedToken);
+                        bd->PointerInputSource->add_PointerReleased(Callback<PointerReleased_Callback>(PointerReleased).Get(), &bd->PointerReleasedToken);
 
-                        // bd->KeyboardInputSource->add_KeyDown(Callback<KeyDown_Callback>(KeyDown).Get(),
-                        // &bd->KeyDownToken);
-                        // bd->KeyboardInputSource->add_KeyUp(Callback<KeyDown_Callback>(KeyUp).Get(), &bd->KeyUpToken);
-                        // bd->KeyboardInputSource->add_CharacterReceived(Callback<CharacterReceived_Callback>(CharacterReceived).Get(),
-                        // &bd->CharacterReceivedToken);
+                        //bd->KeyboardInputSource->add_KeyDown(Callback<KeyDown_Callback>(KeyDown).Get(), &bd->KeyDownToken);
+                        //bd->KeyboardInputSource->add_KeyUp(Callback<KeyDown_Callback>(KeyUp).Get(), &bd->KeyUpToken);
+                        //bd->KeyboardInputSource->add_CharacterReceived(Callback<CharacterReceived_Callback>(CharacterReceived).Get(), &bd->CharacterReceivedToken);
 
-                        ComPtr<ABI::Windows::UI::Core::ICoreWindow> window =
-                            ImGui_ImplUwp_GetCoreWindowForCurrentThread();
+                        ComPtr<ABI::Windows::UI::Core::ICoreWindow> window = ImGui_ImplUwp_GetCoreWindowForCurrentThread();
                         if (window.Get())
                         {
                             window->add_KeyDown(Callback<WindowKeyDown_Callback>(KeyDown).Get(), &bd->KeyDownToken);
                             window->add_KeyUp(Callback<WindowKeyDown_Callback>(KeyUp).Get(), &bd->KeyUpToken);
-                            window->add_CharacterReceived(
-                                Callback<WindowCharacterReceived_Callback>(CharacterReceived).Get(),
-                                &bd->CharacterReceivedToken);
+                            window->add_CharacterReceived(Callback<WindowCharacterReceived_Callback>(CharacterReceived).Get(), &bd->CharacterReceivedToken);
                         }
                     }
                 }
@@ -359,21 +303,21 @@ static bool ImGui_ImplUwp_InitEx(ABI::Windows::UI::Core::ICoreWindow* core_windo
 
 IMGUI_IMPL_API bool ImGui_ImplUwp_Init(void* core_window)
 {
-    return ImGui_ImplUwp_InitEx((ABI::Windows::UI::Core::ICoreWindow*) core_window, nullptr, false);
+    return ImGui_ImplUwp_InitEx((ABI::Windows::UI::Core::ICoreWindow*)core_window, nullptr, false);
 }
 
 IMGUI_IMPL_API bool ImGui_ImplUwp_InitForCurrentView()
 {
     auto window = ImGui_ImplUwp_GetCoreWindowForCurrentThread();
-    if (!window)
-        return false;
+	if (!window)
+		return false;
 
     return ImGui_ImplUwp_InitEx(window, nullptr, true);
 }
 
 IMGUI_IMPL_API bool ImGui_ImplUwp_InitForSwapChainPanel(void* swapchain_panel)
 {
-    return ImGui_ImplUwp_InitEx(nullptr, (ABI::Windows::UI::Xaml::Controls::ISwapChainPanel*) swapchain_panel, false);
+    return ImGui_ImplUwp_InitEx(nullptr, (ABI::Windows::UI::Xaml::Controls::ISwapChainPanel*)swapchain_panel, false);
 }
 
 void ImGui_ImplUwp_Shutdown()
@@ -390,8 +334,7 @@ void ImGui_ImplUwp_Shutdown()
 
     io.BackendPlatformName = nullptr;
     io.BackendPlatformUserData = nullptr;
-    io.BackendFlags &=
-        ~(ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_HasSetMousePos | ImGuiBackendFlags_HasGamepad);
+    io.BackendFlags &= ~(ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_HasSetMousePos | ImGuiBackendFlags_HasGamepad);
 
     if (bd->CoreWindow)
     {
@@ -407,17 +350,17 @@ void ImGui_ImplUwp_Shutdown()
         bd->CoreWindow->remove_PointerPressed(bd->PointerPressedToken);
         bd->CoreWindow->remove_PointerReleased(bd->PointerReleasedToken);
     }
-    else if (bd->SwapChainPanel)
-    {
-        bd->PointerInputSource->remove_PointerMoved(bd->PointerMovedToken);
-        bd->PointerInputSource->remove_PointerExited(bd->PointerExitedToken);
-        bd->PointerInputSource->remove_PointerWheelChanged(bd->PointerWheelChangedToken);
-        bd->PointerInputSource->remove_PointerPressed(bd->PointerPressedToken);
-        bd->PointerInputSource->remove_PointerReleased(bd->PointerReleasedToken);
+	else if (bd->SwapChainPanel)
+	{
+		bd->PointerInputSource->remove_PointerMoved(bd->PointerMovedToken);
+		bd->PointerInputSource->remove_PointerExited(bd->PointerExitedToken);
+		bd->PointerInputSource->remove_PointerWheelChanged(bd->PointerWheelChangedToken);
+		bd->PointerInputSource->remove_PointerPressed(bd->PointerPressedToken);
+		bd->PointerInputSource->remove_PointerReleased(bd->PointerReleasedToken);
 
-        // bd->KeyboardInputSource->remove_KeyDown(bd->KeyDownToken);
-        // bd->KeyboardInputSource->remove_KeyUp(bd->KeyUpToken);
-        // bd->KeyboardInputSource->remove_CharacterReceived(bd->CharacterReceivedToken);
+		//bd->KeyboardInputSource->remove_KeyDown(bd->KeyDownToken);
+		//bd->KeyboardInputSource->remove_KeyUp(bd->KeyUpToken);
+		//bd->KeyboardInputSource->remove_CharacterReceived(bd->CharacterReceivedToken);
 
         ComPtr<ABI::Windows::UI::Core::ICoreWindow> window = ImGui_ImplUwp_GetCoreWindowForCurrentThread();
         if (window.Get())
@@ -427,11 +370,11 @@ void ImGui_ImplUwp_Shutdown()
             window->remove_CharacterReceived(bd->CharacterReceivedToken);
         }
 
-        bd->PointerInputSource->Release();
-        bd->KeyboardInputSource->Release();
-        bd->SwapChainPanel->Release();
-        bd->SwapChainPanelElement->Release();
-    }
+		bd->PointerInputSource->Release();
+		bd->KeyboardInputSource->Release();
+		bd->SwapChainPanel->Release();
+		bd->SwapChainPanelElement->Release();
+	}
 
     IM_DELETE(bd);
 }
@@ -450,57 +393,36 @@ static bool ImGui_ImplUwp_UpdateMouseCursor()
         if (bd->CoreWindow)
             bd->CoreWindow->put_PointerCursor(nullptr);
         else if (bd->PointerInputSource)
-            bd->PointerInputSource->put_PointerCursor(nullptr);
+			bd->PointerInputSource->put_PointerCursor(nullptr);
     }
     else
     {
         // Show OS mouse cursor
         ComPtr<ABI::Windows::UI::Core::ICoreCursor> cursor;
         ComPtr<ABI::Windows::UI::Core::ICoreCursorFactory> cursorFactory;
-        Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Core_CoreCursor).Get(),
-                                                  &cursorFactory);
+        Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Core_CoreCursor).Get(), &cursorFactory);
 
         HRESULT result = 0;
 
         switch (imgui_cursor)
         {
-        case ImGuiMouseCursor_Arrow:
-            result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_Arrow, 0, &cursor);
-            break;
-        case ImGuiMouseCursor_TextInput:
-            result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_IBeam, 0, &cursor);
-            break;
-        case ImGuiMouseCursor_ResizeAll:
-            result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeAll, 0, &cursor);
-            break;
-        case ImGuiMouseCursor_ResizeEW:
-            result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeWestEast, 0, &cursor);
-            break;
-        case ImGuiMouseCursor_ResizeNS:
-            result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeNorthSouth, 0, &cursor);
-            break;
-        case ImGuiMouseCursor_ResizeNESW:
-            result =
-                cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeNortheastSouthwest, 0, &cursor);
-            break;
-        case ImGuiMouseCursor_ResizeNWSE:
-            result =
-                cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeNorthwestSoutheast, 0, &cursor);
-            break;
-        case ImGuiMouseCursor_Hand:
-            result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_Hand, 0, &cursor);
-            break;
-        case ImGuiMouseCursor_NotAllowed:
-            result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_UniversalNo, 0, &cursor);
-            break;
+        case ImGuiMouseCursor_Arrow:        result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_Arrow, 0, &cursor); break;
+        case ImGuiMouseCursor_TextInput:    result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_IBeam, 0, &cursor); break;
+        case ImGuiMouseCursor_ResizeAll:    result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeAll, 0, &cursor); break;
+        case ImGuiMouseCursor_ResizeEW:     result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeWestEast, 0, &cursor); break;
+        case ImGuiMouseCursor_ResizeNS:     result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeNorthSouth, 0, &cursor); break;
+        case ImGuiMouseCursor_ResizeNESW:   result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeNortheastSouthwest, 0, &cursor); break;
+        case ImGuiMouseCursor_ResizeNWSE:   result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_SizeNorthwestSoutheast, 0, &cursor); break;
+        case ImGuiMouseCursor_Hand:         result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_Hand, 0, &cursor); break;
+        case ImGuiMouseCursor_NotAllowed:   result = cursorFactory->CreateCursor(ABI::Windows::UI::Core::CoreCursorType_UniversalNo, 0, &cursor); break;
         }
 
         if (result == S_OK)
         {
-            if (bd->CoreWindow)
+			if (bd->CoreWindow)
                 bd->CoreWindow->put_PointerCursor(cursor.Get());
-            else if (bd->PointerInputSource)
-                bd->PointerInputSource->put_PointerCursor(cursor.Get());
+			else if (bd->PointerInputSource)
+				bd->PointerInputSource->put_PointerCursor(cursor.Get());
         }
     }
     return true;
@@ -510,13 +432,12 @@ static bool IsVkDown(int vk)
 {
     ImGui_ImplUwp_Data* bd = ImGui_ImplUwp_GetBackendData();
 
-    ABI::Windows::UI::Core::CoreVirtualKeyStates states =
-        ABI::Windows::UI::Core::CoreVirtualKeyStates::CoreVirtualKeyStates_None;
+    ABI::Windows::UI::Core::CoreVirtualKeyStates states = ABI::Windows::UI::Core::CoreVirtualKeyStates::CoreVirtualKeyStates_None;
 
-    if (bd->CoreWindow)
-        bd->CoreWindow->GetKeyState((ABI::Windows::System::VirtualKey) vk, &states);
-    else if (bd->KeyboardInputSource)
-        bd->KeyboardInputSource->GetCurrentKeyState((ABI::Windows::System::VirtualKey) vk, &states);
+	if (bd->CoreWindow)
+        bd->CoreWindow->GetKeyState((ABI::Windows::System::VirtualKey)vk, &states);
+	else if (bd->KeyboardInputSource)
+		bd->KeyboardInputSource->GetCurrentKeyState((ABI::Windows::System::VirtualKey)vk, &states);
 
     return (states & ABI::Windows::UI::Core::CoreVirtualKeyStates::CoreVirtualKeyStates_Down) != 0;
 }
@@ -531,8 +452,7 @@ static void ImGui_ImplUwp_AddKeyEvent(ImGuiKey key, bool down, int native_keycod
 
 static void ImGui_ImplUwp_ProcessKeyEventsWorkarounds()
 {
-    // Left & right Shift keys: when both are pressed together, Windows tend to not generate the WM_KEYUP event for the
-    // first released one.
+    // Left & right Shift keys: when both are pressed together, Windows tend to not generate the WM_KEYUP event for the first released one.
     if (ImGui::IsKeyDown(ImGuiKey_LeftShift) && !IsVkDown(VK_LSHIFT))
         ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftShift, false, VK_LSHIFT);
     if (ImGui::IsKeyDown(ImGuiKey_RightShift) && !IsVkDown(VK_RSHIFT))
@@ -558,7 +478,7 @@ static void ImGui_ImplUwp_UpdateMouseData()
 {
     ImGui_ImplUwp_Data* bd = ImGui_ImplUwp_GetBackendData();
     ImGuiIO& io = ImGui::GetIO();
-    // IM_ASSERT(bd->CoreWindow != 0);
+    //IM_ASSERT(bd->CoreWindow != 0);
 
     if (bd->CoreWindow)
     {
@@ -572,9 +492,7 @@ static void ImGui_ImplUwp_UpdateMouseData()
             ABI::Windows::UI::Core::CoreWindowActivationMode mode;
             coreWindow5->get_ActivationMode(&mode);
 
-            is_app_focused =
-                mode ==
-                ABI::Windows::UI::Core::CoreWindowActivationMode::CoreWindowActivationMode_ActivatedInForeground;
+            is_app_focused = mode == ABI::Windows::UI::Core::CoreWindowActivationMode::CoreWindowActivationMode_ActivatedInForeground;
         }
         else
         {
@@ -589,8 +507,7 @@ static void ImGui_ImplUwp_UpdateMouseData()
 
         if (is_app_focused)
         {
-            // (Optional) Set OS mouse position from Dear ImGui if requested (rarely used, only when
-            // ImGuiConfigFlags_NavEnableSetMousePos is enabled by user)
+            // (Optional) Set OS mouse position from Dear ImGui if requested (rarely used, only when ImGuiConfigFlags_NavEnableSetMousePos is enabled by user)
             if (io.WantSetMousePos)
             {
                 ComPtr<ABI::Windows::UI::Core::ICoreWindow2> coreWindow2;
@@ -598,13 +515,12 @@ static void ImGui_ImplUwp_UpdateMouseData()
 
                 if (hr == S_OK)
                 {
-                    ABI::Windows::Foundation::Point pos = { (int) io.MousePos.x / io.DisplayFramebufferScale.x,
-                                                            (int) io.MousePos.y / io.DisplayFramebufferScale.y };
+                    ABI::Windows::Foundation::Point pos = { (int)io.MousePos.x / io.DisplayFramebufferScale.x, (int)io.MousePos.y / io.DisplayFramebufferScale.y };
                     coreWindow2->put_PointerPosition(pos);
                 }
             }
         }
-    }
+    } 
 }
 
 // Gamepad navigation mapping
@@ -613,19 +529,15 @@ static void ImGui_ImplUwp_UpdateGamepads()
 #ifndef IMGUI_IMPL_UWP_DISABLE_GAMEPAD
     ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplUwp_Data* bd = ImGui_ImplUwp_GetBackendData();
-    // if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) == 0) // FIXME: Technically feeding gamepad shouldn't
-    // depend on this now that they are regular inputs.
-    //     return;
+    //if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) == 0) // FIXME: Technically feeding gamepad shouldn't depend on this now that they are regular inputs.
+    //    return;
 
     // Calling XInputGetState() every frame on disconnected gamepads is unfortunately too slow.
-    // Instead we refresh gamepad availability by calling XInputGetCapabilities() _only_ after receiving
-    // WM_DEVICECHANGE.
+    // Instead we refresh gamepad availability by calling XInputGetCapabilities() _only_ after receiving WM_DEVICECHANGE.
     if (bd->WantUpdateHasGamepad)
     {
         XINPUT_CAPABILITIES caps = {};
-        bd->HasGamepad = bd->XInputGetCapabilities
-                             ? (bd->XInputGetCapabilities(0, XINPUT_FLAG_GAMEPAD, &caps) == ERROR_SUCCESS)
-                             : false;
+        bd->HasGamepad = bd->XInputGetCapabilities ? (bd->XInputGetCapabilities(0, XINPUT_FLAG_GAMEPAD, &caps) == ERROR_SUCCESS) : false;
         bd->WantUpdateHasGamepad = false;
     }
 
@@ -636,46 +548,39 @@ static void ImGui_ImplUwp_UpdateGamepads()
         return;
     io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
 
-#define IM_SATURATE(V) (V < 0.0f ? 0.0f : V > 1.0f ? 1.0f : V)
-#define MAP_BUTTON(KEY_NO, BUTTON_ENUM)                                                                                \
-    {                                                                                                                  \
-        io.AddKeyEvent(KEY_NO, (gamepad.wButtons & BUTTON_ENUM) != 0);                                                 \
-    }
-#define MAP_ANALOG(KEY_NO, VALUE, V0, V1)                                                                              \
-    {                                                                                                                  \
-        float vn = (float) (VALUE - V0) / (float) (V1 - V0);                                                           \
-        io.AddKeyAnalogEvent(KEY_NO, vn > 0.10f, IM_SATURATE(vn));                                                     \
-    }
-    MAP_BUTTON(ImGuiKey_GamepadStart, XINPUT_GAMEPAD_START);
-    MAP_BUTTON(ImGuiKey_GamepadBack, XINPUT_GAMEPAD_BACK);
-    MAP_BUTTON(ImGuiKey_GamepadFaceLeft, XINPUT_GAMEPAD_X);
-    MAP_BUTTON(ImGuiKey_GamepadFaceRight, XINPUT_GAMEPAD_B);
-    MAP_BUTTON(ImGuiKey_GamepadFaceUp, XINPUT_GAMEPAD_Y);
-    MAP_BUTTON(ImGuiKey_GamepadFaceDown, XINPUT_GAMEPAD_A);
-    MAP_BUTTON(ImGuiKey_GamepadDpadLeft, XINPUT_GAMEPAD_DPAD_LEFT);
-    MAP_BUTTON(ImGuiKey_GamepadDpadRight, XINPUT_GAMEPAD_DPAD_RIGHT);
-    MAP_BUTTON(ImGuiKey_GamepadDpadUp, XINPUT_GAMEPAD_DPAD_UP);
-    MAP_BUTTON(ImGuiKey_GamepadDpadDown, XINPUT_GAMEPAD_DPAD_DOWN);
-    MAP_BUTTON(ImGuiKey_GamepadL1, XINPUT_GAMEPAD_LEFT_SHOULDER);
-    MAP_BUTTON(ImGuiKey_GamepadR1, XINPUT_GAMEPAD_RIGHT_SHOULDER);
-    MAP_ANALOG(ImGuiKey_GamepadL2, gamepad.bLeftTrigger, XINPUT_GAMEPAD_TRIGGER_THRESHOLD, 255);
-    MAP_ANALOG(ImGuiKey_GamepadR2, gamepad.bRightTrigger, XINPUT_GAMEPAD_TRIGGER_THRESHOLD, 255);
-    MAP_BUTTON(ImGuiKey_GamepadL3, XINPUT_GAMEPAD_LEFT_THUMB);
-    MAP_BUTTON(ImGuiKey_GamepadR3, XINPUT_GAMEPAD_RIGHT_THUMB);
-    MAP_ANALOG(ImGuiKey_GamepadLStickLeft, gamepad.sThumbLX, -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, -32768);
-    MAP_ANALOG(ImGuiKey_GamepadLStickRight, gamepad.sThumbLX, +XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, +32767);
-    MAP_ANALOG(ImGuiKey_GamepadLStickUp, gamepad.sThumbLY, +XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, +32767);
-    MAP_ANALOG(ImGuiKey_GamepadLStickDown, gamepad.sThumbLY, -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, -32768);
-    MAP_ANALOG(ImGuiKey_GamepadRStickLeft, gamepad.sThumbRX, -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, -32768);
-    MAP_ANALOG(ImGuiKey_GamepadRStickRight, gamepad.sThumbRX, +XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, +32767);
-    MAP_ANALOG(ImGuiKey_GamepadRStickUp, gamepad.sThumbRY, +XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, +32767);
-    MAP_ANALOG(ImGuiKey_GamepadRStickDown, gamepad.sThumbRY, -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, -32768);
-#undef MAP_BUTTON
-#undef MAP_ANALOG
+    #define IM_SATURATE(V)                      (V < 0.0f ? 0.0f : V > 1.0f ? 1.0f : V)
+    #define MAP_BUTTON(KEY_NO, BUTTON_ENUM)     { io.AddKeyEvent(KEY_NO, (gamepad.wButtons & BUTTON_ENUM) != 0); }
+    #define MAP_ANALOG(KEY_NO, VALUE, V0, V1)   { float vn = (float)(VALUE - V0) / (float)(V1 - V0); io.AddKeyAnalogEvent(KEY_NO, vn > 0.10f, IM_SATURATE(vn)); }
+    MAP_BUTTON(ImGuiKey_GamepadStart,           XINPUT_GAMEPAD_START);
+    MAP_BUTTON(ImGuiKey_GamepadBack,            XINPUT_GAMEPAD_BACK);
+    MAP_BUTTON(ImGuiKey_GamepadFaceLeft,        XINPUT_GAMEPAD_X);
+    MAP_BUTTON(ImGuiKey_GamepadFaceRight,       XINPUT_GAMEPAD_B);
+    MAP_BUTTON(ImGuiKey_GamepadFaceUp,          XINPUT_GAMEPAD_Y);
+    MAP_BUTTON(ImGuiKey_GamepadFaceDown,        XINPUT_GAMEPAD_A);
+    MAP_BUTTON(ImGuiKey_GamepadDpadLeft,        XINPUT_GAMEPAD_DPAD_LEFT);
+    MAP_BUTTON(ImGuiKey_GamepadDpadRight,       XINPUT_GAMEPAD_DPAD_RIGHT);
+    MAP_BUTTON(ImGuiKey_GamepadDpadUp,          XINPUT_GAMEPAD_DPAD_UP);
+    MAP_BUTTON(ImGuiKey_GamepadDpadDown,        XINPUT_GAMEPAD_DPAD_DOWN);
+    MAP_BUTTON(ImGuiKey_GamepadL1,              XINPUT_GAMEPAD_LEFT_SHOULDER);
+    MAP_BUTTON(ImGuiKey_GamepadR1,              XINPUT_GAMEPAD_RIGHT_SHOULDER);
+    MAP_ANALOG(ImGuiKey_GamepadL2,              gamepad.bLeftTrigger, XINPUT_GAMEPAD_TRIGGER_THRESHOLD, 255);
+    MAP_ANALOG(ImGuiKey_GamepadR2,              gamepad.bRightTrigger, XINPUT_GAMEPAD_TRIGGER_THRESHOLD, 255);
+    MAP_BUTTON(ImGuiKey_GamepadL3,              XINPUT_GAMEPAD_LEFT_THUMB);
+    MAP_BUTTON(ImGuiKey_GamepadR3,              XINPUT_GAMEPAD_RIGHT_THUMB);
+    MAP_ANALOG(ImGuiKey_GamepadLStickLeft,      gamepad.sThumbLX, -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, -32768);
+    MAP_ANALOG(ImGuiKey_GamepadLStickRight,     gamepad.sThumbLX, +XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, +32767);
+    MAP_ANALOG(ImGuiKey_GamepadLStickUp,        gamepad.sThumbLY, +XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, +32767);
+    MAP_ANALOG(ImGuiKey_GamepadLStickDown,      gamepad.sThumbLY, -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, -32768);
+    MAP_ANALOG(ImGuiKey_GamepadRStickLeft,      gamepad.sThumbRX, -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, -32768);
+    MAP_ANALOG(ImGuiKey_GamepadRStickRight,     gamepad.sThumbRX, +XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, +32767);
+    MAP_ANALOG(ImGuiKey_GamepadRStickUp,        gamepad.sThumbRY, +XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, +32767);
+    MAP_ANALOG(ImGuiKey_GamepadRStickDown,      gamepad.sThumbRY, -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE, -32768);
+    #undef MAP_BUTTON
+    #undef MAP_ANALOG
 #endif // #ifndef IMGUI_IMPL_UWP_DISABLE_GAMEPAD
 }
 
-void ImGui_ImplUwp_NewFrame(ImVec2 displaySize)
+void    ImGui_ImplUwp_NewFrame(ImVec2 displaySize)
 {
     ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplUwp_Data* bd = ImGui_ImplUwp_GetBackendData();
@@ -683,25 +588,25 @@ void ImGui_ImplUwp_NewFrame(ImVec2 displaySize)
 
     // Setup display size (every frame to accommodate for window resizing)
 
-    if (bd->CoreWindow)
-    {
-        // ABI::Windows::Foundation::Rect rect = { 0, 0, 0, 0 };
-        // bd->CoreWindow->get_Bounds(&rect);
-        io.DisplaySize = displaySize; // ImVec2(rect.Width * io.DisplayFramebufferScale.x, rect.Height *
-                                      // io.DisplayFramebufferScale.y);
-    }
-    else if (bd->SwapChainPanelElement)
-    {
+	if (bd->CoreWindow)
+	{
+		//ABI::Windows::Foundation::Rect rect = { 0, 0, 0, 0 };
+		//bd->CoreWindow->get_Bounds(&rect);
+		//io.DisplaySize = ImVec2(rect.Width * io.DisplayFramebufferScale.x, rect.Height * io.DisplayFramebufferScale.y);
+        io.DisplaySize = displaySize; 
+	}
+	else if (bd->SwapChainPanelElement)
+	{
         DOUBLE w, h;
-        bd->SwapChainPanelElement->get_ActualHeight(&h);
-        bd->SwapChainPanelElement->get_ActualWidth(&w);
-        io.DisplaySize = ImVec2(w * io.DisplayFramebufferScale.x, h * io.DisplayFramebufferScale.y);
-    }
+		bd->SwapChainPanelElement->get_ActualHeight(&h);
+		bd->SwapChainPanelElement->get_ActualWidth(&w);
+		io.DisplaySize = ImVec2(w * io.DisplayFramebufferScale.x, h * io.DisplayFramebufferScale.y);
+	}
 
     // Setup time step
     INT64 current_time = 0;
-    ::QueryPerformanceCounter((LARGE_INTEGER*) &current_time);
-    io.DeltaTime = (float) (current_time - bd->Time) / bd->TicksPerSecond;
+    ::QueryPerformanceCounter((LARGE_INTEGER*)&current_time);
+    io.DeltaTime = (float)(current_time - bd->Time) / bd->TicksPerSecond;
     bd->Time = current_time;
 
     // Update OS mouse position
@@ -724,225 +629,119 @@ void ImGui_ImplUwp_NewFrame(ImVec2 displaySize)
 
 void ImGui_BindUwpKeyUp(PFN_KeyUp keyUpMethod) { _keyUpMethod = keyUpMethod; }
 
-// There is no distinct VK_xxx for keypad enter, instead it is VK_RETURN + KF_EXTENDED, we assign it an arbitrary value
-// to make code more readable (VK_ codes go up to 255)
-#define IM_VK_KEYPAD_ENTER (VK_RETURN + 256)
+// There is no distinct VK_xxx for keypad enter, instead it is VK_RETURN + KF_EXTENDED, we assign it an arbitrary value to make code more readable (VK_ codes go up to 255)
+#define IM_VK_KEYPAD_ENTER      (VK_RETURN + 256)
 
 // Map VK_xxx to ImGuiKey_xxx.
 static ImGuiKey ImGui_ImplUwp_VirtualKeyToImGuiKey(WPARAM wParam)
 {
     switch (wParam)
     {
-    case VK_TAB:
-        return ImGuiKey_Tab;
-    case VK_LEFT:
-        return ImGuiKey_LeftArrow;
-    case VK_RIGHT:
-        return ImGuiKey_RightArrow;
-    case VK_UP:
-        return ImGuiKey_UpArrow;
-    case VK_DOWN:
-        return ImGuiKey_DownArrow;
-    case VK_PRIOR:
-        return ImGuiKey_PageUp;
-    case VK_NEXT:
-        return ImGuiKey_PageDown;
-    case VK_HOME:
-        return ImGuiKey_Home;
-    case VK_END:
-        return ImGuiKey_End;
-    case VK_INSERT:
-        return ImGuiKey_Insert;
-    case VK_DELETE:
-        return ImGuiKey_Delete;
-    case VK_BACK:
-        return ImGuiKey_Backspace;
-    case VK_SPACE:
-        return ImGuiKey_Space;
-    case VK_RETURN:
-        return ImGuiKey_Enter;
-    case VK_ESCAPE:
-        return ImGuiKey_Escape;
-    case VK_OEM_7:
-        return ImGuiKey_Apostrophe;
-    case VK_OEM_COMMA:
-        return ImGuiKey_Comma;
-    case VK_OEM_MINUS:
-        return ImGuiKey_Minus;
-    case VK_OEM_PERIOD:
-        return ImGuiKey_Period;
-    case VK_OEM_2:
-        return ImGuiKey_Slash;
-    case VK_OEM_1:
-        return ImGuiKey_Semicolon;
-    case VK_OEM_PLUS:
-        return ImGuiKey_Equal;
-    case VK_OEM_4:
-        return ImGuiKey_LeftBracket;
-    case VK_OEM_5:
-        return ImGuiKey_Backslash;
-    case VK_OEM_6:
-        return ImGuiKey_RightBracket;
-    case VK_OEM_3:
-        return ImGuiKey_GraveAccent;
-    case VK_CAPITAL:
-        return ImGuiKey_CapsLock;
-    case VK_SCROLL:
-        return ImGuiKey_ScrollLock;
-    case VK_NUMLOCK:
-        return ImGuiKey_NumLock;
-    case VK_SNAPSHOT:
-        return ImGuiKey_PrintScreen;
-    case VK_PAUSE:
-        return ImGuiKey_Pause;
-    case VK_NUMPAD0:
-        return ImGuiKey_Keypad0;
-    case VK_NUMPAD1:
-        return ImGuiKey_Keypad1;
-    case VK_NUMPAD2:
-        return ImGuiKey_Keypad2;
-    case VK_NUMPAD3:
-        return ImGuiKey_Keypad3;
-    case VK_NUMPAD4:
-        return ImGuiKey_Keypad4;
-    case VK_NUMPAD5:
-        return ImGuiKey_Keypad5;
-    case VK_NUMPAD6:
-        return ImGuiKey_Keypad6;
-    case VK_NUMPAD7:
-        return ImGuiKey_Keypad7;
-    case VK_NUMPAD8:
-        return ImGuiKey_Keypad8;
-    case VK_NUMPAD9:
-        return ImGuiKey_Keypad9;
-    case VK_DECIMAL:
-        return ImGuiKey_KeypadDecimal;
-    case VK_DIVIDE:
-        return ImGuiKey_KeypadDivide;
-    case VK_MULTIPLY:
-        return ImGuiKey_KeypadMultiply;
-    case VK_SUBTRACT:
-        return ImGuiKey_KeypadSubtract;
-    case VK_ADD:
-        return ImGuiKey_KeypadAdd;
-    case IM_VK_KEYPAD_ENTER:
-        return ImGuiKey_KeypadEnter;
-    case VK_LSHIFT:
-        return ImGuiKey_LeftShift;
-    case VK_LCONTROL:
-        return ImGuiKey_LeftCtrl;
-    case VK_LMENU:
-        return ImGuiKey_LeftAlt;
-    case VK_LWIN:
-        return ImGuiKey_LeftSuper;
-    case VK_RSHIFT:
-        return ImGuiKey_RightShift;
-    case VK_RCONTROL:
-        return ImGuiKey_RightCtrl;
-    case VK_RMENU:
-        return ImGuiKey_RightAlt;
-    case VK_RWIN:
-        return ImGuiKey_RightSuper;
-    case VK_APPS:
-        return ImGuiKey_Menu;
-    case '0':
-        return ImGuiKey_0;
-    case '1':
-        return ImGuiKey_1;
-    case '2':
-        return ImGuiKey_2;
-    case '3':
-        return ImGuiKey_3;
-    case '4':
-        return ImGuiKey_4;
-    case '5':
-        return ImGuiKey_5;
-    case '6':
-        return ImGuiKey_6;
-    case '7':
-        return ImGuiKey_7;
-    case '8':
-        return ImGuiKey_8;
-    case '9':
-        return ImGuiKey_9;
-    case 'A':
-        return ImGuiKey_A;
-    case 'B':
-        return ImGuiKey_B;
-    case 'C':
-        return ImGuiKey_C;
-    case 'D':
-        return ImGuiKey_D;
-    case 'E':
-        return ImGuiKey_E;
-    case 'F':
-        return ImGuiKey_F;
-    case 'G':
-        return ImGuiKey_G;
-    case 'H':
-        return ImGuiKey_H;
-    case 'I':
-        return ImGuiKey_I;
-    case 'J':
-        return ImGuiKey_J;
-    case 'K':
-        return ImGuiKey_K;
-    case 'L':
-        return ImGuiKey_L;
-    case 'M':
-        return ImGuiKey_M;
-    case 'N':
-        return ImGuiKey_N;
-    case 'O':
-        return ImGuiKey_O;
-    case 'P':
-        return ImGuiKey_P;
-    case 'Q':
-        return ImGuiKey_Q;
-    case 'R':
-        return ImGuiKey_R;
-    case 'S':
-        return ImGuiKey_S;
-    case 'T':
-        return ImGuiKey_T;
-    case 'U':
-        return ImGuiKey_U;
-    case 'V':
-        return ImGuiKey_V;
-    case 'W':
-        return ImGuiKey_W;
-    case 'X':
-        return ImGuiKey_X;
-    case 'Y':
-        return ImGuiKey_Y;
-    case 'Z':
-        return ImGuiKey_Z;
-    case VK_F1:
-        return ImGuiKey_F1;
-    case VK_F2:
-        return ImGuiKey_F2;
-    case VK_F3:
-        return ImGuiKey_F3;
-    case VK_F4:
-        return ImGuiKey_F4;
-    case VK_F5:
-        return ImGuiKey_F5;
-    case VK_F6:
-        return ImGuiKey_F6;
-    case VK_F7:
-        return ImGuiKey_F7;
-    case VK_F8:
-        return ImGuiKey_F8;
-    case VK_F9:
-        return ImGuiKey_F9;
-    case VK_F10:
-        return ImGuiKey_F10;
-    case VK_F11:
-        return ImGuiKey_F11;
-    case VK_F12:
-        return ImGuiKey_F12;
-    default:
-        return ImGuiKey_None;
+        case VK_TAB: return ImGuiKey_Tab;
+        case VK_LEFT: return ImGuiKey_LeftArrow;
+        case VK_RIGHT: return ImGuiKey_RightArrow;
+        case VK_UP: return ImGuiKey_UpArrow;
+        case VK_DOWN: return ImGuiKey_DownArrow;
+        case VK_PRIOR: return ImGuiKey_PageUp;
+        case VK_NEXT: return ImGuiKey_PageDown;
+        case VK_HOME: return ImGuiKey_Home;
+        case VK_END: return ImGuiKey_End;
+        case VK_INSERT: return ImGuiKey_Insert;
+        case VK_DELETE: return ImGuiKey_Delete;
+        case VK_BACK: return ImGuiKey_Backspace;
+        case VK_SPACE: return ImGuiKey_Space;
+        case VK_RETURN: return ImGuiKey_Enter;
+        case VK_ESCAPE: return ImGuiKey_Escape;
+        case VK_OEM_7: return ImGuiKey_Apostrophe;
+        case VK_OEM_COMMA: return ImGuiKey_Comma;
+        case VK_OEM_MINUS: return ImGuiKey_Minus;
+        case VK_OEM_PERIOD: return ImGuiKey_Period;
+        case VK_OEM_2: return ImGuiKey_Slash;
+        case VK_OEM_1: return ImGuiKey_Semicolon;
+        case VK_OEM_PLUS: return ImGuiKey_Equal;
+        case VK_OEM_4: return ImGuiKey_LeftBracket;
+        case VK_OEM_5: return ImGuiKey_Backslash;
+        case VK_OEM_6: return ImGuiKey_RightBracket;
+        case VK_OEM_3: return ImGuiKey_GraveAccent;
+        case VK_CAPITAL: return ImGuiKey_CapsLock;
+        case VK_SCROLL: return ImGuiKey_ScrollLock;
+        case VK_NUMLOCK: return ImGuiKey_NumLock;
+        case VK_SNAPSHOT: return ImGuiKey_PrintScreen;
+        case VK_PAUSE: return ImGuiKey_Pause;
+        case VK_NUMPAD0: return ImGuiKey_Keypad0;
+        case VK_NUMPAD1: return ImGuiKey_Keypad1;
+        case VK_NUMPAD2: return ImGuiKey_Keypad2;
+        case VK_NUMPAD3: return ImGuiKey_Keypad3;
+        case VK_NUMPAD4: return ImGuiKey_Keypad4;
+        case VK_NUMPAD5: return ImGuiKey_Keypad5;
+        case VK_NUMPAD6: return ImGuiKey_Keypad6;
+        case VK_NUMPAD7: return ImGuiKey_Keypad7;
+        case VK_NUMPAD8: return ImGuiKey_Keypad8;
+        case VK_NUMPAD9: return ImGuiKey_Keypad9;
+        case VK_DECIMAL: return ImGuiKey_KeypadDecimal;
+        case VK_DIVIDE: return ImGuiKey_KeypadDivide;
+        case VK_MULTIPLY: return ImGuiKey_KeypadMultiply;
+        case VK_SUBTRACT: return ImGuiKey_KeypadSubtract;
+        case VK_ADD: return ImGuiKey_KeypadAdd;
+        case IM_VK_KEYPAD_ENTER: return ImGuiKey_KeypadEnter;
+        case VK_LSHIFT: return ImGuiKey_LeftShift;
+        case VK_LCONTROL: return ImGuiKey_LeftCtrl;
+        case VK_LMENU: return ImGuiKey_LeftAlt;
+        case VK_LWIN: return ImGuiKey_LeftSuper;
+        case VK_RSHIFT: return ImGuiKey_RightShift;
+        case VK_RCONTROL: return ImGuiKey_RightCtrl;
+        case VK_RMENU: return ImGuiKey_RightAlt;
+        case VK_RWIN: return ImGuiKey_RightSuper;
+        case VK_APPS: return ImGuiKey_Menu;
+        case '0': return ImGuiKey_0;
+        case '1': return ImGuiKey_1;
+        case '2': return ImGuiKey_2;
+        case '3': return ImGuiKey_3;
+        case '4': return ImGuiKey_4;
+        case '5': return ImGuiKey_5;
+        case '6': return ImGuiKey_6;
+        case '7': return ImGuiKey_7;
+        case '8': return ImGuiKey_8;
+        case '9': return ImGuiKey_9;
+        case 'A': return ImGuiKey_A;
+        case 'B': return ImGuiKey_B;
+        case 'C': return ImGuiKey_C;
+        case 'D': return ImGuiKey_D;
+        case 'E': return ImGuiKey_E;
+        case 'F': return ImGuiKey_F;
+        case 'G': return ImGuiKey_G;
+        case 'H': return ImGuiKey_H;
+        case 'I': return ImGuiKey_I;
+        case 'J': return ImGuiKey_J;
+        case 'K': return ImGuiKey_K;
+        case 'L': return ImGuiKey_L;
+        case 'M': return ImGuiKey_M;
+        case 'N': return ImGuiKey_N;
+        case 'O': return ImGuiKey_O;
+        case 'P': return ImGuiKey_P;
+        case 'Q': return ImGuiKey_Q;
+        case 'R': return ImGuiKey_R;
+        case 'S': return ImGuiKey_S;
+        case 'T': return ImGuiKey_T;
+        case 'U': return ImGuiKey_U;
+        case 'V': return ImGuiKey_V;
+        case 'W': return ImGuiKey_W;
+        case 'X': return ImGuiKey_X;
+        case 'Y': return ImGuiKey_Y;
+        case 'Z': return ImGuiKey_Z;
+        case VK_F1: return ImGuiKey_F1;
+        case VK_F2: return ImGuiKey_F2;
+        case VK_F3: return ImGuiKey_F3;
+        case VK_F4: return ImGuiKey_F4;
+        case VK_F5: return ImGuiKey_F5;
+        case VK_F6: return ImGuiKey_F6;
+        case VK_F7: return ImGuiKey_F7;
+        case VK_F8: return ImGuiKey_F8;
+        case VK_F9: return ImGuiKey_F9;
+        case VK_F10: return ImGuiKey_F10;
+        case VK_F11: return ImGuiKey_F11;
+        case VK_F12: return ImGuiKey_F12;
+        default: return ImGuiKey_None;
     }
 }
 
@@ -1016,7 +815,7 @@ int KeyDown(::IInspectable* sender, ABI::Windows::UI::Core::IKeyEventArgs* args)
         // Submit modifiers
         ImGui_ImplUwp_UpdateKeyModifiers();
 
-        int vk = (int) key;
+        int vk = (int)key;
         if ((key == VK_RETURN) && keyStatus.IsExtendedKey)
             vk = IM_VK_KEYPAD_ENTER;
 
@@ -1029,43 +828,21 @@ int KeyDown(::IInspectable* sender, ABI::Windows::UI::Core::IKeyEventArgs* args)
         // Submit individual left/right modifier events
         if (vk == VK_SHIFT)
         {
-            // Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in
-            // ImGui_ImplUwp_ProcessKeyEventsWorkarounds()
-            if (IsVkDown(VK_LSHIFT) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftShift, is_key_down, VK_LSHIFT, scancode);
-            }
-            if (IsVkDown(VK_RSHIFT) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightShift, is_key_down, VK_RSHIFT, scancode);
-            }
+            // Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in ImGui_ImplUwp_ProcessKeyEventsWorkarounds()
+            if (IsVkDown(VK_LSHIFT) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftShift, is_key_down, VK_LSHIFT, scancode); }
+            if (IsVkDown(VK_RSHIFT) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightShift, is_key_down, VK_RSHIFT, scancode); }
         }
         else if (vk == VK_CONTROL)
         {
-            if (IsVkDown(VK_LCONTROL) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftCtrl, is_key_down, VK_LCONTROL, scancode);
-            }
-            if (IsVkDown(VK_RCONTROL) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightCtrl, is_key_down, VK_RCONTROL, scancode);
-            }
+            if (IsVkDown(VK_LCONTROL) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftCtrl, is_key_down, VK_LCONTROL, scancode); }
+            if (IsVkDown(VK_RCONTROL) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightCtrl, is_key_down, VK_RCONTROL, scancode); }
         }
         else if (vk == VK_MENU || keyStatus.IsMenuKeyDown)
         {
-            if (IsVkDown(VK_LMENU) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode);
-            }
-            if (IsVkDown(VK_RMENU) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightAlt, is_key_down, VK_RMENU, scancode);
-            }
+            if (IsVkDown(VK_LMENU) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
+            if (IsVkDown(VK_RMENU) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightAlt, is_key_down, VK_RMENU, scancode); }
 
-            if (!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU))
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode);
-            }
+            if (!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU)) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
         }
     }
 
@@ -1084,6 +861,7 @@ int KeyUp(::IInspectable* sender, ABI::Windows::UI::Core::IKeyEventArgs* args)
     args->get_VirtualKey(&key);
     args->get_KeyStatus(&keyStatus);
 
+
     if (_keyUpMethod != nullptr)
         _keyUpMethod(key);
 
@@ -1093,7 +871,7 @@ int KeyUp(::IInspectable* sender, ABI::Windows::UI::Core::IKeyEventArgs* args)
         // Submit modifiers
         ImGui_ImplUwp_UpdateKeyModifiers();
 
-        int vk = (int) key;
+        int vk = (int)key;
         if ((key == VK_RETURN) && keyStatus.IsExtendedKey)
             vk = IM_VK_KEYPAD_ENTER;
 
@@ -1106,43 +884,21 @@ int KeyUp(::IInspectable* sender, ABI::Windows::UI::Core::IKeyEventArgs* args)
         // Submit individual left/right modifier events
         if (vk == VK_SHIFT)
         {
-            // Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in
-            // ImGui_ImplUwp_ProcessKeyEventsWorkarounds()
-            if (IsVkDown(VK_LSHIFT) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftShift, is_key_down, VK_LSHIFT, scancode);
-            }
-            if (IsVkDown(VK_RSHIFT) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightShift, is_key_down, VK_RSHIFT, scancode);
-            }
+            // Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in ImGui_ImplUwp_ProcessKeyEventsWorkarounds()
+            if (IsVkDown(VK_LSHIFT) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftShift, is_key_down, VK_LSHIFT, scancode); }
+            if (IsVkDown(VK_RSHIFT) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightShift, is_key_down, VK_RSHIFT, scancode); }
         }
         else if (vk == VK_CONTROL)
         {
-            if (IsVkDown(VK_LCONTROL) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftCtrl, is_key_down, VK_LCONTROL, scancode);
-            }
-            if (IsVkDown(VK_RCONTROL) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightCtrl, is_key_down, VK_RCONTROL, scancode);
-            }
+            if (IsVkDown(VK_LCONTROL) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftCtrl, is_key_down, VK_LCONTROL, scancode); }
+            if (IsVkDown(VK_RCONTROL) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightCtrl, is_key_down, VK_RCONTROL, scancode); }
         }
         else if (vk == VK_MENU || !keyStatus.IsMenuKeyDown)
         {
-            if (IsVkDown(VK_LMENU) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode);
-            }
-            if (IsVkDown(VK_RMENU) == is_key_down)
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightAlt, is_key_down, VK_RMENU, scancode);
-            }
+            if (IsVkDown(VK_LMENU) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
+            if (IsVkDown(VK_RMENU) == is_key_down) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_RightAlt, is_key_down, VK_RMENU, scancode); }
 
-            if (!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU))
-            {
-                ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode);
-            }
+            if (!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU)) { ImGui_ImplUwp_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
         }
     }
 
@@ -1203,15 +959,14 @@ int PointerWheelChanged(::IInspectable* sender, ABI::Windows::UI::Core::IPointer
     pointerPointProps->get_MouseWheelDelta(&mouseWheelDelta);
 
     if (isHorizontalMouseWheel)
-        io.AddMouseWheelEvent(-(float) mouseWheelDelta / (float) WHEEL_DELTA, 0.0f);
+        io.AddMouseWheelEvent(-(float) mouseWheelDelta / (float)WHEEL_DELTA, 0.0f);
     else
-        io.AddMouseWheelEvent(0.0f, (float) mouseWheelDelta / (float) WHEEL_DELTA);
+        io.AddMouseWheelEvent(0.0f, (float)mouseWheelDelta / (float)WHEEL_DELTA);
 
     return 0;
 }
 
-int WindowActivated(ABI::Windows::UI::Core::ICoreWindow* sender,
-                    ABI::Windows::UI::Core::IWindowActivatedEventArgs* args)
+int WindowActivated(ABI::Windows::UI::Core::ICoreWindow* sender, ABI::Windows::UI::Core::IWindowActivatedEventArgs* args)
 {
     if (ImGui::GetCurrentContext() == nullptr)
         return 0;
@@ -1261,16 +1016,11 @@ int PointerPressed(::IInspectable* sender, ABI::Windows::UI::Core::IPointerEvent
 
     int button = 0;
 
-    if (x2Btn && (bd->MouseButtonsDown & (1 << 4)) == 0)
-        button = 4;
-    if (x1Btn && (bd->MouseButtonsDown & (1 << 3)) == 0)
-        button = 3;
-    if (mBtn && (bd->MouseButtonsDown & (1 << 2)) == 0)
-        button = 2;
-    if (rBtn && (bd->MouseButtonsDown & (1 << 1)) == 0)
-        button = 1;
-    if (lBtn && (bd->MouseButtonsDown & (1 << 0)) == 0)
-        button = 0;
+    if (x2Btn && (bd->MouseButtonsDown & (1 << 4)) == 0) button = 4;
+    if (x1Btn && (bd->MouseButtonsDown & (1 << 3)) == 0) button = 3;
+    if (mBtn && (bd->MouseButtonsDown & (1 << 2)) == 0) button = 2;
+    if (rBtn && (bd->MouseButtonsDown & (1 << 1)) == 0) button = 1;
+    if (lBtn && (bd->MouseButtonsDown & (1 << 0)) == 0) button = 0;
 
     ImGuiMouseSource mouse_source = GetMouseSourceFromDevice(pointerDevice.Get());
 
@@ -1316,16 +1066,11 @@ int PointerReleased(::IInspectable* sender, ABI::Windows::UI::Core::IPointerEven
 
     int button = 0;
 
-    if (!x2Btn && (bd->MouseButtonsDown & (1 << 4)) != 0)
-        button = 4;
-    if (!x1Btn && (bd->MouseButtonsDown & (1 << 3)) != 0)
-        button = 3;
-    if (!mBtn && (bd->MouseButtonsDown & (1 << 2)) != 0)
-        button = 2;
-    if (!rBtn && (bd->MouseButtonsDown & (1 << 1)) != 0)
-        button = 1;
-    if (!lBtn && (bd->MouseButtonsDown & (1 << 0)) != 0)
-        button = 0;
+    if (!x2Btn && (bd->MouseButtonsDown & (1 << 4)) != 0) button = 4;
+    if (!x1Btn && (bd->MouseButtonsDown & (1 << 3)) != 0) button = 3;
+    if (!mBtn && (bd->MouseButtonsDown & (1 << 2)) != 0) button = 2;
+    if (!rBtn && (bd->MouseButtonsDown & (1 << 1)) != 0) button = 1;
+    if (!lBtn && (bd->MouseButtonsDown & (1 << 0)) != 0) button = 0;
 
     ImGuiMouseSource mouse_source = GetMouseSourceFromDevice(pointerDevice.Get());
 
@@ -1340,21 +1085,14 @@ int PointerReleased(::IInspectable* sender, ABI::Windows::UI::Core::IPointerEven
 #if !defined(IMGUI_DISABLE_UWP_DEFAULT_CLIPBOARD_FUNCTIONS)
 static const char* ImGui_ImplUwp_GetClipboardTextFn(void* user_data_ctx)
 {
-    ImGuiContext& g = *(ImGuiContext*) user_data_ctx;
+    ImGuiContext& g = *(ImGuiContext*)user_data_ctx;
     g.ClipboardHandlerData.clear();
 
     Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IClipboardStatics> clipboardStatics;
-    Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IStandardDataFormatsStatics>
-        standardDataFormats;
+    Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IStandardDataFormatsStatics> standardDataFormats;
     Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IDataPackageView> dataPkgView;
-    Windows::Foundation::GetActivationFactory(
-        Microsoft::WRL::Wrappers::HStringReference(RuntimeClass_Windows_ApplicationModel_DataTransfer_Clipboard).Get(),
-        &clipboardStatics);
-    Windows::Foundation::GetActivationFactory(
-        Microsoft::WRL::Wrappers::HStringReference(
-            RuntimeClass_Windows_ApplicationModel_DataTransfer_StandardDataFormats)
-            .Get(),
-        &standardDataFormats);
+    Windows::Foundation::GetActivationFactory(Microsoft::WRL::Wrappers::HStringReference(RuntimeClass_Windows_ApplicationModel_DataTransfer_Clipboard).Get(), &clipboardStatics);
+    Windows::Foundation::GetActivationFactory(Microsoft::WRL::Wrappers::HStringReference(RuntimeClass_Windows_ApplicationModel_DataTransfer_StandardDataFormats).Get(), &standardDataFormats);
 
     if (clipboardStatics->GetContent(&dataPkgView) != S_OK)
         return NULL;
@@ -1375,15 +1113,11 @@ static const char* ImGui_ImplUwp_GetClipboardTextFn(void* user_data_ctx)
         return NULL;
 
     HRESULT hr;
-    Microsoft::WRL::Wrappers::Event opCompleted(
-        CreateEventEx(nullptr, nullptr, CREATE_EVENT_MANUAL_RESET, WRITE_OWNER | EVENT_ALL_ACCESS));
+    Microsoft::WRL::Wrappers::Event opCompleted(CreateEventEx(nullptr, nullptr, CREATE_EVENT_MANUAL_RESET, WRITE_OWNER | EVENT_ALL_ACCESS));
 
-    Microsoft::WRL::ComPtr<ABI::Windows::Foundation::IAsyncOperationCompletedHandler<HSTRING>> cb =
-        Microsoft::WRL::Callback<Microsoft::WRL::Implements<
-            Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
-            ABI::Windows::Foundation::IAsyncOperationCompletedHandler<HSTRING>, Microsoft::WRL::FtmBase>>(
-            [&opCompleted](ABI::Windows::Foundation::IAsyncOperation<HSTRING>* asyncOperation,
-                           AsyncStatus status) -> HRESULT
+    Microsoft::WRL::ComPtr<ABI::Windows::Foundation::IAsyncOperationCompletedHandler<HSTRING>> cb
+        = Microsoft::WRL::Callback<Microsoft::WRL::Implements<Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>, ABI::Windows::Foundation::IAsyncOperationCompletedHandler<HSTRING>, Microsoft::WRL::FtmBase>>(
+            [&opCompleted](ABI::Windows::Foundation::IAsyncOperation<HSTRING>* asyncOperation, AsyncStatus status)->HRESULT
             {
                 SetEvent(opCompleted.Get());
                 return S_OK;
@@ -1399,7 +1133,7 @@ static const char* ImGui_ImplUwp_GetClipboardTextFn(void* user_data_ctx)
         return NULL;
     }
 
-    if (const WCHAR* wbuf_global = (const WCHAR*) text.GetRawBuffer(NULL))
+    if (const WCHAR* wbuf_global = (const WCHAR*)text.GetRawBuffer(NULL))
     {
         int buf_len = ::WideCharToMultiByte(CP_UTF8, 0, wbuf_global, -1, NULL, 0, NULL, NULL);
         g.ClipboardHandlerData.resize(buf_len);
@@ -1415,25 +1149,19 @@ static void ImGui_ImplUwp_SetClipboardTextFn(void*, const char* text)
 {
     Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IDataPackage> dataPkg;
     Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IClipboardStatics> clipboardStatics;
-    Windows::Foundation::ActivateInstance(
-        Microsoft::WRL::Wrappers::HStringReference(RuntimeClass_Windows_ApplicationModel_DataTransfer_DataPackage)
-            .Get(),
-        &dataPkg);
-    Windows::Foundation::GetActivationFactory(
-        Microsoft::WRL::Wrappers::HStringReference(RuntimeClass_Windows_ApplicationModel_DataTransfer_Clipboard).Get(),
-        &clipboardStatics);
+    Windows::Foundation::ActivateInstance(Microsoft::WRL::Wrappers::HStringReference(RuntimeClass_Windows_ApplicationModel_DataTransfer_DataPackage).Get(), &dataPkg);
+    Windows::Foundation::GetActivationFactory(Microsoft::WRL::Wrappers::HStringReference(RuntimeClass_Windows_ApplicationModel_DataTransfer_Clipboard).Get(), &clipboardStatics);
 
-    HRESULT hr =
-        dataPkg->put_RequestedOperation(ABI::Windows::ApplicationModel::DataTransfer::DataPackageOperation_Copy);
+    HRESULT hr = dataPkg->put_RequestedOperation(ABI::Windows::ApplicationModel::DataTransfer::DataPackageOperation_Copy);
     if (hr != S_OK)
         return;
 
     const int wbuf_length = ::MultiByteToWideChar(CP_UTF8, 0, text, -1, NULL, 0);
-    HGLOBAL wbuf_handle = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T) wbuf_length * sizeof(WCHAR));
+    HGLOBAL wbuf_handle = ::GlobalAlloc(GMEM_MOVEABLE, (SIZE_T)wbuf_length * sizeof(WCHAR));
     if (wbuf_handle == NULL)
         return;
 
-    WCHAR* wbuf_global = (WCHAR*) ::GlobalLock(wbuf_handle);
+    WCHAR* wbuf_global = (WCHAR*)::GlobalLock(wbuf_handle);
     ::MultiByteToWideChar(CP_UTF8, 0, text, -1, wbuf_global, wbuf_length);
     ::GlobalUnlock(wbuf_handle);
 

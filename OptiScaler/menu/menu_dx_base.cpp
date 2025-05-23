@@ -6,7 +6,7 @@
 #include "menu_common.h"
 #include "menu_dx_base.h"
 
-#include "imgui/imgui_impl_win32.h"
+#include <imgui/imgui_impl_win32.h>
 
 bool MenuDxBase::RenderMenu()
 {
