@@ -12,7 +12,8 @@ bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource*
     auto inDesc = source->GetDesc();
 
     if (UAV)
-        inDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        inDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS |
+                       D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
 
     if (depth)
         inDesc.Format = DXGI_FORMAT_R32_FLOAT;
@@ -103,7 +104,6 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
         if (_mvFlip.get() == nullptr)
         {
             _mvFlip = std::make_unique<RF_Dx12>("VelocityFlip", _device);
-            _paramVelocity[index] = velocity;
             return;
         }
 
@@ -111,7 +111,9 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
         {
             ResourceBarrier(cmdList, _paramVelocityCopy[index], D3D12_RESOURCE_STATE_COPY_DEST,
                             D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
             auto result = _mvFlip->Dispatch(_device, cmdList, velocity, _paramVelocityCopy[index]);
+            
             ResourceBarrier(cmdList, _paramVelocityCopy[index], D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                             D3D12_RESOURCE_STATE_COPY_DEST);
 
@@ -128,8 +130,6 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
         _paramVelocity[index] = _paramVelocityCopy[index];
         return;
     }
-
-    _paramVelocity[index] = velocity;
 }
 
 void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* depth, D3D12_RESOURCE_STATES state)
@@ -155,7 +155,9 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
         {
             ResourceBarrier(cmdList, _paramDepthCopy[index], D3D12_RESOURCE_STATE_COPY_DEST,
                             D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
             auto result = _depthFlip->Dispatch(_device, cmdList, depth, _paramDepthCopy[index]);
+
             ResourceBarrier(cmdList, _paramDepthCopy[index], D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                             D3D12_RESOURCE_STATE_COPY_DEST);
 
