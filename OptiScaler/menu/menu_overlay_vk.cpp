@@ -40,7 +40,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
 
     if (_vulkanObjectsCreated)
     {
-        LOG_DEBUG("_vulkanObjectsCreated, releaseing objects");
+        LOG_DEBUG("_vulkanObjectsCreated, releasing objects");
 
         if (ImGui::GetIO().BackendRendererUserData != nullptr)
             ImGui_ImplVulkan_Shutdown();
@@ -51,14 +51,11 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     }
 
     // Initialize ImGui
-    if (!MenuOverlayBase::IsInited() || MenuOverlayBase::Handle() != hwnd)
-    {
-        if (MenuOverlayBase::IsInited())
-            MenuOverlayBase::Shutdown();
+    if (MenuOverlayBase::IsInited())
+        MenuOverlayBase::Shutdown();
 
-        LOG_DEBUG("MenuOverlayBase::Init");
-        MenuOverlayBase::Init(hwnd, false);
-    }
+    LOG_DEBUG("MenuOverlayBase::Init");
+    MenuOverlayBase::Init(hwnd, false);
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize.x = pCreateInfo->imageExtent.width;
@@ -132,6 +129,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         sampler_pool_size.descriptorCount = 8; // required by ImGui 1.92
         VkDescriptorPoolCreateInfo desc_pool_info = {};
         desc_pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        desc_pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         desc_pool_info.maxSets = 8;
         desc_pool_info.poolSizeCount = 1;
         desc_pool_info.pPoolSizes = &sampler_pool_size;

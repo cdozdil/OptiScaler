@@ -1232,7 +1232,16 @@ bool MenuCommon::RenderMenu()
     }
 
     // FPS Overlay font
-    ImGui::PushFontSize(Config::Instance()->MenuScale.value_or_default() * 14.0f);
+    auto fpsScale = Config::Instance()->FpsScale.value_or(Config::Instance()->MenuScale.value_or_default());
+    ImGui::PushFontSize(std::round(fpsScale * 14.0f));
+
+    if (Config::Instance()->FpsScale.has_value())
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImGuiStyle styleold = style;
+        style = ImGuiStyle();
+        style.ScaleAllSizes(fpsScale);
+    }
 
     // If Fps overlay is visible
     if (Config::Instance()->ShowFps.value_or_default())
@@ -1390,9 +1399,9 @@ bool MenuCommon::RenderMenu()
             ImVec2 plotSize;
 
             if (Config::Instance()->FpsOverlayHorizontal.value_or_default())
-                plotSize = { Config::Instance()->MenuScale.value() * 150, Config::Instance()->MenuScale.value() * 16 };
+                plotSize = { fpsScale * 150, fpsScale * 16 };
             else
-                plotSize = { Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30 };
+                plotSize = { fpsScale * 300, fpsScale * 30 };
 
             if (Config::Instance()->FpsOverlayType.value_or_default() > 1)
             {
@@ -1466,7 +1475,7 @@ bool MenuCommon::RenderMenu()
 
     {
         // Overlay font
-        ImGui::PushFontSize(Config::Instance()->MenuScale.value_or_default() * 14.0f);
+        ImGui::PushFontSize(std::round(Config::Instance()->MenuScale.value_or_default() * 14.0f));
 
         // If overlay is not visible frame needs to be inited
         if (!Config::Instance()->ShowFps.value_or_default())
@@ -1505,7 +1514,7 @@ bool MenuCommon::RenderMenu()
         flags |= ImGuiWindowFlags_AlwaysAutoResize;
 
         // if UI scale is changed rescale the style
-        if (_imguiSizeUpdate)
+        if (_imguiSizeUpdate || Config::Instance()->FpsScale.has_value())
         {
             _imguiSizeUpdate = false;
 
@@ -1554,9 +1563,9 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
 
                 if (Config::Instance()->UseHQFont.value_or_default())
-                    ImGui::PushFontSize(14.0f * Config::Instance()->MenuScale.value_or(1.0) * 3.0); // TODO: round?
+                    ImGui::PushFontSize(std::round(14.0f * Config::Instance()->MenuScale.value_or_default() * 3.0));
                 else
-                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0) * 3.0);
+                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default() * 3.0);
 
                 if (State::Instance().nvngxExists ||
                     (State::Instance().libxessExists || XeSSProxy::Module() != nullptr))
@@ -3476,8 +3485,28 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f",
                                            ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->FpsOverlayAlpha = fpsAlpha;
-                }
+                 
+                    const char* options[] = {
+                        "Same as menu", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2",
+                        "1.3",  "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0"
+                    };
+                    int currentIndex = std::max(((int) (Config::Instance()->FpsScale.value_or(0.0f) * 10.0f)) - 4, 0);
+                    float values[] = { 0.0f,  0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f,
+                                       1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f };
 
+                    if (ImGui::SliderInt("Scale", &currentIndex, 0, IM_ARRAYSIZE(options) - 1, options[currentIndex]))
+                    {
+                        if (currentIndex == 0)
+                        {
+                            Config::Instance()->FpsScale.reset();
+                        }
+                        else
+                        {
+                            Config::Instance()->FpsScale = values[currentIndex];
+                        }
+                    }
+                }
+                    
                 // ADVANCED SETTINGS -----------------------------
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("Upscaler Inputs",
@@ -3773,7 +3802,7 @@ bool MenuCommon::RenderMenu()
                                            "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
                 const char* selectedScaleName = uiScales[_selectedScale];
 
-                if (ImGui::BeginCombo("UI Scale", selectedScaleName))
+                if (ImGui::BeginCombo("Menu UI Scale", selectedScaleName))
                 {
                     for (int n = 0; n < 16; n++)
                     {

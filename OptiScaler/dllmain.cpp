@@ -1004,10 +1004,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         State::Instance().isRunningOnLinux = IsRunningOnWine();
         State::Instance().isRunningOnDXVK = State::Instance().isRunningOnLinux;
 
-        // Temporary fix for Linux & DXVK
-        if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
-            Config::Instance()->UseHQFont.set_volatile_value(false);
-
         // Check if real DLSS available
         if (Config::Instance()->DLSSEnabled.value_or_default())
         {
