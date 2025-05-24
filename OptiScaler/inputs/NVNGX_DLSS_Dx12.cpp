@@ -1655,7 +1655,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                     if (DepthScale->Dispatch(D3D12Device, InCmdList, paramDepth, DepthScale->Buffer()))
                     {
-                        fg->SetDepth(commandList, DepthScale->Buffer(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                        DepthScale->SetBufferState(InCmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                        fg->SetDepth(commandList, DepthScale->Buffer(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                         done = true;
                     }
                 }
