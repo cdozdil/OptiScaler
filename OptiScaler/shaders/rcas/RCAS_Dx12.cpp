@@ -129,54 +129,6 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
     _counter++;
     _counter = _counter % 2;
 
-    if (_cpuSrvHandle[_counter].ptr == NULL)
-        _cpuSrvHandle[_counter] = _srvHeap[_counter]->GetCPUDescriptorHandleForHeapStart();
-
-    if (_cpuSrvHandle2[_counter].ptr == NULL)
-    {
-        _cpuSrvHandle2[_counter] = _cpuSrvHandle[_counter];
-        _cpuSrvHandle2[_counter].ptr +=
-            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-
-    if (_cpuUavHandle[_counter].ptr == NULL)
-    {
-        _cpuUavHandle[_counter] = _cpuSrvHandle2[_counter];
-        _cpuUavHandle[_counter].ptr +=
-            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-
-    if (_cpuCbvHandle[_counter].ptr == NULL)
-    {
-        _cpuCbvHandle[_counter] = _cpuUavHandle[_counter];
-        _cpuCbvHandle[_counter].ptr +=
-            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-
-    if (_gpuSrvHandle[_counter].ptr == NULL)
-        _gpuSrvHandle[_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
-
-    if (_gpuSrvHandle2[_counter].ptr == NULL)
-    {
-        _gpuSrvHandle2[_counter] = _gpuSrvHandle[_counter];
-        _gpuSrvHandle2[_counter].ptr +=
-            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-
-    if (_gpuUavHandle[_counter].ptr == NULL)
-    {
-        _gpuUavHandle[_counter] = _gpuSrvHandle2[_counter];
-        _gpuUavHandle[_counter].ptr +=
-            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-
-    if (_gpuCbvHandle[_counter].ptr == NULL)
-    {
-        _gpuCbvHandle[_counter] = _gpuUavHandle[_counter];
-        _gpuCbvHandle[_counter].ptr +=
-            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    }
-
     auto inDesc = InResource->GetDesc();
     auto mvDesc = InMotionVectors->GetDesc();
     auto outDesc = OutResource->GetDesc();
@@ -273,7 +225,7 @@ bool RCAS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCm
     cbvDesc.SizeInBytes = sizeof(constants);
     InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
-    ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
+    ID3D12DescriptorHeap* heaps[] = { _srvHeap };
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     InCmdList->SetComputeRootSignature(_rootSignature);
@@ -456,13 +408,13 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
     }
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-    heapDesc.NumDescriptors = 4; // SRV x 2 + UAV + CBV
+    heapDesc.NumDescriptors = 8; // SRV x 2 + UAV + CBV x 2
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
     State::Instance().skipHeapCapture = true;
 
-    auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
+    auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap));
 
     if (FAILED(hr))
     {
@@ -470,64 +422,65 @@ RCAS_Dx12::RCAS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName)
         return;
     }
 
-    hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[1]));
-
-    if (FAILED(hr))
-    {
-        LOG_ERROR("[{0}] CreateDescriptorHeap[1] error {1:x}", _name, (unsigned int) hr);
-        return;
-    }
-
-    hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[2]));
-
-    if (FAILED(hr))
-    {
-        LOG_ERROR("[{0}] CreateDescriptorHeap[2] error {1:x}", _name, (unsigned int) hr);
-        return;
-    }
-
-    hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[3]));
-
     State::Instance().skipHeapCapture = false;
 
-    if (FAILED(hr))
-    {
-        LOG_ERROR("[{0}] CreateDescriptorHeap[3] error {1:x}", _name, (unsigned int) hr);
-        return;
-    }
+    size_t incrementSize = InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    _init = _srvHeap[3] != nullptr;
+    // CPU
+    _cpuSrvHandle[0] = _srvHeap->GetCPUDescriptorHandleForHeapStart();
+
+    _cpuUavHandle[0] = _cpuSrvHandle[0];
+    _cpuUavHandle[0].ptr += incrementSize;
+
+    _cpuCbvHandle[0] = _cpuUavHandle[0];
+    _cpuCbvHandle[0].ptr += incrementSize;
+
+    _cpuSrvHandle2[0] = _cpuCbvHandle[0];
+    _cpuSrvHandle2[0].ptr += incrementSize;
+
+    _cpuSrvHandle[1] = _cpuSrvHandle2[0];
+    _cpuSrvHandle[1].ptr += incrementSize;
+
+    _cpuUavHandle[1] = _cpuSrvHandle[1];
+    _cpuUavHandle[1].ptr += incrementSize;
+
+    _cpuCbvHandle[1] = _cpuUavHandle[1];
+    _cpuCbvHandle[1].ptr += incrementSize;
+
+    _cpuSrvHandle2[1] = _cpuCbvHandle[1];
+    _cpuSrvHandle2[1].ptr += incrementSize;
+
+    // GPU
+    _gpuSrvHandle[0] = _srvHeap->GetGPUDescriptorHandleForHeapStart();
+
+    _gpuUavHandle[0] = _gpuSrvHandle[0];
+    _gpuUavHandle[0].ptr += incrementSize;
+
+    _gpuCbvHandle[0] = _gpuUavHandle[0];
+    _gpuCbvHandle[0].ptr += incrementSize;
+
+    _gpuSrvHandle2[0] = _gpuCbvHandle[0];
+    _gpuSrvHandle2[0].ptr += incrementSize;
+
+    _gpuSrvHandle[1] = _gpuSrvHandle2[0];
+    _gpuSrvHandle[1].ptr += incrementSize;
+
+    _gpuUavHandle[1] = _gpuSrvHandle[1];
+    _gpuUavHandle[1].ptr += incrementSize;
+
+    _gpuCbvHandle[1] = _gpuUavHandle[1];
+    _gpuCbvHandle[1].ptr += incrementSize;
+
+    _gpuSrvHandle2[1] = _gpuCbvHandle[1];
+    _gpuSrvHandle2[1].ptr += incrementSize;
+
+    _init = _srvHeap != nullptr;
 }
 
 RCAS_Dx12::~RCAS_Dx12()
 {
     if (!_init || State::Instance().isShuttingDown)
         return;
-
-    // ID3D12Fence* d3d12Fence = nullptr;
-
-    // do
-    //{
-    //	if (_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d12Fence)) != S_OK)
-    //		break;
-
-    //	d3d12Fence->Signal(999);
-
-    //	HANDLE fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-    //	if (fenceEvent != NULL && d3d12Fence->SetEventOnCompletion(999, fenceEvent) == S_OK)
-    //	{
-    //		WaitForSingleObject(fenceEvent, INFINITE);
-    //		CloseHandle(fenceEvent);
-    //	}
-
-    //} while (false);
-
-    // if (d3d12Fence != nullptr)
-    //{
-    //	d3d12Fence->Release();
-    //	d3d12Fence = nullptr;
-    // }
 
     if (_rootSignature != nullptr)
     {
@@ -541,28 +494,10 @@ RCAS_Dx12::~RCAS_Dx12()
         _pipelineState = nullptr;
     }
 
-    if (_srvHeap[0] != nullptr)
+    if (_srvHeap != nullptr)
     {
-        _srvHeap[0]->Release();
-        _srvHeap[0] = nullptr;
-    }
-
-    if (_srvHeap[1] != nullptr)
-    {
-        _srvHeap[1]->Release();
-        _srvHeap[1] = nullptr;
-    }
-
-    if (_srvHeap[2] != nullptr)
-    {
-        _srvHeap[2]->Release();
-        _srvHeap[2] = nullptr;
-    }
-
-    if (_srvHeap[3] != nullptr)
-    {
-        _srvHeap[3]->Release();
-        _srvHeap[3] = nullptr;
+        _srvHeap->Release();
+        _srvHeap = nullptr;
     }
 
     if (_buffer != nullptr)

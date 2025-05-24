@@ -14,7 +14,7 @@ class OS_Dx12
     bool _init = false;
     ID3D12RootSignature* _rootSignature = nullptr;
     ID3D12PipelineState* _pipelineState = nullptr;
-    ID3D12DescriptorHeap* _srvHeap[3] = { nullptr, nullptr, nullptr };
+    ID3D12DescriptorHeap* _srvHeap = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[2] { { NULL }, { NULL } };
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[2] { { NULL }, { NULL } };
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2] { { NULL }, { NULL } };
@@ -28,8 +28,9 @@ class OS_Dx12
     uint32_t InNumThreadsY = 16;
 
     ID3D12Device* _device = nullptr;
-    ID3D12Resource* _buffer = nullptr;
     ID3D12Resource* _constantBuffer = nullptr;
+
+    ID3D12Resource* _buffer = nullptr;
     D3D12_RESOURCE_STATES _bufferState = D3D12_RESOURCE_STATE_COMMON;
 
   public:
