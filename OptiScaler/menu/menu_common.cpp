@@ -4102,8 +4102,18 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
         // This automatically becomes the next default font
         ImFontConfig fontConfig;
         // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
-        auto font =
-            atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, fontSize, &fontConfig);
+
+        ImFont* font;
+        if (Config::Instance()->TTFFontPath.has_value())
+        {
+            font = atlas->AddFontFromFileTTF(wstring_to_string(Config::Instance()->TTFFontPath.value()).c_str(), fontSize, &fontConfig,
+                                             io.Fonts->GetGlyphRangesDefault());
+        }
+        else
+        {
+            font = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, fontSize,
+                                                                    &fontConfig);
+        }     
 
         ImGui::PushFont(font);
     }
