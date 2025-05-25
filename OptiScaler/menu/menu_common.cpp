@@ -1235,9 +1235,6 @@ bool MenuCommon::RenderMenu()
     // FPS Overlay font
     auto fpsScale = Config::Instance()->FpsScale.value_or(Config::Instance()->MenuScale.value_or_default());
 
-    if (Config::Instance()->UseHQFont.value_or_default())
-        ImGui::PushFontSize(std::round(fpsScale * fontSize));
-
     if (Config::Instance()->FpsScale.has_value())
     {
         ImGuiStyle& style = ImGui::GetStyle();
@@ -1359,7 +1356,9 @@ bool MenuCommon::RenderMenu()
                 }
             }
 
-            if (!Config::Instance()->UseHQFont.value_or_default())
+            if (Config::Instance()->UseHQFont.value_or_default())
+                ImGui::PushFontSize(std::round(fpsScale * fontSize));
+            else
                 ImGui::SetWindowFontScale(fpsScale);
 
             if (Config::Instance()->FpsOverlayType.value_or_default() == 0)
@@ -1452,6 +1451,9 @@ bool MenuCommon::RenderMenu()
         // Get size for postioning
         auto winSize = ImGui::GetWindowSize();
 
+        if (Config::Instance()->UseHQFont.value_or_default())
+            ImGui::PopFontSize();
+
         ImGui::End();
 
         // Top left / Bottom left
@@ -1473,9 +1475,6 @@ bool MenuCommon::RenderMenu()
             return true;
         }
     }
-
-    if (Config::Instance()->UseHQFont.value_or_default())
-        ImGui::PopFontSize();
 
     if (!_isVisible)
         return false;
@@ -1598,7 +1597,7 @@ bool MenuCommon::RenderMenu()
                     if (Config::Instance()->UseHQFont.value_or_default())
                         ImGui::PopFontSize();
                     else
-                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
+                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
 
                     ImGui::Spacing();
                     ImGui::Text("nvngx.dll: %sExist",
@@ -1618,7 +1617,7 @@ bool MenuCommon::RenderMenu()
                     if (Config::Instance()->UseHQFont.value_or_default())
                         ImGui::PopFont();
                     else
-                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
+                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
                 }
             }
 
@@ -4103,19 +4102,19 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
         ImFontConfig fontConfig;
         // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
 
-        ImFont* font;
         if (Config::Instance()->TTFFontPath.has_value())
         {
-            font = atlas->AddFontFromFileTTF(wstring_to_string(Config::Instance()->TTFFontPath.value()).c_str(), fontSize, &fontConfig,
+            io.FontDefault =
+                atlas->AddFontFromFileTTF(wstring_to_string(Config::Instance()->TTFFontPath.value()).c_str(), fontSize,
+                                          &fontConfig,
                                              io.Fonts->GetGlyphRangesDefault());
         }
         else
         {
-            font = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, fontSize,
+            io.FontDefault = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85,
+                                                                         fontSize,
                                                                     &fontConfig);
-        }     
-
-        ImGui::PushFont(font);
+        }
     }
 
     if (!Config::Instance()->OverlayMenu.value_or_default())
