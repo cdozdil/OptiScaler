@@ -16,6 +16,7 @@
 
 #include <imgui/imgui_internal.h>
 
+constexpr float fontSize = 14.0f; // just changing this doesn't make other elements scale ideally
 static ImVec2 overlayPosition(-1000.0f, -1000.0f);
 static bool _hdrTonemapApplied = false;
 static ImVec4 SdrColors[ImGuiCol_COUNT];
@@ -1233,7 +1234,9 @@ bool MenuCommon::RenderMenu()
 
     // FPS Overlay font
     auto fpsScale = Config::Instance()->FpsScale.value_or(Config::Instance()->MenuScale.value_or_default());
-    ImGui::PushFontSize(std::round(fpsScale * 14.0f));
+
+    if (Config::Instance()->UseHQFont.value_or_default())
+        ImGui::PushFontSize(std::round(fpsScale * fontSize));
 
     if (Config::Instance()->FpsScale.has_value())
     {
@@ -1356,6 +1359,9 @@ bool MenuCommon::RenderMenu()
                 }
             }
 
+            if (!Config::Instance()->UseHQFont.value_or_default())
+                ImGui::SetWindowFontScale(fpsScale);
+
             if (Config::Instance()->FpsOverlayType.value_or_default() == 0)
             {
                 if (currentFeature != nullptr)
@@ -1468,14 +1474,16 @@ bool MenuCommon::RenderMenu()
         }
     }
 
-    ImGui::PopFontSize();
+    if (Config::Instance()->UseHQFont.value_or_default())
+        ImGui::PopFontSize();
 
     if (!_isVisible)
         return false;
 
     {
         // Overlay font
-        ImGui::PushFontSize(std::round(Config::Instance()->MenuScale.value_or_default() * 14.0f));
+        if (Config::Instance()->UseHQFont.value_or_default())
+            ImGui::PushFontSize(std::round(Config::Instance()->MenuScale.value_or_default() * fontSize));
 
         // If overlay is not visible frame needs to be inited
         if (!Config::Instance()->ShowFps.value_or_default())
@@ -1563,7 +1571,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
 
                 if (Config::Instance()->UseHQFont.value_or_default())
-                    ImGui::PushFontSize(std::round(14.0f * Config::Instance()->MenuScale.value_or_default() * 3.0));
+                    ImGui::PushFontSize(std::round(fontSize * Config::Instance()->MenuScale.value_or_default() * 3.0));
                 else
                     ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default() * 3.0);
 
@@ -4038,7 +4046,8 @@ bool MenuCommon::RenderMenu()
             }
         }
 
-        ImGui::PopFontSize();
+        if (Config::Instance()->UseHQFont.value_or_default())
+            ImGui::PopFontSize();
 
         return true;
     }
@@ -4085,17 +4094,17 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
         LOG_DEBUG("ImGui_ImplUwp_Init result: {0}", initResult);
     }
 
-    if (io.Fonts->Fonts.empty())
+    if (io.Fonts->Fonts.empty() && Config::Instance()->UseHQFont.value_or_default())
     {
         ImFontAtlas* atlas = io.Fonts;
         atlas->Clear();
-        constexpr float fontSize = 14.0f; // just changing this doesn't make other elements scale ideally
 
         // This automatically becomes the next default font
         ImFontConfig fontConfig;
         // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
         auto font =
-            atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, 14.0f, &fontConfig);
+            atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85, fontSize, &fontConfig);
+
         ImGui::PushFont(font);
     }
 
