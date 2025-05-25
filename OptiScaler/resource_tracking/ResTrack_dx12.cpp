@@ -139,8 +139,8 @@ bool ResTrack_Dx12::CheckResource(ID3D12Resource* resource)
         return false;
     }
 
-    //LOG_TRACE("Resource: {:X} {}x{} == {}x{}", (size_t) resource, resDesc.Width, resDesc.Height,
-    //          scDesc.BufferDesc.Width, scDesc.BufferDesc.Height);
+    // LOG_TRACE("Resource: {:X} {}x{} == {}x{}", (size_t) resource, resDesc.Width, resDesc.Height,
+    //           scDesc.BufferDesc.Width, scDesc.BufferDesc.Height);
 
     return true;
 }

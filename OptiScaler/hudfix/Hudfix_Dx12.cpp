@@ -192,8 +192,8 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && resource->lastUsedFrame != 0 &&
         (currentMs - resource->lastUsedFrame) > 0.3)
     {
-         LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
-                   (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
+        LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
+                  (size_t) resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
 
         resource->lastUsedFrame = currentMs; // use it next time if timing is ok
         return false;
@@ -201,9 +201,9 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 
     // Check if resource is valid
     // LOG_TRACE("Check resource if resource is still valid, if crashes here ResTrack is missing something");
-    //ID3D12Resource* testRes;
-    //auto queryResult = resource->buffer->QueryInterface(IID_PPV_ARGS(&testRes));
-    //if (queryResult != S_OK)
+    // ID3D12Resource* testRes;
+    // auto queryResult = resource->buffer->QueryInterface(IID_PPV_ARGS(&testRes));
+    // if (queryResult != S_OK)
     //{
     //    // LOG_WARN("Resource is not valid anymore!");
     //    return false;
@@ -213,8 +213,8 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     auto resDesc = resource->buffer->GetDesc();
 
     // Release test resource
-    //testRes->Release();
-    //testRes = nullptr;
+    // testRes->Release();
+    // testRes = nullptr;
 
     // dimensions not match
     if (resDesc.Height != scDesc.BufferDesc.Height || resDesc.Width != scDesc.BufferDesc.Width)

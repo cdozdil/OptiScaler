@@ -58,7 +58,7 @@ typedef struct HeapInfo
             return nullptr;
 
         {
-            //std::shared_lock<std::shared_mutex> lock(_heapMutex[mutexIndex]);
+            // std::shared_lock<std::shared_mutex> lock(_heapMutex[mutexIndex]);
             if (info[index].buffer == nullptr || (size_t) info[index].buffer == 0xfdfdfdfd)
                 return nullptr;
         }
@@ -78,7 +78,7 @@ typedef struct HeapInfo
             return nullptr;
 
         {
-            //std::shared_lock<std::shared_mutex> lock(_heapMutex[mutexIndex]);
+            // std::shared_lock<std::shared_mutex> lock(_heapMutex[mutexIndex]);
             if (info[index].buffer == nullptr || (size_t) info[index].buffer == 0xfdfdfdfd)
                 return nullptr;
         }

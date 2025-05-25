@@ -31,7 +31,7 @@ class IFGFeature
 
   public:
     OwnedMutex Mutex;
-    //std::mutex CallbackMutex;
+    // std::mutex CallbackMutex;
 
     virtual feature_version Version() = 0;
     virtual const char* Name() = 0;

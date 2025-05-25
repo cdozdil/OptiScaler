@@ -383,10 +383,10 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount,
                   fIndex, (size_t) dfgPrepare.commandList);
 
-        //if (retCode == FFX_API_RETURN_OK && !Config::Instance()->FGExecuteAfterCallback.value_or_default())
+        // if (retCode == FFX_API_RETURN_OK && !Config::Instance()->FGExecuteAfterCallback.value_or_default())
         //{
-        //    auto result = _commandList[fIndex]->Close();
-        //    LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
+        //     auto result = _commandList[fIndex]->Close();
+        //     LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
 
         //    if (result == S_OK)
         //    {
@@ -464,7 +464,7 @@ ffxReturnCode_t FSRFG_Dx12::DispatchCallback(ffxDispatchDescFrameGeneration* par
 
 ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGeneration* params)
 {
-    //CallbackMutex.lock();
+    // CallbackMutex.lock();
 
     HRESULT result;
     ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
@@ -473,10 +473,10 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
     LOG_DEBUG("frameID: {}, commandList: {:X}, numGeneratedFrames: {}", params->frameID, (size_t) params->commandList,
               params->numGeneratedFrames);
 
-    //if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGExecuteAfterCallback.value_or_default())
+    // if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGExecuteAfterCallback.value_or_default())
     //{
-    //    result = _commandList[fIndex]->Close();
-    //    LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
+    //     result = _commandList[fIndex]->Close();
+    //     LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
 
     //    // if there is command list error return ERROR
     //    if (result == S_OK)
@@ -513,7 +513,7 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
 
     _lastUpscaledFrameId = params->frameID;
 
-    //CallbackMutex.unlock();
+    // CallbackMutex.unlock();
 
     return dispatchResult;
 }
