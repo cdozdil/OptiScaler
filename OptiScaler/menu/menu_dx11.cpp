@@ -131,6 +131,7 @@ Menu_Dx11::~Menu_Dx11()
     if (!_dx11Init || State::Instance().isShuttingDown)
         return;
 
+    ImGui_ImplDX11_Shutdown(false);
     MenuCommon::Shutdown();
 
     // hackzor
