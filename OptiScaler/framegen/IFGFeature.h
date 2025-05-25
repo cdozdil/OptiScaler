@@ -31,7 +31,7 @@ class IFGFeature
 
   public:
     OwnedMutex Mutex;
-    std::mutex CallbackMutex;
+    //std::mutex CallbackMutex;
 
     virtual feature_version Version() = 0;
     virtual const char* Name() = 0;
@@ -40,7 +40,8 @@ class IFGFeature
     virtual void UpscaleEnd() = 0;
     virtual void MVandDepthReady() = 0;
     virtual void HudlessReady() = 0;
-    virtual bool ReadyForDispatch() = 0;
+    virtual void HudlessDispatchReady() = 0;
+    virtual bool ReadyForExecute() = 0;
     virtual void Present() = 0;
 
     virtual void FgDone() = 0;

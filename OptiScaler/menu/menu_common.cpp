@@ -1848,9 +1848,16 @@ bool MenuCommon::RenderMenu()
                         ShowHelpMarker("Fix for DLSS-D wrong depth inputs");
 
                         bool resourceFlip = Config::Instance()->FGResourceFlip.value_or_default();
-                        if (ImGui::Checkbox("FG Flip Resources (Unity)", &resourceFlip))
+                        if (ImGui::Checkbox("FG Flip (Unity)", &resourceFlip))
                             Config::Instance()->FGResourceFlip = resourceFlip;
                         ShowHelpMarker("Flip Velocity & Depth resources of Unity games");
+
+                        ImGui::SameLine(0.0f, 16.0f);
+
+                        bool resourceFlipOffset = Config::Instance()->FGResourceFlipOffset.value_or_default();
+                        if (ImGui::Checkbox("FG Flip Use Offset", &resourceFlipOffset))
+                            Config::Instance()->FGResourceFlipOffset = resourceFlipOffset;
+                        ShowHelpMarker("Use height difference as offset");
 
                         ImGui::SeparatorText("Experimental sync settings");
 

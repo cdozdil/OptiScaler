@@ -60,7 +60,7 @@ static bool CreateComputeShader(ID3D12Device* device, ID3D12RootSignature* rootS
 }
 
 bool RF_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource,
-                       ID3D12Resource* OutResource)
+                       ID3D12Resource* OutResource, UINT width, UINT height, bool velocity)
 {
     if (!_init || InDevice == nullptr || InCmdList == nullptr || InResource == nullptr || OutResource == nullptr)
         return false;
@@ -90,8 +90,12 @@ bool RF_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
 
     RFConstants constants {};
 
-    constants.height = inDesc.Height - 1;
-    constants.width = inDesc.Width - 1;
+    constants.height = height - 1;
+    constants.width = width - 1;
+    constants.offset = Config::Instance()->FGResourceFlipOffset.value_or_default() ? inDesc.Height - height : 0;
+    constants.velocity = velocity ? 1 : 0;
+
+    LOG_DEBUG("Width: {}, Height: {}, Offset", constants.width, constants.height, constants.offset);
 
     // Copy the updated constant buffer data to the constant buffer resource
     BYTE* pCBDataBegin;

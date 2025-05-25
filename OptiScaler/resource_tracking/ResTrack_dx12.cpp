@@ -21,8 +21,6 @@ static UINT _trackMark = 1;
 static bool _foundUpscale = false;
 static bool _foundHudless = false;
 
-#define LOG_HEAP_MOVES
-
 // Device hooks for FG
 typedef void (*PFN_CreateRenderTargetView)(ID3D12Device* This, ID3D12Resource* pResource,
                                            D3D12_RENDER_TARGET_VIEW_DESC* pDesc,
@@ -77,18 +75,6 @@ typedef void (*PFN_ExecuteCommandLists)(ID3D12CommandQueue* This, UINT NumComman
 
 typedef ULONG (*PFN_Release)(ID3D12Resource* This);
 
-#ifdef USE_COPY_RESOURCE
-typedef void (*PFN_CopyResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pDstResource,
-                                 ID3D12Resource* pSrcResource);
-typedef void (*PFN_CopyTextureRegion)(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX,
-                                      UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox);
-#endif
-
-#ifdef USE_RESOURCE_DISCARD
-typedef void (*PFN_DiscardResource)(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource,
-                                    D3D12_DISCARD_REGION* pRegion);
-#endif
-
 // Original method calls for device
 static PFN_CreateRenderTargetView o_CreateRenderTargetView = nullptr;
 static PFN_CreateShaderResourceView o_CreateShaderResourceView = nullptr;
@@ -114,16 +100,6 @@ static PFN_OMSetRenderTargets o_OMSetRenderTargets = nullptr;
 static PFN_SetGraphicsRootDescriptorTable o_SetGraphicsRootDescriptorTable = nullptr;
 static PFN_SetComputeRootDescriptorTable o_SetComputeRootDescriptorTable = nullptr;
 
-#ifdef USE_COPY_RESOURCE
-static PFN_CopyResource o_CopyResource = nullptr;
-static PFN_CopyTextureRegion o_CopyTextureRegion = nullptr;
-#endif
-
-#ifdef USE_RESOURCE_DISCARD
-static PFN_DiscardResource o_DiscardResource = nullptr;
-static std::mutex _resourceMutex;
-#endif
-
 // heaps
 // static std::vector<HeapInfo> fgHeaps;
 static std::unique_ptr<HeapInfo> fgHeaps[1000];
@@ -145,21 +121,10 @@ static std::atomic<unsigned> gHeapGeneration { 1 };
 static thread_local HeapCacheTLS cacheGR;
 static thread_local HeapCacheTLS cacheCR;
 
-#ifdef USE_RESOURCE_DISCARD
-// created resources
-static ankerl::unordered_dense::map<ID3D12Resource*, std::vector<size_t>> fgHandlesByResources;
-#endif
-
 bool ResTrack_Dx12::CheckResource(ID3D12Resource* resource)
 {
     if (State::Instance().currentSwapchain == nullptr)
         return false;
-
-    ID3D12Resource* temp;
-    if (resource->QueryInterface(IID_PPV_ARGS(&temp)) != S_OK)
-        return false;
-
-    o_Release(temp);
 
     DXGI_SWAP_CHAIN_DESC scDesc {};
     if (State::Instance().currentSwapchain->GetDesc(&scDesc) != S_OK)
@@ -170,12 +135,15 @@ bool ResTrack_Dx12::CheckResource(ID3D12Resource* resource)
 
     auto resDesc = resource->GetDesc();
     if (resDesc.Height != scDesc.BufferDesc.Height || resDesc.Width != scDesc.BufferDesc.Width)
+    {
         return false;
+    }
+
+    //LOG_TRACE("Resource: {:X} {}x{} == {}x{}", (size_t) resource, resDesc.Width, resDesc.Height,
+    //          scDesc.BufferDesc.Width, scDesc.BufferDesc.Height);
 
     return true;
 }
-
-static std::set<ID3D12Resource*> fgCaptureList;
 
 // possibleHudless lisy by cmdlist
 static ankerl::unordered_dense::map<ID3D12GraphicsCommandList*,
@@ -271,35 +239,6 @@ void ResTrack_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID
 #pragma endregion
 
 #pragma region Heap helpers
-
-#ifdef USE_RESOURCE_DISCARD
-
-static void AddResourceHeap(ID3D12Resource* resource, size_t cpuHeapStart)
-{
-    if (fgHandlesByResources.contains(resource))
-        fgHandlesByResources[resource].push_back(cpuHeapStart);
-    else
-        fgHandlesByResources[resource] = { cpuHeapStart };
-}
-
-static void RemoveResourceHeap(ID3D12Resource* resource, size_t cpuHeapStart)
-{
-    if (fgHandlesByResources.contains(resource))
-    {
-        auto v = fgHandlesByResources[resource];
-
-        for (size_t i = 0; i < v.size(); i++)
-        {
-            if (v[i] == cpuHeapStart)
-            {
-                v.erase(v.begin() + i);
-                return;
-            }
-        }
-    }
-}
-
-#endif
 
 SIZE_T ResTrack_Dx12::GetGPUHandle(ID3D12Device* This, SIZE_T cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE type)
 {
@@ -501,13 +440,6 @@ HeapInfo* ResTrack_Dx12::GetHeapByGpuHandleGR(SIZE_T gpuHandle)
 
 HeapInfo* ResTrack_Dx12::GetHeapByGpuHandleCR(SIZE_T gpuHandle)
 {
-
-    // for (size_t i = 0; i < fgHeapIndex; i++)
-    //{
-    //     if (fgHeaps[i]->gpuStart != 0 && fgHeaps[i]->gpuStart <= gpuHandle && fgHeaps[i]->gpuEnd > gpuHandle)
-    //         return fgHeaps[i].get();
-    // }
-
     unsigned currentGen = gHeapGeneration.load(std::memory_order_relaxed);
 
     {
@@ -630,47 +562,6 @@ bool ResTrack_Dx12::IsFGCommandList(IUnknown* cmdList)
 
 #pragma endregion
 
-#pragma region Resource discard hooks
-
-#ifdef USE_RESOURCE_DISCARD
-static void hkDiscardResource(ID3D12GraphicsCommandList* This, ID3D12Resource* pResource, D3D12_DISCARD_REGION* pRegion)
-{
-    o_DiscardResource(This, pResource, pRegion);
-
-    if (!IsFGCommandList(This) && pRegion == nullptr)
-    {
-        std::lock_guard<std::mutex> lock(_resourceMutex);
-
-        if (!fgHandlesByResources.contains(pResource))
-            return;
-
-        auto heapInfo = &fgHandlesByResources[pResource];
-
-        for (size_t i = 0; i < heapInfo->size(); i++)
-        {
-            auto heap = GetHeapByCpuHandle(heapInfo->at(i));
-
-            if (heap != nullptr)
-            {
-                auto temp = heap->GetByCpuHandle(heapInfo->at(i));
-
-                if (temp != nullptr && temp->buffer != nullptr)
-                    RemoveResourceHeap(temp->buffer, heapInfo->at(i));
-
-                heap->SetByCpuHandle(heapInfo->at(i), {});
-            }
-        }
-
-        heapInfo->clear();
-
-        LOG_DEBUG_ONLY("Erased: {:X}", (size_t) pResource);
-        fgHandlesByResources.erase(pResource);
-    }
-}
-#endif
-
-#pragma endregion
-
 #pragma region Resource input hooks
 
 void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource,
@@ -703,16 +594,6 @@ void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource*
 
         auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
 
-#ifdef USE_RESOURCE_DISCARD
-        {
-            std::lock_guard<std::mutex> lock(_resourceMutex);
-            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
-
-            if (temp != nullptr && temp->buffer != nullptr)
-                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
-        }
-#endif
-
         if (heap != nullptr)
             heap->ClearByCpuHandle(DestDescriptor.ptr);
 
@@ -732,28 +613,9 @@ void ResTrack_Dx12::hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource*
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = RTV;
 
-#ifdef USE_RESOURCE_DISCARD
-    {
-        std::lock_guard<std::mutex> lock(_resourceMutex);
-        AddResourceHeap(pResource, info.cpuStart);
-    }
-#endif
-
     auto heap = GetHeapByCpuHandleRTV(DestDescriptor.ptr);
     if (heap != nullptr)
-    {
-#ifdef USE_RESOURCE_DISCARD
-        {
-            std::lock_guard<std::mutex> lock(_resourceMutex);
-            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
-
-            if (temp != nullptr && temp->buffer != nullptr)
-                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
-        }
-#endif
-
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-    }
 }
 
 void ResTrack_Dx12::hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resource* pResource,
@@ -786,16 +648,6 @@ void ResTrack_Dx12::hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resourc
 
         auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
 
-#ifdef USE_RESOURCE_DISCARD
-        {
-            std::lock_guard<std::mutex> lock(_resourceMutex);
-            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
-
-            if (temp != nullptr && temp->buffer != nullptr)
-                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
-        }
-#endif
-
         if (heap != nullptr)
             heap->ClearByCpuHandle(DestDescriptor.ptr);
 
@@ -815,28 +667,9 @@ void ResTrack_Dx12::hkCreateShaderResourceView(ID3D12Device* This, ID3D12Resourc
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = SRV;
 
-#ifdef USE_RESOURCE_DISCARD
-    {
-        std::lock_guard<std::mutex> lock(_resourceMutex);
-        AddResourceHeap(pResource, info.cpuStart);
-    }
-#endif
-
     auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
     if (heap != nullptr)
-    {
-#ifdef USE_RESOURCE_DISCARD
-        {
-            std::lock_guard<std::mutex> lock(_resourceMutex);
-            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
-
-            if (temp != nullptr && temp->buffer != nullptr)
-                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
-        }
-#endif
-
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-    }
 }
 
 void ResTrack_Dx12::hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resource* pResource,
@@ -868,25 +701,11 @@ void ResTrack_Dx12::hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resour
         LOG_DEBUG_ONLY("Unbind: {:X}", DestDescriptor.ptr);
 
         auto heap = GetHeapByCpuHandleSRV(DestDescriptor.ptr);
-
-#ifdef USE_RESOURCE_DISCARD
-        {
-            std::lock_guard<std::mutex> lock(_resourceMutex);
-            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
-
-            if (temp != nullptr && temp->buffer != nullptr)
-                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
-        }
-#endif
-
         if (heap != nullptr)
             heap->ClearByCpuHandle(DestDescriptor.ptr);
 
         return;
     }
-
-    if (pResource == nullptr || pDesc == nullptr || pDesc->ViewDimension != D3D12_UAV_DIMENSION_TEXTURE2D)
-        return;
 
     auto gpuHandle = GetGPUHandle(This, DestDescriptor.ptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
@@ -898,93 +717,10 @@ void ResTrack_Dx12::hkCreateUnorderedAccessView(ID3D12Device* This, ID3D12Resour
     FillResourceInfo(pResource, &resInfo);
     resInfo.type = UAV;
 
-#ifdef USE_RESOURCE_DISCARD
-    {
-        std::lock_guard<std::mutex> lock(_resourceMutex);
-        AddResourceHeap(pResource, info.cpuStart);
-    }
-#endif
-
     auto heap = GetHeapByCpuHandleUAV(DestDescriptor.ptr);
     if (heap != nullptr)
-    {
-#ifdef USE_RESOURCE_DISCARD
-        {
-            std::lock_guard<std::mutex> lock(_resourceMutex);
-            auto temp = heap->GetByCpuHandle(DestDescriptor.ptr);
-
-            if (temp != nullptr && temp->buffer != nullptr)
-                RemoveResourceHeap(temp->buffer, DestDescriptor.ptr);
-        }
-#endif
-
         heap->SetByCpuHandle(DestDescriptor.ptr, resInfo);
-    }
 }
-
-#pragma endregion
-
-#pragma region Resource copy hooks
-
-#ifdef USE_COPY_RESOURCE
-static void hkCopyResource(ID3D12GraphicsCommandList* This, ID3D12Resource* Dest, ID3D12Resource* Source)
-{
-    o_CopyResource(This, Dest, Source);
-
-    auto fIndex = GetFrameIndex();
-
-    if (This == MenuOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList[fIndex] == This)
-        return;
-
-    if (!IsHudFixActive())
-        return;
-
-    ResourceInfo srcInfo {};
-    FillResourceInfo(Source, &srcInfo);
-
-    if (CheckForHudless(__FUNCTION__, &srcInfo) && CheckCapture(__FUNCTION__))
-    {
-        CaptureHudless(This, &srcInfo, D3D12_RESOURCE_STATE_COPY_SOURCE);
-        return;
-    }
-
-    ResourceInfo dstInfo {};
-    FillResourceInfo(Dest, &dstInfo);
-
-    if (CheckForHudless(__FUNCTION__, &dstInfo) && CheckCapture(__FUNCTION__))
-        CaptureHudless(This, &dstInfo, D3D12_RESOURCE_STATE_COPY_DEST);
-}
-
-static void hkCopyTextureRegion(ID3D12GraphicsCommandList* This, D3D12_TEXTURE_COPY_LOCATION* pDst, UINT DstX,
-                                UINT DstY, UINT DstZ, D3D12_TEXTURE_COPY_LOCATION* pSrc, D3D12_BOX* pSrcBox)
-{
-    o_CopyTextureRegion(This, pDst, DstX, DstY, DstZ, pSrc, pSrcBox);
-
-    auto fIndex = GetFrameIndex();
-
-    if (This == MenuOverlayDx::MenuCommandList() || FrameGen_Dx12::fgCommandList[fIndex] == This)
-        return;
-
-    if (!IsHudFixActive())
-        return;
-
-    ResourceInfo srcInfo {};
-    FillResourceInfo(pSrc->pResource, &srcInfo);
-
-    if (CheckForHudless(__FUNCTION__, &srcInfo) && CheckCapture(__FUNCTION__))
-    {
-        CaptureHudless(This, &srcInfo, D3D12_RESOURCE_STATE_COPY_SOURCE);
-        return;
-    }
-
-    ResourceInfo dstInfo {};
-    FillResourceInfo(pDst->pResource, &dstInfo);
-
-    if (CheckForHudless(__FUNCTION__, &dstInfo) && CheckCapture(__FUNCTION__))
-        CaptureHudless(This, &dstInfo, D3D12_RESOURCE_STATE_COPY_DEST);
-}
-
-#endif
 
 #pragma endregion
 
@@ -997,7 +733,7 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
         return;
 
     IFGFeature_Dx12* fg = State::Instance().currentFG;
-    if (!fg->ReadyForDispatch())
+    if (!fg->ReadyForExecute())
     {
         for (size_t i = 0; i < NumCommandLists; i++)
         {
@@ -1017,25 +753,25 @@ void ResTrack_Dx12::hkExecuteCommandLists(ID3D12CommandQueue* This, UINT NumComm
                 _upscalerCommandList = nullptr;
             }
         }
+    }
 
-        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() &&
-            fg->ReadyForDispatch() && Config::Instance()->FGImmediatelyExecute.value_or_default())
-        {
-            LOG_DEBUG("Immediate dispatch fg");
-            State::Instance().fgTrigSource = "Immediate";
-            fg->Present();
-        }
-    }
-    else if (Config::Instance()->FGWaitForNextExecute.value_or_default())
+    if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() &&
+        fg->ReadyForExecute())
     {
-        if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() &&
-            fg->ReadyForDispatch())
-        {
-            LOG_DEBUG("Next execute dispatch fg");
-            State::Instance().fgTrigSource = "Next";
-            fg->Present();
-        }
+        State::Instance().fgTrigSource = "Immediate";
+        fg->ExecuteHudlessCmdList();
     }
+
+    // else if (Config::Instance()->FGWaitForNextExecute.value_or_default())
+    //{
+    //     if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() &&
+    //         fg->ReadyForExecute())
+    //     {
+    //         LOG_DEBUG("Next execute dispatch fg");
+    //         State::Instance().fgTrigSource = "Next";
+    //         fg->Present();
+    //     }
+    // }
 }
 
 #pragma region Heap hooks
@@ -1065,8 +801,8 @@ HRESULT ResTrack_Dx12::hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPT
                   numDescriptors);
         {
             std::unique_lock<std::shared_mutex> lock(heapMutex);
-            fgHeaps[fgHeapIndex] =
-                std::make_unique<HeapInfo>(heap, cpuStart, cpuEnd, gpuStart, gpuEnd, numDescriptors, increment, type);
+            fgHeaps[fgHeapIndex] = std::make_unique<HeapInfo>(heap, cpuStart, cpuEnd, gpuStart, gpuEnd, numDescriptors,
+                                                              increment, type, fgHeapIndex);
             fgHeapIndex++;
             gHeapGeneration.fetch_add(1, std::memory_order_relaxed);
         }
@@ -1187,19 +923,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This, UINT NumDestDescriptor
                 if (srcHeap == nullptr)
                 {
                     if (dstHeap != nullptr)
-                    {
-#ifdef USE_RESOURCE_DISCARD
-                        {
-                            std::lock_guard<std::mutex> lock(_resourceMutex);
-                            auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                            if (temp != nullptr && temp->buffer != nullptr)
-                                RemoveResourceHeap(temp->buffer, destHandle);
-                        }
-#endif
-
                         dstHeap->ClearByCpuHandle(destHandle);
-                    }
 
                     if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
                     {
@@ -1234,15 +958,6 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This, UINT NumDestDescriptor
 
                 if (buffer == nullptr)
                 {
-#ifdef USE_RESOURCE_DISCARD
-                    {
-                        std::lock_guard<std::mutex> lock(_resourceMutex);
-                        auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                        if (temp != nullptr && temp->buffer != nullptr)
-                            RemoveResourceHeap(temp->buffer, destHandle);
-                    }
-#endif
                     dstHeap->ClearByCpuHandle(destHandle);
 
                     if (destRangeSizes == nullptr || destRangeSizes[destRangeIndex] == destIndex)
@@ -1257,18 +972,6 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This, UINT NumDestDescriptor
 
                     continue;
                 }
-
-#ifdef USE_RESOURCE_DISCARD
-                {
-                    std::lock_guard<std::mutex> lock(_resourceMutex);
-                    auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                    if (temp != nullptr && temp->buffer != nullptr)
-                        RemoveResourceHeap(temp->buffer, destHandle);
-
-                    AddResourceHeap(buffer->buffer, destHandle);
-                }
-#endif
 
                 dstHeap->SetByCpuHandle(destHandle, *buffer);
 
@@ -1323,19 +1026,7 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This, UINT NumDestDescriptor
                 if (srcHeap == nullptr)
                 {
                     if (dstHeap != nullptr)
-                    {
-#ifdef USE_RESOURCE_DISCARD
-                        {
-                            std::lock_guard<std::mutex> lock(_resourceMutex);
-                            auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                            if (temp != nullptr && temp->buffer != nullptr)
-                                RemoveResourceHeap(temp->buffer, destHandle);
-                        }
-#endif
-
                         dstHeap->ClearByCpuHandle(destHandle);
-                    }
 
                     if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
                     {
@@ -1370,16 +1061,6 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This, UINT NumDestDescriptor
 
                 if (buffer == nullptr)
                 {
-#ifdef USE_RESOURCE_DISCARD
-                    {
-                        std::lock_guard<std::mutex> lock(_resourceMutex);
-                        auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                        if (temp != nullptr && temp->buffer != nullptr)
-                            RemoveResourceHeap(temp->buffer, destHandle);
-                    }
-#endif
-
                     dstHeap->ClearByCpuHandle(destHandle);
 
                     if (srcRangeSizes == nullptr || srcRangeSizes[srcRangeIndex] == srcIndex)
@@ -1394,18 +1075,6 @@ void ResTrack_Dx12::hkCopyDescriptors(ID3D12Device* This, UINT NumDestDescriptor
 
                     continue;
                 }
-
-#ifdef USE_RESOURCE_DISCARD
-                {
-                    std::lock_guard<std::mutex> lock(_resourceMutex);
-                    auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                    if (temp != nullptr && temp->buffer != nullptr)
-                        RemoveResourceHeap(temp->buffer, destHandle);
-
-                    AddResourceHeap(buffer->buffer, destHandle);
-                }
-#endif
 
                 dstHeap->SetByCpuHandle(destHandle, *buffer);
 
@@ -1461,16 +1130,6 @@ void ResTrack_Dx12::hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescript
 
         if (srcHeap == nullptr)
         {
-#ifdef USE_RESOURCE_DISCARD
-            {
-                std::lock_guard<std::mutex> lock(_resourceMutex);
-                auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                if (temp != nullptr && temp->buffer != nullptr)
-                    RemoveResourceHeap(temp->buffer, destHandle);
-            }
-#endif
-
             dstHeap->ClearByCpuHandle(destHandle);
             continue;
         }
@@ -1479,31 +1138,9 @@ void ResTrack_Dx12::hkCopyDescriptorsSimple(ID3D12Device* This, UINT NumDescript
 
         if (buffer == nullptr)
         {
-#ifdef USE_RESOURCE_DISCARD
-            {
-                std::lock_guard<std::mutex> lock(_resourceMutex);
-                auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-                if (temp != nullptr && temp->buffer != nullptr)
-                    RemoveResourceHeap(temp->buffer, destHandle);
-            }
-#endif
-
             dstHeap->ClearByCpuHandle(destHandle);
             continue;
         }
-
-#ifdef USE_RESOURCE_DISCARD
-        {
-            std::lock_guard<std::mutex> lock(_resourceMutex);
-            auto temp = dstHeap->GetByCpuHandle(destHandle);
-
-            if (temp != nullptr && temp->buffer != nullptr)
-                RemoveResourceHeap(temp->buffer, destHandle);
-
-            AddResourceHeap(buffer->buffer, destHandle);
-        }
-#endif
 
         dstHeap->SetByCpuHandle(destHandle, *buffer);
     }
@@ -2057,16 +1694,6 @@ void ResTrack_Dx12::HookCommandList(ID3D12Device* InDevice)
             // hudless compute
             o_SetComputeRootDescriptorTable = (PFN_SetComputeRootDescriptorTable) pVTable[31];
 
-            // hudless copy
-#ifdef USE_COPY_RESOURCE
-            o_CopyResource = (PFN_CopyResource) pVTable[17];
-            o_CopyTextureRegion = (PFN_CopyTextureRegion) pVTable[16];
-#endif
-
-#ifdef USE_RESOURCE_DISCARD
-            // release resource
-            o_DiscardResource = (PFN_DiscardResource) pVTable[51];
-#endif
             o_ExecuteBundle = (PFN_ExecuteBundle) pVTable[27];
 
             if (o_OMSetRenderTargets != nullptr)
@@ -2076,14 +1703,6 @@ void ResTrack_Dx12::HookCommandList(ID3D12Device* InDevice)
 
                 if (o_OMSetRenderTargets != nullptr)
                     DetourAttach(&(PVOID&) o_OMSetRenderTargets, hkOMSetRenderTargets);
-
-#ifdef USE_COPY_RESOURCE
-                if (o_CopyTextureRegion != nullptr)
-                    DetourAttach(&(PVOID&) o_CopyTextureRegion, hkCopyTextureRegion);
-
-                if (o_CopyResource != nullptr)
-                    DetourAttach(&(PVOID&) o_CopyResource, hkCopyResource);
-#endif
 
                 if (o_SetGraphicsRootDescriptorTable != nullptr)
                     DetourAttach(&(PVOID&) o_SetGraphicsRootDescriptorTable, hkSetGraphicsRootDescriptorTable);
@@ -2103,10 +1722,6 @@ void ResTrack_Dx12::HookCommandList(ID3D12Device* InDevice)
                 if (o_ExecuteBundle != nullptr)
                     DetourAttach(&(PVOID&) o_ExecuteBundle, hkExecuteBundle);
 
-#ifdef USE_RESOURCE_DISCARD
-                if (o_DiscardResource != nullptr)
-                    DetourAttach(&(PVOID&) o_DiscardResource, hkDiscardResource);
-#endif
                 DetourTransactionCommit();
             }
 
@@ -2210,12 +1825,6 @@ void ResTrack_Dx12::HookDevice(ID3D12Device* device)
     HookToQueue(device);
     HookCommandList(device);
     HookResource(device);
-}
-
-void ResTrack_Dx12::ResetCaptureList()
-{
-    std::lock_guard<std::mutex> lock(hudlessMutex);
-    fgCaptureList.clear();
 }
 
 void ResTrack_Dx12::ClearPossibleHudless()

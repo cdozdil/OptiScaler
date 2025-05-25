@@ -192,8 +192,8 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
     if (!Config::Instance()->FGAlwaysTrackHeaps.value_or_default() && resource->lastUsedFrame != 0 &&
         (currentMs - resource->lastUsedFrame) > 0.3)
     {
-        // LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
-        //           (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
+         LOG_DEBUG("Resource {:X}, last used frame ({}) is too small ({}) from current one ({}) skipping resource!",
+                   (size_t)resource->buffer, currentMs - resource->lastUsedFrame, resource->lastUsedFrame, currentMs);
 
         resource->lastUsedFrame = currentMs; // use it next time if timing is ok
         return false;
@@ -201,20 +201,20 @@ bool Hudfix_Dx12::CheckResource(ResourceInfo* resource)
 
     // Check if resource is valid
     // LOG_TRACE("Check resource if resource is still valid, if crashes here ResTrack is missing something");
-    ID3D12Resource* testRes;
-    auto queryResult = resource->buffer->QueryInterface(IID_PPV_ARGS(&testRes));
-    if (queryResult != S_OK)
-    {
-        // LOG_WARN("Resource is not valid anymore!");
-        return false;
-    }
+    //ID3D12Resource* testRes;
+    //auto queryResult = resource->buffer->QueryInterface(IID_PPV_ARGS(&testRes));
+    //if (queryResult != S_OK)
+    //{
+    //    // LOG_WARN("Resource is not valid anymore!");
+    //    return false;
+    //}
 
     // Get resource info
-    auto resDesc = testRes->GetDesc();
+    auto resDesc = resource->buffer->GetDesc();
 
     // Release test resource
-    testRes->Release();
-    testRes = nullptr;
+    //testRes->Release();
+    //testRes = nullptr;
 
     // dimensions not match
     if (resDesc.Height != scDesc.BufferDesc.Height || resDesc.Width != scDesc.BufferDesc.Width)
@@ -310,7 +310,8 @@ void Hudfix_Dx12::HudlessFound()
     // Increase counter
     _fgCounter++;
 
-    // Let resource tracker to continue
+    State::Instance().currentFG->DispatchHudless(true, State::Instance().lastFrameTime);
+
     _skipHudlessChecks = false;
 }
 
@@ -340,15 +341,15 @@ bool Hudfix_Dx12::CheckForRealObject(std::string functionName, IUnknown* pObject
 
 void Hudfix_Dx12::UpscaleStart()
 {
-    return;
-
-    // LOG_DEBUG("");
-
-    // if (_upscaleCounter > _fgCounter && IsResourceCheckActive() && CheckCapture())
-    //{
-    //     LOG_WARN("FG not run yet! _upscaleCounter: {}, _fgCounter: {}", _upscaleCounter, _fgCounter);
-    //     HudlessFound(false);
-    // }
+    if (State::Instance().FGresetCapturedResources)
+    {
+        std::lock_guard<std::mutex> lock(_captureMutex);
+        _captureList.clear();
+        LOG_DEBUG("FGResetCapturedResources");
+        State::Instance().FGresetCapturedResources = false;
+        State::Instance().FGcapturedResourceCount = 0;
+        State::Instance().FGresetCapturedResources = false;
+    }
 }
 
 void Hudfix_Dx12::UpscaleEnd(UINT64 frameId, float lastFrameTime)
@@ -644,19 +645,18 @@ bool Hudfix_Dx12::CheckForHudless(std::string callerName, ID3D12GraphicsCommandL
                 fg->SetHudless(nullptr, _captureBuffer[fIndex], D3D12_RESOURCE_STATE_COPY_DEST, false);
         }
 
+        if (State::Instance().FGcaptureResources)
         {
-            if (State::Instance().FGcaptureResources)
-            {
-                std::lock_guard<std::mutex> lock(_captureMutex);
-                _captureList.insert(resource->buffer);
-                State::Instance().FGcapturedResourceCount = _captureList.size();
-            }
+            std::lock_guard<std::mutex> lock(_captureMutex);
+            _captureList.insert(resource->buffer);
+            State::Instance().FGcapturedResourceCount = _captureList.size();
         }
 
         LOG_DEBUG("Calling FG with hudless");
 
         // This will prevent resource tracker to check these operations
         // Will reset after FG dispatch
+        _skipHudlessChecks = true;
         HudlessFound();
 
         return true;
@@ -690,6 +690,11 @@ void Hudfix_Dx12::ResetCounters()
     _frameTime = 0.0;
 
     _hudlessList.clear();
+
+    _captureCounter[0] = 0;
+    _captureCounter[1] = 0;
+    _captureCounter[2] = 0;
+    _captureCounter[3] = 0;
 
     LOG_DEBUG("_hudlessList: {}", _hudlessList.size());
 }

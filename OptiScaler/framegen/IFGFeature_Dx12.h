@@ -14,6 +14,7 @@ class IFGFeature_Dx12 : public virtual IFGFeature
   private:
     bool _mvAndDepthReady = false;
     bool _hudlessReady = false;
+    bool _hudlessDispatchReady = false;
     std::unique_ptr<RF_Dx12> _mvFlip;
     std::unique_ptr<RF_Dx12> _depthFlip;
     ID3D12Device* _device = nullptr;
@@ -67,12 +68,14 @@ class IFGFeature_Dx12 : public virtual IFGFeature
                     bool makeCopy = false);
 
     bool IsFGCommandList(void* cmdList);
+    bool ExecuteHudlessCmdList();
 
     IFGFeature_Dx12() = default;
 
     // Inherited via IFGFeature
     void MVandDepthReady() override;
     void HudlessReady() override;
+    void HudlessDispatchReady() override;
     void Present() override;
-    bool ReadyForDispatch() override;
+    bool ReadyForExecute() override;
 };

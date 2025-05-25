@@ -25,25 +25,9 @@ static void TestResource(ResourceInfo* info)
 }
 #endif
 
-// Clear heap info when ResourceDiscard is called
-// #define USE_RESOURCE_DISCARD
-
-// Use CopyResource & CopyTextureRegion to capture hudless
-// It's a unstable
-// #define USE_COPY_RESOURCE
-
-// Use resource barriers before and after capture operation
-#define USE_RESOURCE_BARRIRER
-
-// Uses std::thread when processing descriptor heap operations
-// #define USE_THREAD_FOR_COPY_DESCS
-
-#define USE_ARRAY_HEAP_INFO
-
 static ankerl::unordered_dense::map<ID3D12Resource*, std::vector<ResourceInfo*>> _trackedResources;
 static std::mutex _trMutex;
-
-#ifdef USE_ARRAY_HEAP_INFO
+static std::shared_mutex _heapMutex[1000];
 
 typedef struct HeapInfo
 {
@@ -57,11 +41,12 @@ typedef struct HeapInfo
     UINT type = 0;
     std::shared_ptr<ResourceInfo[]> info;
     UINT lastOffset = 0;
+    UINT mutexIndex = 0;
 
     HeapInfo(ID3D12DescriptorHeap* heap, SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd,
-             UINT numResources, UINT increment, UINT type)
+             UINT numResources, UINT increment, UINT type, UINT mutexIndex)
         : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources),
-          increment(increment), info(new ResourceInfo[numResources]), type(type), heap(heap)
+          increment(increment), info(new ResourceInfo[numResources]), type(type), heap(heap), mutexIndex(mutexIndex)
     {
     }
 
@@ -72,8 +57,11 @@ typedef struct HeapInfo
         if (index >= numDescriptors)
             return nullptr;
 
-        if (info[index].buffer == nullptr || (size_t) info[index].buffer == 0xfdfdfdfd)
-            return nullptr;
+        {
+            //std::shared_lock<std::shared_mutex> lock(_heapMutex[mutexIndex]);
+            if (info[index].buffer == nullptr || (size_t) info[index].buffer == 0xfdfdfdfd)
+                return nullptr;
+        }
 
 #ifdef DEBUG_TRACKING
         TestResource(&info[index]);
@@ -89,8 +77,11 @@ typedef struct HeapInfo
         if (index >= numDescriptors)
             return nullptr;
 
-        if (info[index].buffer == nullptr || (size_t) info[index].buffer == 0xfdfdfdfd)
-            return nullptr;
+        {
+            //std::shared_lock<std::shared_mutex> lock(_heapMutex[mutexIndex]);
+            if (info[index].buffer == nullptr || (size_t) info[index].buffer == 0xfdfdfdfd)
+                return nullptr;
+        }
 
 #ifdef DEBUG_TRACKING
         TestResource(&info[index]);
@@ -110,7 +101,9 @@ typedef struct HeapInfo
         TestResource(&setInfo);
 #endif
 
+        //_heapMutex[mutexIndex].lock();
         info[index] = setInfo;
+        //_heapMutex[mutexIndex].unlock();
 
         {
             _trMutex.lock();
@@ -135,7 +128,9 @@ typedef struct HeapInfo
         TestResource(&setInfo);
 #endif
 
+        //_heapMutex[mutexIndex].lock();
         info[index] = setInfo;
+        //_heapMutex[mutexIndex].unlock();
 
         {
             _trMutex.lock();
@@ -177,8 +172,10 @@ typedef struct HeapInfo
             }
         }
 
+        //_heapMutex[mutexIndex].lock();
         info[index].buffer = nullptr;
         info[index].lastUsedFrame = 0;
+        //_heapMutex[mutexIndex].unlock();
     }
 
     void ClearByGpuHandle(SIZE_T gpuHandle) const
@@ -209,74 +206,13 @@ typedef struct HeapInfo
             }
         }
 
+        //_heapMutex[mutexIndex].lock();
         info[index].buffer = nullptr;
         info[index].lastUsedFrame = 0;
+        //_heapMutex[mutexIndex].unlock();
     }
 
 } heap_info;
-#else
-// Vector version for lower heap usage
-typedef struct HeapInfo
-{
-    SIZE_T cpuStart = NULL;
-    SIZE_T cpuEnd = NULL;
-    SIZE_T gpuStart = NULL;
-    SIZE_T gpuEnd = NULL;
-    UINT numDescriptors = 0;
-    UINT increment = 0;
-    UINT type = 0;
-    std::vector<ResourceInfo> info;
-
-    HeapInfo(SIZE_T cpuStart, SIZE_T cpuEnd, SIZE_T gpuStart, SIZE_T gpuEnd, UINT numResources, UINT increment,
-             UINT type)
-        : cpuStart(cpuStart), cpuEnd(cpuEnd), gpuStart(gpuStart), gpuEnd(gpuEnd), numDescriptors(numResources),
-          increment(increment), info(numResources), type(type)
-    {
-    }
-
-    ResourceInfo* GetByCpuHandle(SIZE_T cpuHandle)
-    {
-        if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
-            return nullptr;
-
-        auto index = (cpuHandle - cpuStart) / increment;
-
-        return (index < info.size()) ? &info[index] : nullptr;
-    }
-
-    ResourceInfo* GetByGpuHandle(SIZE_T gpuHandle)
-    {
-        if (gpuStart > gpuHandle || gpuEnd < gpuHandle)
-            return nullptr;
-
-        auto index = (gpuHandle - gpuStart) / increment;
-
-        return (index < info.size()) ? &info[index] : nullptr;
-    }
-
-    void SetByCpuHandle(SIZE_T cpuHandle, ResourceInfo setInfo)
-    {
-        if (cpuStart > cpuHandle || cpuEnd < cpuHandle)
-            return;
-
-        auto index = (cpuHandle - cpuStart) / increment;
-
-        if (index < info.size())
-            info[index] = setInfo;
-    }
-
-    void SetByGpuHandle(SIZE_T gpuHandle, ResourceInfo setInfo)
-    {
-        if (gpuStart > gpuHandle || gpuEnd < gpuHandle)
-            return;
-
-        auto index = (gpuHandle - gpuStart) / increment;
-
-        if (index < info.size())
-            info[index] = setInfo;
-    }
-} heap_info;
-#endif
 
 typedef struct ResourceHeapInfo
 {
@@ -325,14 +261,6 @@ class ResTrack_Dx12
 
     static void hkExecuteBundle(ID3D12GraphicsCommandList* This, ID3D12GraphicsCommandList* pCommandList);
 
-    static void hkCreateSampler(ID3D12Device* This, const D3D12_SAMPLER_DESC* pDesc,
-                                D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
-
-    static void hkCreateDepthStencilView(ID3D12Device* This, ID3D12Resource* pResource,
-                                         const D3D12_DEPTH_STENCIL_VIEW_DESC* pDesc,
-                                         D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
-    static void hkCreateConstantBufferView(ID3D12Device* This, const D3D12_CONSTANT_BUFFER_VIEW_DESC* pDesc,
-                                           D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
     static void hkCreateRenderTargetView(ID3D12Device* This, ID3D12Resource* pResource,
                                          D3D12_RENDER_TARGET_VIEW_DESC* pDesc,
                                          D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
@@ -380,7 +308,6 @@ class ResTrack_Dx12
 
   public:
     static void HookDevice(ID3D12Device* device);
-    static void ResetCaptureList();
     static void ClearPossibleHudless();
     static void PresentDone();
     static void SetUpscalerCmdList(ID3D12GraphicsCommandList* cmdList);

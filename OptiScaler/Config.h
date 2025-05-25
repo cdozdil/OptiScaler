@@ -348,6 +348,7 @@ class Config
     CustomOptional<bool> FGMakeMVCopy { true };
     CustomOptional<bool> FGMakeDepthCopy { true };
     CustomOptional<bool> FGResourceFlip { false };
+    CustomOptional<bool> FGResourceFlipOffset { false };
 
     // OptiFG - Hudfix
     CustomOptional<bool> FGHUDFix { false };

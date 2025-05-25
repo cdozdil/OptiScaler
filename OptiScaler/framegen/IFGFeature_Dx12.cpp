@@ -12,8 +12,7 @@ bool IFGFeature_Dx12::CreateBufferResource(ID3D12Device* device, ID3D12Resource*
     auto inDesc = source->GetDesc();
 
     if (UAV)
-        inDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS |
-                       D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
+        inDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
     if (depth)
         inDesc.Format = DXGI_FORMAT_R32_FLOAT;
@@ -93,13 +92,14 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
     auto index = GetIndex();
     LOG_TRACE("Setting velocity, index: {}", index);
 
-    _paramVelocity[index] = velocity;
-
     if (cmdList == nullptr)
         return;
 
+    _paramVelocity[index] = velocity;
+
     if (Config::Instance()->FGResourceFlip.value_or_default() && _device != nullptr &&
-        CreateBufferResource(_device, velocity, D3D12_RESOURCE_STATE_COPY_DEST, &_paramVelocityCopy[index], true))
+        CreateBufferResource(_device, velocity, D3D12_RESOURCE_STATE_COPY_DEST, &_paramVelocityCopy[index], true,
+                             false))
     {
         if (_mvFlip.get() == nullptr)
         {
@@ -112,8 +112,11 @@ void IFGFeature_Dx12::SetVelocity(ID3D12GraphicsCommandList* cmdList, ID3D12Reso
             ResourceBarrier(cmdList, _paramVelocityCopy[index], D3D12_RESOURCE_STATE_COPY_DEST,
                             D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-            auto result = _mvFlip->Dispatch(_device, cmdList, velocity, _paramVelocityCopy[index]);
-            
+            auto feature = State::Instance().currentFeature;
+            UINT width = feature->LowResMV() ? feature->RenderWidth() : feature->DisplayWidth();
+            UINT height = feature->LowResMV() ? feature->RenderHeight() : feature->DisplayHeight();
+            auto result = _mvFlip->Dispatch(_device, cmdList, velocity, _paramVelocityCopy[index], width, height, true);
+
             ResourceBarrier(cmdList, _paramVelocityCopy[index], D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                             D3D12_RESOURCE_STATE_COPY_DEST);
 
@@ -137,14 +140,16 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
     auto index = GetIndex();
     LOG_TRACE("Setting depth, index: {}", index);
 
-    _paramDepth[index] = depth;
-
     if (cmdList == nullptr)
         return;
 
-    if (Config::Instance()->FGResourceFlip.value_or_default() && _device != nullptr &&
-        CreateBufferResource(_device, depth, D3D12_RESOURCE_STATE_COPY_DEST, &_paramDepthCopy[index], true, true))
+    _paramDepth[index] = depth;
+
+    if (Config::Instance()->FGResourceFlip.value_or_default() && _device != nullptr)
     {
+        if (!CreateBufferResource(_device, depth, D3D12_RESOURCE_STATE_COPY_DEST, &_paramDepthCopy[index], true, true))
+            return;
+
         if (_depthFlip.get() == nullptr)
         {
             _depthFlip = std::make_unique<RF_Dx12>("DepthFlip", _device);
@@ -156,7 +161,9 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
             ResourceBarrier(cmdList, _paramDepthCopy[index], D3D12_RESOURCE_STATE_COPY_DEST,
                             D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-            auto result = _depthFlip->Dispatch(_device, cmdList, depth, _paramDepthCopy[index]);
+            auto feature = State::Instance().currentFeature;
+            auto result = _depthFlip->Dispatch(_device, cmdList, depth, _paramDepthCopy[index], feature->RenderWidth(),
+                                               feature->RenderHeight(), false);
 
             ResourceBarrier(cmdList, _paramDepthCopy[index], D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                             D3D12_RESOURCE_STATE_COPY_DEST);
@@ -172,7 +179,6 @@ void IFGFeature_Dx12::SetDepth(ID3D12GraphicsCommandList* cmdList, ID3D12Resourc
         CopyResource(cmdList, depth, &_paramDepthCopy[index], state))
     {
         _paramDepth[index] = _paramDepthCopy[index];
-        return;
     }
 }
 
@@ -261,6 +267,9 @@ void IFGFeature_Dx12::ReleaseObjects()
             _commandList[i] = nullptr;
         }
     }
+
+    _mvFlip.reset();
+    _depthFlip.reset();
 }
 
 bool IFGFeature_Dx12::IsFGCommandList(void* cmdList)
@@ -279,9 +288,36 @@ bool IFGFeature_Dx12::IsFGCommandList(void* cmdList)
     return found;
 }
 
+bool IFGFeature_Dx12::ExecuteHudlessCmdList()
+{
+    if (!_hudlessDispatchReady)
+        return false;
+
+    _mvAndDepthReady = false;
+    _hudlessReady = false;
+    _hudlessDispatchReady = false;
+
+    auto fIndex = GetIndex();
+    auto result = _commandList[fIndex]->Close();
+
+    LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
+
+    if (result == S_OK)
+    {
+        ID3D12CommandList* cl[] = { cl[0] = _commandList[fIndex] };
+        _gameCommandQueue->ExecuteCommandLists(1, cl);
+
+        return true;
+    }
+
+    return false;
+}
+
 void IFGFeature_Dx12::MVandDepthReady() { _mvAndDepthReady = true; }
 
 void IFGFeature_Dx12::HudlessReady() { _hudlessReady = true; }
+
+void IFGFeature_Dx12::HudlessDispatchReady() { _hudlessDispatchReady = true; }
 
 void IFGFeature_Dx12::Present()
 {
@@ -289,14 +325,16 @@ void IFGFeature_Dx12::Present()
     {
         _mvAndDepthReady = false;
         _hudlessReady = false;
+        _hudlessDispatchReady = false;
         return;
     }
 
     auto hudless = _hudlessReady;
     _mvAndDepthReady = false;
     _hudlessReady = false;
+    _hudlessDispatchReady = false;
 
     DispatchHudless(hudless, State::Instance().lastFrameTime);
 }
 
-bool IFGFeature_Dx12::ReadyForDispatch() { return _mvAndDepthReady && _hudlessReady; }
+bool IFGFeature_Dx12::ReadyForExecute() { return _mvAndDepthReady && _hudlessReady; }

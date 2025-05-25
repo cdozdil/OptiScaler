@@ -165,14 +165,6 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
         LOG_DEBUG("_frameCounter: {}, flags: {:X}, Frametime: {}", _frameCounter, Flags, ftDelta);
     }
 
-    if (State::Instance().FGresetCapturedResources)
-    {
-        LOG_DEBUG("FGResetCapturedResources");
-        ResTrack_Dx12::ResetCaptureList();
-        State::Instance().FGcapturedResourceCount = 0;
-        State::Instance().FGresetCapturedResources = false;
-    }
-
     IFGFeature_Dx12* fg = State::Instance().currentFG;
 
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
@@ -211,16 +203,16 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
             // Unmap the buffer
             HooksDx::readbackBuffer->Unmap(0, nullptr);
-
             HooksDx::dx12UpscaleTrig = false;
         }
 
         if (State::Instance().activeFgType == OptiFG && fg->IsActive() && fg->TargetFrame() < fg->FrameCount() &&
-            fg->ReadyForDispatch())
+            fg->ReadyForExecute())
         {
             LOG_DEBUG("Dispatch fg");
             State::Instance().fgTrigSource = "Present";
             fg->Present();
+            fg->ExecuteHudlessCmdList();
         }
     }
 
@@ -255,6 +247,8 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
     result = o_FGSCPresent(This, SyncInterval, Flags);
     LOG_DEBUG("Result: {:X}", result);
 
+    Hudfix_Dx12::PresentEnd();
+
     if (lockAccuired && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
         LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
@@ -286,8 +280,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         return presentResult;
     }
 
-    if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
-        State::Instance().currentFG->CallbackMutex.lock();
+    //if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+    //    State::Instance().currentFG->CallbackMutex.lock();
 
     if (State::Instance().activeFgType != OptiFG && !(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
     {
@@ -455,8 +449,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         else
             LOG_ERROR("3 {:X}", (UINT) presentResult);
 
-        if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
-            State::Instance().currentFG->CallbackMutex.unlock();
+        //if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+        //    State::Instance().currentFG->CallbackMutex.unlock();
 
         return presentResult;
     }
@@ -511,8 +505,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         fg->FgDone();
     }
 
-    if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
-        State::Instance().currentFG->CallbackMutex.unlock();
+    //if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+    //    State::Instance().currentFG->CallbackMutex.unlock();
 
     return presentResult;
 }

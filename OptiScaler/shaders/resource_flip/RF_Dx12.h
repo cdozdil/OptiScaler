@@ -23,15 +23,15 @@ class RF_Dx12
     D3D12_GPU_DESCRIPTOR_HANDLE _gpuCbvHandle[2] { { NULL }, { NULL } };
     int _counter = 0;
 
-    uint32_t InNumThreadsX = 512;
-    uint32_t InNumThreadsY = 1;
+    uint32_t InNumThreadsX = 16;
+    uint32_t InNumThreadsY = 16;
 
     ID3D12Device* _device = nullptr;
     ID3D12Resource* _constantBuffer = nullptr;
 
   public:
     bool Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdList, ID3D12Resource* InResource,
-                  ID3D12Resource* OutResource);
+                  ID3D12Resource* OutResource, UINT width, UINT height, bool velocity);
 
     bool IsInit() const { return _init; }
 

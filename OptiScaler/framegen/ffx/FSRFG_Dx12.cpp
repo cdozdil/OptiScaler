@@ -63,10 +63,14 @@ UINT64 FSRFG_Dx12::UpscaleStart()
     if (IsActive())
     {
         auto frameIndex = GetIndex();
-        auto allocator = _commandAllocators[frameIndex];
-        auto result = allocator->Reset();
-        result = _commandList[frameIndex]->Reset(allocator, nullptr);
-        LOG_DEBUG("_commandList[{}]->Reset()", frameIndex);
+
+        if (Config::Instance()->FGHUDFix.value_or_default())
+        {
+            auto allocator = _commandAllocators[frameIndex];
+            auto result = allocator->Reset();
+            result = _commandList[frameIndex]->Reset(allocator, nullptr);
+            LOG_DEBUG("_commandList[{}]->Reset()", frameIndex);
+        }
     }
 
     return _frameCount;
@@ -379,17 +383,20 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
         LOG_DEBUG("D3D12_Dispatch result: {0}, frame: {1}, fIndex: {2}, commandList: {3:X}", retCode, _frameCount,
                   fIndex, (size_t) dfgPrepare.commandList);
 
-        if (retCode == FFX_API_RETURN_OK && !Config::Instance()->FGExecuteAfterCallback.value_or_default())
-        {
-            auto result = _commandList[fIndex]->Close();
-            LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
+        //if (retCode == FFX_API_RETURN_OK && !Config::Instance()->FGExecuteAfterCallback.value_or_default())
+        //{
+        //    auto result = _commandList[fIndex]->Close();
+        //    LOG_DEBUG("_commandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
 
-            if (result == S_OK)
-            {
-                ID3D12CommandList* cl[] = { cl[0] = _commandList[fIndex] };
-                _gameCommandQueue->ExecuteCommandLists(1, cl);
-            }
-        }
+        //    if (result == S_OK)
+        //    {
+        //        ID3D12CommandList* cl[] = { cl[0] = _commandList[fIndex] };
+        //        _gameCommandQueue->ExecuteCommandLists(1, cl);
+        //    }
+        //}
+
+        if (retCode == FFX_API_RETURN_OK)
+            HudlessDispatchReady();
     }
 
     if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && Mutex.getOwner() == 1)
@@ -457,7 +464,7 @@ ffxReturnCode_t FSRFG_Dx12::DispatchCallback(ffxDispatchDescFrameGeneration* par
 
 ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGeneration* params)
 {
-    CallbackMutex.lock();
+    //CallbackMutex.lock();
 
     HRESULT result;
     ffxReturnCode_t dispatchResult = FFX_API_RETURN_OK;
@@ -466,23 +473,23 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
     LOG_DEBUG("frameID: {}, commandList: {:X}, numGeneratedFrames: {}", params->frameID, (size_t) params->commandList,
               params->numGeneratedFrames);
 
-    if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGExecuteAfterCallback.value_or_default())
-    {
-        result = _commandList[fIndex]->Close();
-        LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
+    //if (params->frameID != _lastUpscaledFrameId && Config::Instance()->FGExecuteAfterCallback.value_or_default())
+    //{
+    //    result = _commandList[fIndex]->Close();
+    //    LOG_DEBUG("fgCommandList[{}]->Close() result: {:X}", fIndex, (UINT) result);
 
-        // if there is command list error return ERROR
-        if (result == S_OK)
-        {
-            ID3D12CommandList* cl[] = { _commandList[fIndex] };
-            _gameCommandQueue->ExecuteCommandLists(1, cl);
-        }
-        else
-        {
-            CallbackMutex.unlock();
-            return FFX_API_RETURN_ERROR;
-        }
-    }
+    //    // if there is command list error return ERROR
+    //    if (result == S_OK)
+    //    {
+    //        ID3D12CommandList* cl[] = { _commandList[fIndex] };
+    //        _gameCommandQueue->ExecuteCommandLists(1, cl);
+    //    }
+    //    else
+    //    {
+    //        CallbackMutex.unlock();
+    //        return FFX_API_RETURN_ERROR;
+    //    }
+    //}
 
     // check for status
     if (!Config::Instance()->FGEnabled.value_or_default() || !Config::Instance()->FGHUDFix.value_or_default() ||
@@ -506,7 +513,7 @@ ffxReturnCode_t FSRFG_Dx12::HudlessDispatchCallback(ffxDispatchDescFrameGenerati
 
     _lastUpscaledFrameId = params->frameID;
 
-    CallbackMutex.unlock();
+    //CallbackMutex.unlock();
 
     return dispatchResult;
 }
