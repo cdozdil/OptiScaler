@@ -14,7 +14,7 @@ class RF_Dx12
     bool _init = false;
     ID3D12RootSignature* _rootSignature = nullptr;
     ID3D12PipelineState* _pipelineState = nullptr;
-    ID3D12DescriptorHeap* _srvHeap = nullptr;
+    ID3D12DescriptorHeap* _srvHeap[3] = { nullptr, nullptr, nullptr };
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[2] { { NULL }, { NULL } };
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[2] { { NULL }, { NULL } };
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2] { { NULL }, { NULL } };

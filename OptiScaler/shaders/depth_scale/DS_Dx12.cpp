@@ -142,6 +142,40 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     _counter++;
     _counter = _counter % 2;
 
+    if (_cpuSrvHandle[_counter].ptr == NULL)
+        _cpuSrvHandle[_counter] = _srvHeap[_counter]->GetCPUDescriptorHandleForHeapStart();
+
+    if (_cpuUavHandle[_counter].ptr == NULL)
+    {
+        _cpuUavHandle[_counter] = _cpuSrvHandle[_counter];
+        _cpuUavHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    }
+
+    if (_cpuCbvHandle[_counter].ptr == NULL)
+    {
+        _cpuCbvHandle[_counter] = _cpuUavHandle[_counter];
+        _cpuCbvHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    }
+
+    if (_gpuSrvHandle[_counter].ptr == NULL)
+        _gpuSrvHandle[_counter] = _srvHeap[_counter]->GetGPUDescriptorHandleForHeapStart();
+
+    if (_gpuUavHandle[_counter].ptr == NULL)
+    {
+        _gpuUavHandle[_counter] = _gpuSrvHandle[_counter];
+        _gpuUavHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    }
+
+    if (_gpuCbvHandle[_counter].ptr == NULL)
+    {
+        _gpuCbvHandle[_counter] = _gpuUavHandle[_counter];
+        _gpuCbvHandle[_counter].ptr +=
+            InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    }
+
     auto inDesc = InResource->GetDesc();
     auto outDesc = OutResource->GetDesc();
 
@@ -190,7 +224,7 @@ bool DS_Dx12::Dispatch(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCmdL
     cbvDesc.SizeInBytes = sizeof(constants);
     InDevice->CreateConstantBufferView(&cbvDesc, _cpuCbvHandle[_counter]);
 
-    ID3D12DescriptorHeap* heaps[] = { _srvHeap };
+    ID3D12DescriptorHeap* heaps[] = { _srvHeap[_counter] };
     InCmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 
     InCmdList->SetComputeRootSignature(_rootSignature);
@@ -385,59 +419,39 @@ DS_Dx12::DS_Dx12(std::string InName, ID3D12Device* InDevice) : _name(InName), _d
     }
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-    heapDesc.NumDescriptors = 6; // SRV + UAV + CBV x2
+    heapDesc.NumDescriptors = 3; // SRV + UAV + CBV
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
     State::Instance().skipHeapCapture = true;
 
-    auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap));
+    auto hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[0]));
 
     if (FAILED(hr))
     {
-        LOG_ERROR("[{}] CreateDescriptorHeap error {:X}", _name, hr);
+        LOG_ERROR("[{0}] CreateDescriptorHeap[0] error {1:x}", _name, hr);
         return;
     }
 
-    size_t incrementSize = InDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[1]));
 
-    // CPU
-    _cpuSrvHandle[0] = _srvHeap->GetCPUDescriptorHandleForHeapStart();
+    if (FAILED(hr))
+    {
+        LOG_ERROR("[{0}] CreateDescriptorHeap[1] error {1:x}", _name, hr);
+        return;
+    }
 
-    _cpuUavHandle[0] = _cpuSrvHandle[0];
-    _cpuUavHandle[0].ptr += incrementSize;
+    hr = InDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&_srvHeap[2]));
 
-    _cpuCbvHandle[0] = _cpuUavHandle[0];
-    _cpuCbvHandle[0].ptr += incrementSize;
+    State::Instance().skipHeapCapture = false;
 
-    _cpuSrvHandle[1] = _cpuCbvHandle[0];
-    _cpuSrvHandle[1].ptr += incrementSize;
+    if (FAILED(hr))
+    {
+        LOG_ERROR("[{0}] CreateDescriptorHeap[2] error {1:x}", _name, hr);
+        return;
+    }
 
-    _cpuUavHandle[1] = _cpuSrvHandle[1];
-    _cpuUavHandle[1].ptr += incrementSize;
-
-    _cpuCbvHandle[1] = _cpuUavHandle[1];
-    _cpuCbvHandle[1].ptr += incrementSize;
-
-    // GPU
-    _gpuSrvHandle[0] = _srvHeap->GetGPUDescriptorHandleForHeapStart();
-
-    _gpuUavHandle[0] = _gpuSrvHandle[0];
-    _gpuUavHandle[0].ptr += incrementSize;
-
-    _gpuCbvHandle[0] = _gpuUavHandle[0];
-    _gpuCbvHandle[0].ptr += incrementSize;
-
-    _gpuSrvHandle[1] = _gpuCbvHandle[0];
-    _gpuSrvHandle[1].ptr += incrementSize;
-
-    _gpuUavHandle[1] = _gpuSrvHandle[1];
-    _gpuUavHandle[1].ptr += incrementSize;
-
-    _gpuCbvHandle[1] = _gpuUavHandle[1];
-    _gpuCbvHandle[1].ptr += incrementSize;
-
-    _init = _srvHeap != nullptr;
+    _init = _srvHeap[2] != nullptr;
 }
 
 DS_Dx12::~DS_Dx12()
@@ -457,10 +471,22 @@ DS_Dx12::~DS_Dx12()
         _rootSignature = nullptr;
     }
 
-    if (_srvHeap != nullptr)
+    if (_srvHeap[0] != nullptr)
     {
-        _srvHeap->Release();
-        _srvHeap = nullptr;
+        _srvHeap[0]->Release();
+        _srvHeap[0] = nullptr;
+    }
+
+    if (_srvHeap[1] != nullptr)
+    {
+        _srvHeap[1]->Release();
+        _srvHeap[1] = nullptr;
+    }
+
+    if (_srvHeap[2] != nullptr)
+    {
+        _srvHeap[2]->Release();
+        _srvHeap[2] = nullptr;
     }
 
     if (_buffer != nullptr)

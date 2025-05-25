@@ -19,7 +19,7 @@ class Bias_Dx12
 
     ID3D12RootSignature* _rootSignature = nullptr;
     ID3D12PipelineState* _pipelineState = nullptr;
-    ID3D12DescriptorHeap* _srvHeap = nullptr;
+    ID3D12DescriptorHeap* _srvHeap[2] = { nullptr, nullptr };
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuSrvHandle[2] { { NULL }, { NULL } };
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuUavHandle[2] { { NULL }, { NULL } };
     D3D12_CPU_DESCRIPTOR_HANDLE _cpuCbvHandle[2] { { NULL }, { NULL } };
