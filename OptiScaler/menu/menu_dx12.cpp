@@ -124,9 +124,8 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
         // ImGui_ImplWin32_NewFrame();
 
         // Render
-        MenuDxBase::RenderMenu();
-
-        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
+        if (MenuDxBase::RenderMenu())
+            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
         outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
@@ -235,6 +234,7 @@ Menu_Dx12::Menu_Dx12(HWND handle, ID3D12Device* pDevice) : MenuDxBase(handle), _
 
     State::Instance().skipHeapCapture = false;
 
+    g_pd3dSrvDescHeapAlloc.Destroy();
     g_pd3dSrvDescHeapAlloc.Create(pDevice, _srvDescHeap);
 
     Dx12Ready();
@@ -244,13 +244,13 @@ Menu_Dx12::Menu_Dx12(HWND handle, ID3D12Device* pDevice) : MenuDxBase(handle), _
 
 Menu_Dx12::~Menu_Dx12()
 {
+    //g_pd3dSrvDescHeapAlloc.Destroy(); // Can cause a crash on app close, unsure why
+
     if (!_dx12Init)
         return;
 
-    if (State::Instance().isShuttingDown)
-        return;
-
-    ImGui_ImplDX12_Shutdown();
+    // On shutting down don't invalidate device objects
+    ImGui_ImplDX12_Shutdown(true, !State::Instance().isShuttingDown);
     MenuCommon::Shutdown();
 
     if (_rtvDescHeap)

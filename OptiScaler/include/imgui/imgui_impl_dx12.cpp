@@ -961,7 +961,7 @@ bool ImGui_ImplDX12_Init(ID3D12Device* device, int num_frames_in_flight, DXGI_FO
 }
 #endif
 
-void ImGui_ImplDX12_Shutdown(bool shutdown_platform)
+void ImGui_ImplDX12_Shutdown(bool shutdown_platform, bool invalidate)
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
     IM_ASSERT(bd != nullptr && "No renderer backend to shutdown, or already shutdown?");
@@ -981,7 +981,9 @@ void ImGui_ImplDX12_Shutdown(bool shutdown_platform)
     // Clean up windows and device objects
     if (shutdown_platform)
         ImGui_ImplDX12_ShutdownPlatformInterface();
-    ImGui_ImplDX12_InvalidateDeviceObjects();
+
+    if (invalidate)
+        ImGui_ImplDX12_InvalidateDeviceObjects();
 
     io.BackendRendererName = nullptr;
     io.BackendRendererUserData = nullptr;

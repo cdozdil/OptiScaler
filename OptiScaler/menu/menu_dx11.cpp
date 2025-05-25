@@ -128,7 +128,7 @@ Menu_Dx11::Menu_Dx11(HWND handle, ID3D11Device* pDevice) : MenuDxBase(handle), _
 
 Menu_Dx11::~Menu_Dx11()
 {
-    if (!_dx11Init || State::Instance().isShuttingDown)
+    if (!_dx11Init)
         return;
 
     ImGui_ImplDX11_Shutdown(false);

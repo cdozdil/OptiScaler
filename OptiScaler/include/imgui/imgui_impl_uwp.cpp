@@ -63,8 +63,8 @@ public:
 #include "imgui_internal.h"
 #include <windows.applicationmodel.datatransfer.h>
 
-static const char* ImGui_ImplUwp_GetClipboardTextFn(void* user_data_ctx);
-static void        ImGui_ImplUwp_SetClipboardTextFn(void* user_data_ctx, const char* text);
+static const char* ImGui_ImplUwp_GetClipboardTextFn(ImGuiContext* user_data_ctx);
+static void        ImGui_ImplUwp_SetClipboardTextFn(ImGuiContext* user_data_ctx, const char* text);
 #endif
 
 struct ImGui_ImplUwp_Data
@@ -172,8 +172,9 @@ static bool ImGui_ImplUwp_InitEx(ABI::Windows::UI::Core::ICoreWindow* core_windo
 
     // Clipboard support
 #if !defined(IMGUI_DISABLE_UWP_DEFAULT_CLIPBOARD_FUNCTIONS)
-    io.GetClipboardTextFn = ImGui_ImplUwp_GetClipboardTextFn;
-    io.SetClipboardTextFn = ImGui_ImplUwp_SetClipboardTextFn;
+    auto platformio = ImGui::GetPlatformIO();
+    platformio.Platform_GetClipboardTextFn = ImGui_ImplUwp_GetClipboardTextFn;
+    platformio.Platform_SetClipboardTextFn = ImGui_ImplUwp_SetClipboardTextFn;
 #endif
 
     if (core_window && !is_for_current_view)
@@ -1083,9 +1084,9 @@ int PointerReleased(::IInspectable* sender, ABI::Windows::UI::Core::IPointerEven
 
 // UWP clipboard implementation
 #if !defined(IMGUI_DISABLE_UWP_DEFAULT_CLIPBOARD_FUNCTIONS)
-static const char* ImGui_ImplUwp_GetClipboardTextFn(void* user_data_ctx)
+static const char* ImGui_ImplUwp_GetClipboardTextFn(ImGuiContext* ctx)
 {
-    ImGuiContext& g = *(ImGuiContext*)user_data_ctx;
+    ImGuiContext& g = *ctx;
     g.ClipboardHandlerData.clear();
 
     Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IClipboardStatics> clipboardStatics;
@@ -1145,7 +1146,7 @@ static const char* ImGui_ImplUwp_GetClipboardTextFn(void* user_data_ctx)
     return g.ClipboardHandlerData.Data;
 }
 
-static void ImGui_ImplUwp_SetClipboardTextFn(void*, const char* text)
+static void ImGui_ImplUwp_SetClipboardTextFn(ImGuiContext*, const char* text)
 {
     Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IDataPackage> dataPkg;
     Microsoft::WRL::ComPtr<ABI::Windows::ApplicationModel::DataTransfer::IClipboardStatics> clipboardStatics;

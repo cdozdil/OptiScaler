@@ -4081,16 +4081,19 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
 
     bool initResult = false;
 
-    if (!isUWP)
+    if (io.BackendPlatformUserData == nullptr)
     {
-        initResult = ImGui_ImplWin32_Init(InHwnd);
-        LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
-    }
-    else
-    {
-        initResult = ImGui_ImplUwp_Init(InHwnd);
-        ImGui_BindUwpKeyUp(KeyUp);
-        LOG_DEBUG("ImGui_ImplUwp_Init result: {0}", initResult);
+        if (!isUWP)
+        {
+            initResult = ImGui_ImplWin32_Init(InHwnd);
+            LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
+        }
+        else
+        {
+            initResult = ImGui_ImplUwp_Init(InHwnd);
+            ImGui_BindUwpKeyUp(KeyUp);
+            LOG_DEBUG("ImGui_ImplUwp_Init result: {0}", initResult);
+        }
     }
 
     if (io.Fonts->Fonts.empty() && Config::Instance()->UseHQFont.value_or_default())
