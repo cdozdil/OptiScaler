@@ -1859,6 +1859,7 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->FGResourceFlipOffset = resourceFlipOffset;
                         ShowHelpMarker("Use height difference as offset");
 
+                        /*
                         ImGui::SeparatorText("Experimental sync settings");
 
                         bool executeImmediately = Config::Instance()->FGImmediatelyExecute.value_or_default();
@@ -1894,6 +1895,7 @@ bool MenuCommon::RenderMenu()
 
                         ShowHelpMarker("Execute command list after FG callback\n"
                                        "Normally it's executed after dispatch");
+                        */
 
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Advanced OptiFG Settings"))
