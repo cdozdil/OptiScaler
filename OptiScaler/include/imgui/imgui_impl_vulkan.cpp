@@ -1277,7 +1277,7 @@ bool    ImGui_ImplVulkan_Init(ImGui_ImplVulkan_InitInfo* info)
     return true;
 }
 
-void ImGui_ImplVulkan_Shutdown()
+void ImGui_ImplVulkan_Shutdown(bool shutdown_platform)
 {
     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
     IM_ASSERT(bd != nullptr && "No renderer backend to shutdown, or already shutdown?");
@@ -1296,7 +1296,8 @@ void ImGui_ImplVulkan_Shutdown()
     main_viewport->RendererUserData = nullptr;
 
     // Clean up windows
-    ImGui_ImplVulkan_ShutdownMultiViewportSupport();
+    if(shutdown_platform)
+        ImGui_ImplVulkan_ShutdownMultiViewportSupport();
 
     io.BackendRendererName = nullptr;
     io.BackendRendererUserData = nullptr;

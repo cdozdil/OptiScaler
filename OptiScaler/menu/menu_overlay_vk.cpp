@@ -43,7 +43,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
         LOG_DEBUG("_vulkanObjectsCreated, releasing objects");
 
         if (ImGui::GetIO().BackendRendererUserData != nullptr)
-            ImGui_ImplVulkan_Shutdown();
+            ImGui_ImplVulkan_Shutdown(false);
 
         MenuOverlayVk::DestroyVulkanObjects(false);
 
@@ -51,11 +51,14 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     }
 
     // Initialize ImGui
-    if (MenuOverlayBase::IsInited())
-        MenuOverlayBase::Shutdown();
+    if (!MenuOverlayBase::IsInited() || MenuOverlayBase::Handle() != hwnd)
+    {
+        if (MenuOverlayBase::IsInited()) 
+            MenuOverlayBase::Shutdown();
 
-    LOG_DEBUG("MenuOverlayBase::Init");
-    MenuOverlayBase::Init(hwnd, false);
+        LOG_DEBUG("MenuOverlayBase::Init");
+        MenuOverlayBase::Init(hwnd, false);
+    }
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize.x = pCreateInfo->imageExtent.width;

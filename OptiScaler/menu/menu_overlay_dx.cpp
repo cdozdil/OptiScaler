@@ -15,52 +15,6 @@ static int const SRV_HEAP_SIZE = 64;
 static bool _dx11Device = false;
 static bool _dx12Device = false;
 
-// Simple free list based allocator
-// Taken from imgui's example
-struct DescriptorHeapAllocator
-{
-    ID3D12DescriptorHeap* Heap = nullptr;
-    D3D12_DESCRIPTOR_HEAP_TYPE HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
-    D3D12_CPU_DESCRIPTOR_HANDLE HeapStartCpu;
-    D3D12_GPU_DESCRIPTOR_HANDLE HeapStartGpu;
-    UINT HeapHandleIncrement;
-    ImVector<int> FreeIndices;
-
-    void Create(ID3D12Device* device, ID3D12DescriptorHeap* heap)
-    {
-        IM_ASSERT(Heap == nullptr && FreeIndices.empty());
-        Heap = heap;
-        D3D12_DESCRIPTOR_HEAP_DESC desc = heap->GetDesc();
-        HeapType = desc.Type;
-        HeapStartCpu = Heap->GetCPUDescriptorHandleForHeapStart();
-        HeapStartGpu = Heap->GetGPUDescriptorHandleForHeapStart();
-        HeapHandleIncrement = device->GetDescriptorHandleIncrementSize(HeapType);
-        FreeIndices.reserve((int) desc.NumDescriptors);
-        for (int n = desc.NumDescriptors; n > 0; n--)
-            FreeIndices.push_back(n - 1);
-    }
-    void Destroy()
-    {
-        Heap = nullptr;
-        FreeIndices.clear();
-    }
-    void Alloc(D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_desc_handle)
-    {
-        IM_ASSERT(FreeIndices.Size > 0);
-        int idx = FreeIndices.back();
-        FreeIndices.pop_back();
-        out_cpu_desc_handle->ptr = HeapStartCpu.ptr + (idx * HeapHandleIncrement);
-        out_gpu_desc_handle->ptr = HeapStartGpu.ptr + (idx * HeapHandleIncrement);
-    }
-    void Free(D3D12_CPU_DESCRIPTOR_HANDLE out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE out_gpu_desc_handle)
-    {
-        int cpu_idx = (int) ((out_cpu_desc_handle.ptr - HeapStartCpu.ptr) / HeapHandleIncrement);
-        int gpu_idx = (int) ((out_gpu_desc_handle.ptr - HeapStartGpu.ptr) / HeapHandleIncrement);
-        IM_ASSERT(cpu_idx == gpu_idx);
-        FreeIndices.push_back(cpu_idx);
-    }
-};
-
 // for dx11
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
@@ -173,7 +127,7 @@ static void CleanupRenderTargetDx12(bool clearQueue)
     if (!_isInited || !_dx12Device)
         return;
 
-    LOG_FUNC();
+    LOG_TRACE("clearQueue: {}", clearQueue);
 
     for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
     {
@@ -190,7 +144,7 @@ static void CleanupRenderTargetDx12(bool clearQueue)
             ImGui::GetIO().BackendRendererUserData)
         {
             // std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            ImGui_ImplDX12_Shutdown();
+            ImGui_ImplDX12_Shutdown(false);
         }
 
         if (g_pd3dRtvDescHeap != nullptr)
@@ -225,6 +179,8 @@ static void CleanupRenderTargetDx12(bool clearQueue)
             g_pd3dCommandQueue->Release();
             g_pd3dCommandQueue = nullptr;
         }
+
+        g_pd3dSrvDescHeapAlloc.Destroy();
 
         // if (g_pd3dDeviceParam != nullptr)
         //{
