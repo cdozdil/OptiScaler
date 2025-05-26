@@ -11,3 +11,4 @@ jobs:
       with:
         clang-format-version: '20'
         check-path: 'OptiScaler'
+        exclude-regex: 'external/|OptiScaler/include/'
