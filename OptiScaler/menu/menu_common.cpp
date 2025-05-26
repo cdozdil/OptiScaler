@@ -16,6 +16,7 @@
 
 #include <imgui/imgui_internal.h>
 
+constexpr float fontSize = 14.0f; // just changing this doesn't make other elements scale ideally
 static ImVec2 overlayPosition(-1000.0f, -1000.0f);
 static bool _hdrTonemapApplied = false;
 static ImVec4 SdrColors[ImGuiCol_COUNT];
@@ -1231,6 +1232,17 @@ bool MenuCommon::RenderMenu()
         inputFpsCycle = false;
     }
 
+    // FPS Overlay font
+    auto fpsScale = Config::Instance()->FpsScale.value_or(Config::Instance()->MenuScale.value_or_default());
+
+    if (Config::Instance()->FpsScale.has_value())
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImGuiStyle styleold = style;
+        style = ImGuiStyle();
+        style.ScaleAllSizes(fpsScale);
+    }
+
     // If Fps overlay is visible
     if (Config::Instance()->ShowFps.value_or_default())
     {
@@ -1345,6 +1357,11 @@ bool MenuCommon::RenderMenu()
                 }
             }
 
+            if (Config::Instance()->UseHQFont.value_or_default())
+                ImGui::PushFontSize(std::round(fpsScale * fontSize));
+            else
+                ImGui::SetWindowFontScale(fpsScale);
+
             if (Config::Instance()->FpsOverlayType.value_or_default() == 0)
             {
                 if (currentFeature != nullptr)
@@ -1388,9 +1405,9 @@ bool MenuCommon::RenderMenu()
             ImVec2 plotSize;
 
             if (Config::Instance()->FpsOverlayHorizontal.value_or_default())
-                plotSize = { Config::Instance()->MenuScale.value() * 150, Config::Instance()->MenuScale.value() * 16 };
+                plotSize = { fpsScale * 150, fpsScale * 16 };
             else
-                plotSize = { Config::Instance()->MenuScale.value() * 300, Config::Instance()->MenuScale.value() * 30 };
+                plotSize = { fpsScale * 300, fpsScale * 30 };
 
             if (Config::Instance()->FpsOverlayType.value_or_default() > 1)
             {
@@ -1435,6 +1452,9 @@ bool MenuCommon::RenderMenu()
         // Get size for postioning
         auto winSize = ImGui::GetWindowSize();
 
+        if (Config::Instance()->UseHQFont.value_or_default())
+            ImGui::PopFontSize();
+
         ImGui::End();
 
         // Top left / Bottom left
@@ -1461,6 +1481,10 @@ bool MenuCommon::RenderMenu()
         return false;
 
     {
+        // Overlay font
+        if (Config::Instance()->UseHQFont.value_or_default())
+            ImGui::PushFontSize(std::round(Config::Instance()->MenuScale.value_or_default() * fontSize));
+
         // If overlay is not visible frame needs to be inited
         if (!Config::Instance()->ShowFps.value_or_default())
         {
@@ -1499,7 +1523,7 @@ bool MenuCommon::RenderMenu()
         flags |= ImGuiWindowFlags_AlwaysAutoResize;
 
         // if UI scale is changed rescale the style
-        if (_imguiSizeUpdate)
+        if (_imguiSizeUpdate || Config::Instance()->FpsScale.has_value())
         {
             _imguiSizeUpdate = false;
 
@@ -1548,9 +1572,9 @@ bool MenuCommon::RenderMenu()
                 ImGui::Spacing();
 
                 if (Config::Instance()->UseHQFont.value_or_default())
-                    ImGui::PushFont(MenuBase::scaledFont);
+                    ImGui::PushFontSize(std::round(fontSize * Config::Instance()->MenuScale.value_or_default() * 3.0));
                 else
-                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0) * 3.0);
+                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default() * 3.0);
 
                 if (State::Instance().nvngxExists ||
                     (State::Instance().libxessExists || XeSSProxy::Module() != nullptr))
@@ -1573,9 +1597,9 @@ bool MenuCommon::RenderMenu()
                                 (State::Instance().libxessExists || XeSSProxy::Module() != nullptr) ? "XeSS" : "");
 
                     if (Config::Instance()->UseHQFont.value_or_default())
-                        ImGui::PopFont();
+                        ImGui::PopFontSize();
                     else
-                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
+                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
 
                     ImGui::Spacing();
                     ImGui::Text("nvngx.dll: %sExist",
@@ -1595,7 +1619,7 @@ bool MenuCommon::RenderMenu()
                     if (Config::Instance()->UseHQFont.value_or_default())
                         ImGui::PopFont();
                     else
-                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or(1.0));
+                        ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
                 }
             }
 
@@ -3479,6 +3503,24 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f",
                                            ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->FpsOverlayAlpha = fpsAlpha;
+
+                    const char* options[] = { "Same as menu", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2",
+                                              "1.3",          "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
+                    int currentIndex = std::max(((int) (Config::Instance()->FpsScale.value_or(0.0f) * 10.0f)) - 4, 0);
+                    float values[] = { 0.0f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f,
+                                       1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f };
+
+                    if (ImGui::SliderInt("Scale", &currentIndex, 0, IM_ARRAYSIZE(options) - 1, options[currentIndex]))
+                    {
+                        if (currentIndex == 0)
+                        {
+                            Config::Instance()->FpsScale.reset();
+                        }
+                        else
+                        {
+                            Config::Instance()->FpsScale = values[currentIndex];
+                        }
+                    }
                 }
 
                 // ADVANCED SETTINGS -----------------------------
@@ -3776,7 +3818,7 @@ bool MenuCommon::RenderMenu()
                                            "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
                 const char* selectedScaleName = uiScales[_selectedScale];
 
-                if (ImGui::BeginCombo("UI Scale", selectedScaleName))
+                if (ImGui::BeginCombo("Menu UI Scale", selectedScaleName))
                 {
                     for (int n = 0; n < 16; n++)
                     {
@@ -4012,6 +4054,9 @@ bool MenuCommon::RenderMenu()
             }
         }
 
+        if (Config::Instance()->UseHQFont.value_or_default())
+            ImGui::PopFontSize();
+
         return true;
     }
 }
@@ -4045,19 +4090,42 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
 
     bool initResult = false;
 
-    if (!isUWP)
+    if (io.BackendPlatformUserData == nullptr)
     {
-        initResult = ImGui_ImplWin32_Init(InHwnd);
-        LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
-    }
-    else
-    {
-        initResult = ImGui_ImplUwp_Init(InHwnd);
-        ImGui_BindUwpKeyUp(KeyUp);
-        LOG_DEBUG("ImGui_ImplUwp_Init result: {0}", initResult);
+        if (!isUWP)
+        {
+            initResult = ImGui_ImplWin32_Init(InHwnd);
+            LOG_DEBUG("ImGui_ImplWin32_Init result: {0}", initResult);
+        }
+        else
+        {
+            initResult = ImGui_ImplUwp_Init(InHwnd);
+            ImGui_BindUwpKeyUp(KeyUp);
+            LOG_DEBUG("ImGui_ImplUwp_Init result: {0}", initResult);
+        }
     }
 
-    MenuBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+    if (io.Fonts->Fonts.empty() && Config::Instance()->UseHQFont.value_or_default())
+    {
+        ImFontAtlas* atlas = io.Fonts;
+        atlas->Clear();
+
+        // This automatically becomes the next default font
+        ImFontConfig fontConfig;
+        // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LightHinting;
+
+        if (Config::Instance()->TTFFontPath.has_value())
+        {
+            io.FontDefault =
+                atlas->AddFontFromFileTTF(wstring_to_string(Config::Instance()->TTFFontPath.value()).c_str(), fontSize,
+                                          &fontConfig, io.Fonts->GetGlyphRangesDefault());
+        }
+        else
+        {
+            io.FontDefault = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85,
+                                                                         fontSize, &fontConfig);
+        }
+    }
 
     if (!Config::Instance()->OverlayMenu.value_or_default())
     {

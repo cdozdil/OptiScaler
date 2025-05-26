@@ -6,11 +6,9 @@
 #include <resource.h>
 #include <Logger.h>
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_win32.h"
-#include "imgui/imgui_impl_uwp.h"
-
-#include "menu_base.h"
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_win32.h>
+#include <imgui/imgui_impl_uwp.h>
 
 #include <detours/detours.h>
 

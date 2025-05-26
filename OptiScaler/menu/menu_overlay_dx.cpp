@@ -5,12 +5,13 @@
 #include <Logger.h>
 #include <Config.h>
 
-#include "imgui/imgui_impl_dx11.h"
-#include "imgui/imgui_impl_dx12.h"
-#include "imgui/imgui_impl_win32.h"
+#include <imgui/imgui_impl_dx11.h>
+#include <imgui/imgui_impl_dx12.h>
+#include <imgui/imgui_impl_win32.h>
 
 // menu
 static int const NUM_BACK_BUFFERS = 8;
+static int const SRV_HEAP_SIZE = 64;
 static bool _dx11Device = false;
 static bool _dx12Device = false;
 
@@ -23,6 +24,7 @@ static ID3D11RenderTargetView* g_pd3dRenderTarget = nullptr;
 static ID3D12Device* g_pd3dDeviceParam = nullptr;
 static ID3D12DescriptorHeap* g_pd3dRtvDescHeap = nullptr;
 static ID3D12DescriptorHeap* g_pd3dSrvDescHeap = nullptr;
+static DescriptorHeapAllocator g_pd3dSrvDescHeapAlloc;
 static ID3D12CommandQueue* g_pd3dCommandQueue = nullptr;
 static ID3D12GraphicsCommandList* g_pd3dCommandList = nullptr;
 static ID3D12CommandAllocator* g_commandAllocators[NUM_BACK_BUFFERS] = {};
@@ -125,7 +127,7 @@ static void CleanupRenderTargetDx12(bool clearQueue)
     if (!_isInited || !_dx12Device)
         return;
 
-    LOG_FUNC();
+    LOG_TRACE("clearQueue: {}", clearQueue);
 
     for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
     {
@@ -142,7 +144,7 @@ static void CleanupRenderTargetDx12(bool clearQueue)
             ImGui::GetIO().BackendRendererUserData)
         {
             // std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            ImGui_ImplDX12_Shutdown();
+            ImGui_ImplDX12_Shutdown(false);
         }
 
         if (g_pd3dRtvDescHeap != nullptr)
@@ -177,6 +179,8 @@ static void CleanupRenderTargetDx12(bool clearQueue)
             g_pd3dCommandQueue->Release();
             g_pd3dCommandQueue = nullptr;
         }
+
+        g_pd3dSrvDescHeapAlloc.Destroy();
 
         // if (g_pd3dDeviceParam != nullptr)
         //{
@@ -262,8 +266,6 @@ static void RenderImGui_DX11(IDXGISwapChain* pSwapChain)
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
-    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
 
     if (io.BackendRendererUserData == nullptr)
     {
@@ -333,8 +335,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
-    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 
     // Generate ImGui resources
     if (!io.BackendRendererUserData && currentSCCommandQueue != nullptr)
@@ -375,7 +376,7 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
         {
             D3D12_DESCRIPTOR_HEAP_DESC desc = {};
             desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-            desc.NumDescriptors = 1;
+            desc.NumDescriptors = SRV_HEAP_SIZE;
             desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
             result = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
@@ -389,6 +390,8 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
                 pSwapChain->Release();
                 return;
             }
+
+            g_pd3dSrvDescHeapAlloc.Create(device, g_pd3dSrvDescHeap);
         }
 
         for (UINT i = 0; i < NUM_BACK_BUFFERS; ++i)
@@ -427,9 +430,21 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             return;
         }
 
-        ImGui_ImplDX12_Init(device, NUM_BACK_BUFFERS, DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap,
-                            g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
-                            g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
+        ImGui_ImplDX12_InitInfo initInfo {};
+        initInfo.Device = device;
+        initInfo.CommandQueue = (ID3D12CommandQueue*) currentSCCommandQueue;
+        initInfo.NumFramesInFlight = NUM_BACK_BUFFERS;
+        initInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+        initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
+        initInfo.SrvDescriptorHeap = g_pd3dSrvDescHeap;
+        initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
+                                           D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
+        { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
+        initInfo.SrvDescriptorFreeFn =
+            [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle)
+        { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
+
+        ImGui_ImplDX12_Init(&initInfo);
 
         pSwapChain->Release();
         return;
@@ -451,9 +466,6 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
             _showRenderImGuiDebugOnce = true;
 
             ImGui_ImplDX12_NewFrame();
-
-            if (io.Fonts->IsDirty())
-                ImGui_ImplDX12_UpdateFontsTexture();
 
             if (MenuOverlayBase::RenderMenu())
             {
@@ -539,8 +551,6 @@ void MenuOverlayDx::Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
                             const DXGI_PRESENT_PARAMETERS* pPresentParameters, IUnknown* pDevice, HWND hWnd, bool isUWP)
 {
     LOG_DEBUG("");
-
-    HRESULT presentResult;
 
     ID3D12CommandQueue* cq = nullptr;
     ID3D11Device* device = nullptr;

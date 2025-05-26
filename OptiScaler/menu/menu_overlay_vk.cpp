@@ -4,8 +4,8 @@
 #include <Util.h>
 #include <Config.h>
 
-#include "imgui/imgui_impl_vulkan.h"
-#include "imgui/imgui_impl_win32.h"
+#include <imgui/imgui_impl_vulkan.h>
+#include <imgui/imgui_impl_win32.h>
 
 // Vulkan overlay code adopted from here:
 // https://gist.github.com/mem99/0ec31ca302927457f86b1d6756aaa8c4
@@ -40,10 +40,10 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
 
     if (_vulkanObjectsCreated)
     {
-        LOG_DEBUG("_vulkanObjectsCreated, releaseing objects");
+        LOG_DEBUG("_vulkanObjectsCreated, releasing objects");
 
         if (ImGui::GetIO().BackendRendererUserData != nullptr)
-            ImGui_ImplVulkan_Shutdown();
+            ImGui_ImplVulkan_Shutdown(false);
 
         MenuOverlayVk::DestroyVulkanObjects(false);
 
@@ -129,10 +129,11 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     {
         VkDescriptorPoolSize sampler_pool_size = {};
         sampler_pool_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        sampler_pool_size.descriptorCount = 1;
+        sampler_pool_size.descriptorCount = 8; // required by ImGui 1.92
         VkDescriptorPoolCreateInfo desc_pool_info = {};
         desc_pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        desc_pool_info.maxSets = 1;
+        desc_pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        desc_pool_info.maxSets = 8;
         desc_pool_info.poolSizeCount = 1;
         desc_pool_info.pPoolSizes = &sampler_pool_size;
         result = vkCreateDescriptorPool(device, &desc_pool_info, NULL, &pool);
@@ -344,8 +345,8 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             return;
         }
 
-        initResult = ImGui_ImplVulkan_UpdateFontsTexture();
-        LOG_DEBUG("ImGui_ImplVulkan_UpdateFontsTexture result: {}", initResult);
+        // initResult = ImGui_ImplVulkan_CreateFontsTexture();
+        // LOG_DEBUG("ImGui_ImplVulkan_CreateFontsTexture result: {}", initResult);
 
         VkSubmitInfo end_info = {};
         end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -465,8 +466,7 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
-    MenuOverlayBase::UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 
     _frameCount++;
 
@@ -474,9 +474,6 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
         auto semaphoreIndex = _frameCount % _scImageCount;
 
         ImGui_ImplVulkan_NewFrame();
-
-        if (io.Fonts->IsDirty())
-            ImGui_ImplVulkan_UpdateFontsTexture();
 
         if (MenuOverlayBase::RenderMenu())
         {
@@ -575,6 +572,7 @@ void MenuOverlayVk::CreateSwapchain(VkDevice device, VkPhysicalDevice pd, VkInst
 
         if (MenuOverlayBase::IsInited())
         {
+            ImGui_ImplVulkan_Shutdown(false);
             LOG_DEBUG("MenuOverlayBase::Shutdown();");
             MenuOverlayBase::Shutdown();
         }

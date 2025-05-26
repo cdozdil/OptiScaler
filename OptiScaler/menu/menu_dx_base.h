@@ -1,9 +1,8 @@
 #pragma once
 #include <pch.h>
 #include <dxgi.h>
-#include "menu_base.h"
 
-class MenuDxBase : public MenuBase
+class MenuDxBase
 {
   private:
     HWND _handle = nullptr;

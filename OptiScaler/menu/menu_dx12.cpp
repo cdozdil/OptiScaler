@@ -4,10 +4,40 @@
 
 #include "Config.h"
 #include "menu_common.h"
-#include "imgui/imgui_impl_dx12.h"
-#include "imgui/imgui_impl_win32.h"
+#include <imgui/imgui_impl_dx12.h>
+#include <imgui/imgui_impl_win32.h>
 
 long frameCounter = 0;
+static int const SRV_HEAP_SIZE = 64;
+
+struct ImGui_ImplDX12_Texture
+{
+    ID3D12Resource* pTextureResource;
+    D3D12_CPU_DESCRIPTOR_HANDLE hFontSrvCpuDescHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE hFontSrvGpuDescHandle;
+
+    ImGui_ImplDX12_Texture() { memset((void*) this, 0, sizeof(*this)); }
+};
+
+struct ImGui_ImplDX12_Data
+{
+    ImGui_ImplDX12_InitInfo InitInfo;
+    ID3D12Device* pd3dDevice;
+    ID3D12RootSignature* pRootSignature;
+    ID3D12PipelineState* pPipelineState;
+    ID3D12CommandQueue* pCommandQueue;
+    bool commandQueueOwned;
+    DXGI_FORMAT RTVFormat;
+    DXGI_FORMAT DSVFormat;
+    ID3D12DescriptorHeap* pd3dSrvDescHeap;
+    UINT numFramesInFlight;
+    ImGui_ImplDX12_Texture FontTexture;
+    bool LegacySingleDescriptorUsed;
+
+    ImGui_ImplDX12_Data() { memset((void*) this, 0, sizeof(*this)); }
+};
+
+static DescriptorHeapAllocator g_pd3dSrvDescHeapAlloc;
 
 bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outTexture)
 {
@@ -28,14 +58,37 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
-    UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 
     if (!_dx12Init && io.BackendRendererUserData == nullptr)
     {
-        _dx12Init = ImGui_ImplDX12_Init(_device, 2, outDesc.Format, _srvDescHeap,
-                                        _srvDescHeap->GetCPUDescriptorHandleForHeapStart(),
-                                        _srvDescHeap->GetGPUDescriptorHandleForHeapStart());
+        ImGui_ImplDX12_InitInfo initInfo {};
+        initInfo.Device = _device;
+
+        D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        queueDesc.NodeMask = 1;
+        HRESULT hr = _device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&initInfo.CommandQueue));
+        IM_ASSERT(SUCCEEDED(hr));
+
+        initInfo.NumFramesInFlight = 2;
+        initInfo.RTVFormat = outDesc.Format;
+        initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
+        initInfo.SrvDescriptorHeap = _srvDescHeap;
+        initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
+                                           D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
+        { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
+        initInfo.SrvDescriptorFreeFn =
+            [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle)
+        { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
+
+        _dx12Init = ImGui_ImplDX12_Init(&initInfo);
+
+        ImGui_ImplDX12_Data* bd =
+            ImGui::GetCurrentContext() ? (ImGui_ImplDX12_Data*) ImGui::GetIO().BackendRendererUserData : nullptr;
+        if (bd)
+            bd->commandQueueOwned = true;
     }
 
     if (!_dx12Init)
@@ -69,16 +122,9 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
         ImGui_ImplDX12_NewFrame();
         // ImGui_ImplWin32_NewFrame();
 
-        if (io.Fonts->IsDirty())
-            ImGui_ImplDX12_UpdateFontsTexture();
-
         // Render
-        MenuDxBase::RenderMenu();
-
-        if (!ImGui::GetDrawData())
-            return false;
-
-        ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
+        if (MenuDxBase::RenderMenu())
+            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCmdList);
 
         outBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         outBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
@@ -122,9 +168,6 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
 
     ImGui_ImplDX12_NewFrame();
     // ImGui_ImplWin32_NewFrame();
-
-    if (io.Fonts->IsDirty())
-        ImGui_ImplDX12_UpdateFontsTexture();
 
     // Render to buffer
     if (MenuDxBase::RenderMenu())
@@ -180,7 +223,7 @@ Menu_Dx12::Menu_Dx12(HWND handle, ID3D12Device* pDevice) : MenuDxBase(handle), _
 
     D3D12_DESCRIPTOR_HEAP_DESC srvDesc = {};
     srvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    srvDesc.NumDescriptors = 1;
+    srvDesc.NumDescriptors = SRV_HEAP_SIZE;
     srvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
     State::Instance().skipHeapCapture = true;
@@ -190,6 +233,9 @@ Menu_Dx12::Menu_Dx12(HWND handle, ID3D12Device* pDevice) : MenuDxBase(handle), _
 
     State::Instance().skipHeapCapture = false;
 
+    g_pd3dSrvDescHeapAlloc.Destroy();
+    g_pd3dSrvDescHeapAlloc.Create(pDevice, _srvDescHeap);
+
     Dx12Ready();
 
     _srvDescHeap->SetName(L"Imgui_Dx12_srvDescHeap");
@@ -197,13 +243,13 @@ Menu_Dx12::Menu_Dx12(HWND handle, ID3D12Device* pDevice) : MenuDxBase(handle), _
 
 Menu_Dx12::~Menu_Dx12()
 {
+    // g_pd3dSrvDescHeapAlloc.Destroy(); // Can cause a crash on app close, unsure why
+
     if (!_dx12Init)
         return;
 
-    if (State::Instance().isShuttingDown)
-        return;
-
-    ImGui_ImplDX12_Shutdown();
+    // On shutting down don't invalidate device objects
+    ImGui_ImplDX12_Shutdown(true, !State::Instance().isShuttingDown);
     MenuCommon::Shutdown();
 
     if (_rtvDescHeap)

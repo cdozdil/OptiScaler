@@ -618,10 +618,6 @@ inline static bool SkipSpoofing()
         {
             State::Instance().isRunningOnDXVK = dxvkAdapter != nullptr;
             ((IDXGIAdapter*) dxvkAdapter)->Release();
-
-            // Temporary fix for Linux & DXVK
-            if (State::Instance().isRunningOnDXVK || State::Instance().isRunningOnLinux)
-                Config::Instance()->UseHQFont.set_volatile_value(false);
         }
 
         if (State::Instance().isRunningOnDXVK != dxvkStatus)

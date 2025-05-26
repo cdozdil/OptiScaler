@@ -2,8 +2,8 @@
 
 #include "Config.h"
 #include "menu_common.h"
-#include "imgui/imgui_impl_dx11.h"
-#include "imgui/imgui_impl_win32.h"
+#include <imgui/imgui_impl_dx11.h>
+#include <imgui/imgui_impl_win32.h>
 
 void Menu_Dx11::CreateRenderTarget(ID3D11Resource* out)
 {
@@ -88,8 +88,7 @@ bool Menu_Dx11::Render(ID3D11DeviceContext* pCmdList, ID3D11Resource* outTexture
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTexReload;
-    UpdateFonts(io, Config::Instance()->MenuScale.value_or_default());
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 
     if (!_dx11Init && io.BackendRendererUserData == nullptr)
         _dx11Init = ImGui_ImplDX11_Init(_device, pCmdList);
@@ -129,9 +128,10 @@ Menu_Dx11::Menu_Dx11(HWND handle, ID3D11Device* pDevice) : MenuDxBase(handle), _
 
 Menu_Dx11::~Menu_Dx11()
 {
-    if (!_dx11Init || State::Instance().isShuttingDown)
+    if (!_dx11Init)
         return;
 
+    ImGui_ImplDX11_Shutdown(false);
     MenuCommon::Shutdown();
 
     // hackzor

@@ -5,9 +5,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
-#include "menu_base.h"
-
-class MenuOverlayBase : public MenuBase
+class MenuOverlayBase
 {
   public:
     static HWND Handle();
