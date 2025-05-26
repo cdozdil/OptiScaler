@@ -58,7 +58,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
 
     ImGuiIO& io = ImGui::GetIO();
     (void) io;
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures; 
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 
     if (!_dx12Init && io.BackendRendererUserData == nullptr)
     {
@@ -76,8 +76,7 @@ bool Menu_Dx12::Render(ID3D12GraphicsCommandList* pCmdList, ID3D12Resource* outT
         initInfo.RTVFormat = outDesc.Format;
         initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
         initInfo.SrvDescriptorHeap = _srvDescHeap;
-        initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*,
-                                                                   D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
+        initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
                                            D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
         { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
         initInfo.SrvDescriptorFreeFn =
@@ -244,7 +243,7 @@ Menu_Dx12::Menu_Dx12(HWND handle, ID3D12Device* pDevice) : MenuDxBase(handle), _
 
 Menu_Dx12::~Menu_Dx12()
 {
-    //g_pd3dSrvDescHeapAlloc.Destroy(); // Can cause a crash on app close, unsure why
+    // g_pd3dSrvDescHeapAlloc.Destroy(); // Can cause a crash on app close, unsure why
 
     if (!_dx12Init)
         return;

@@ -3492,13 +3492,11 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f",
                                            ImGuiSliderFlags_NoRoundToFormat))
                         Config::Instance()->FpsOverlayAlpha = fpsAlpha;
-                 
-                    const char* options[] = {
-                        "Same as menu", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2",
-                        "1.3",  "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0"
-                    };
+
+                    const char* options[] = { "Same as menu", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2",
+                                              "1.3",          "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "2.0" };
                     int currentIndex = std::max(((int) (Config::Instance()->FpsScale.value_or(0.0f) * 10.0f)) - 4, 0);
-                    float values[] = { 0.0f,  0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f,
+                    float values[] = { 0.0f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f,
                                        1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f };
 
                     if (ImGui::SliderInt("Scale", &currentIndex, 0, IM_ARRAYSIZE(options) - 1, options[currentIndex]))
@@ -3513,7 +3511,7 @@ bool MenuCommon::RenderMenu()
                         }
                     }
                 }
-                    
+
                 // ADVANCED SETTINGS -----------------------------
                 ImGui::Spacing();
                 if (ImGui::CollapsingHeader("Upscaler Inputs",
@@ -4109,14 +4107,12 @@ void MenuCommon::Init(HWND InHwnd, bool isUWP)
         {
             io.FontDefault =
                 atlas->AddFontFromFileTTF(wstring_to_string(Config::Instance()->TTFFontPath.value()).c_str(), fontSize,
-                                          &fontConfig,
-                                             io.Fonts->GetGlyphRangesDefault());
+                                          &fontConfig, io.Fonts->GetGlyphRangesDefault());
         }
         else
         {
             io.FontDefault = atlas->AddFontFromMemoryCompressedBase85TTF(hack_compressed_compressed_data_base85,
-                                                                         fontSize,
-                                                                    &fontConfig);
+                                                                         fontSize, &fontConfig);
         }
     }
 

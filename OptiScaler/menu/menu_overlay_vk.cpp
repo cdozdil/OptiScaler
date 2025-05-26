@@ -53,7 +53,7 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
     // Initialize ImGui
     if (!MenuOverlayBase::IsInited() || MenuOverlayBase::Handle() != hwnd)
     {
-        if (MenuOverlayBase::IsInited()) 
+        if (MenuOverlayBase::IsInited())
             MenuOverlayBase::Shutdown();
 
         LOG_DEBUG("MenuOverlayBase::Init");
@@ -345,8 +345,8 @@ static void CreateVulkanObjects(VkDevice device, VkPhysicalDevice pd, VkInstance
             return;
         }
 
-        //initResult = ImGui_ImplVulkan_CreateFontsTexture();
-        //LOG_DEBUG("ImGui_ImplVulkan_CreateFontsTexture result: {}", initResult);
+        // initResult = ImGui_ImplVulkan_CreateFontsTexture();
+        // LOG_DEBUG("ImGui_ImplVulkan_CreateFontsTexture result: {}", initResult);
 
         VkSubmitInfo end_info = {};
         end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

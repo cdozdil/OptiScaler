@@ -432,13 +432,13 @@ static void RenderImGui_DX12(IDXGISwapChain* pSwapChainPlain)
 
         ImGui_ImplDX12_InitInfo initInfo {};
         initInfo.Device = device;
-        initInfo.CommandQueue = (ID3D12CommandQueue*)currentSCCommandQueue;
+        initInfo.CommandQueue = (ID3D12CommandQueue*) currentSCCommandQueue;
         initInfo.NumFramesInFlight = NUM_BACK_BUFFERS;
         initInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
         initInfo.DSVFormat = DXGI_FORMAT_UNKNOWN;
         initInfo.SrvDescriptorHeap = g_pd3dSrvDescHeap;
         initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
-                                            D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
+                                           D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
         { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
         initInfo.SrvDescriptorFreeFn =
             [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle)
