@@ -280,8 +280,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         return presentResult;
     }
 
-    //if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
-    //    State::Instance().currentFG->CallbackMutex.lock();
+    // if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+    //     State::Instance().currentFG->CallbackMutex.lock();
 
     if (State::Instance().activeFgType != OptiFG && !(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART))
     {
@@ -299,7 +299,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
 
     // Removing might cause issues, saved almost 1 ms
     // if (hWnd != Util::GetProcessWindow())
-    //{
+    // {
     //    if (pPresentParameters == nullptr)
     //        presentResult = pSwapChain->Present(SyncInterval, Flags);
     //    else
@@ -311,7 +311,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
     //        LOG_ERROR("2 {:X}", (UINT)presentResult);
 
     //    return presentResult;
-    //}
+    // }
 
     ID3D12CommandQueue* cq = nullptr;
     ID3D11Device* device = nullptr;
@@ -449,8 +449,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         else
             LOG_ERROR("3 {:X}", (UINT) presentResult);
 
-        //if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
-        //    State::Instance().currentFG->CallbackMutex.unlock();
+        // if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+        //     State::Instance().currentFG->CallbackMutex.unlock();
 
         return presentResult;
     }
@@ -505,8 +505,8 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         fg->FgDone();
     }
 
-    //if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
-    //    State::Instance().currentFG->CallbackMutex.unlock();
+    // if (State::Instance().activeFgType == OptiFG && State::Instance().currentFG != nullptr)
+    //     State::Instance().currentFG->CallbackMutex.unlock();
 
     return presentResult;
 }
