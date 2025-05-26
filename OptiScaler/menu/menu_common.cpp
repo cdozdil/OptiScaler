@@ -1235,6 +1235,7 @@ bool MenuCommon::RenderMenu()
     if (Config::Instance()->ShowFps.value_or_default())
     {
         float frameCnt = 0;
+        frameTime = 0;
         for (size_t i = 299; i > 199; i--)
         {
             if (State::Instance().frameTimes[i] > 0.0)
@@ -1464,6 +1465,7 @@ bool MenuCommon::RenderMenu()
         if (!Config::Instance()->ShowFps.value_or_default())
         {
             float frameCnt = 0;
+            frameTime = 0;
             for (size_t i = 299; i > 199; i--)
             {
                 if (State::Instance().frameTimes[i] > 0.0)
