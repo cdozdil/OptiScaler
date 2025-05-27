@@ -461,6 +461,95 @@ ImGuiKey MenuCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
     }
 }
 
+static USHORT lastKey = 0;
+
+class Keybind
+{
+    std::string name;
+    int id;
+    bool waitingForKey = false;
+
+    std::string KeyNameFromVirtualKeyCode(UINT virtualKey)
+    {
+        UINT scanCode = MapVirtualKeyW(virtualKey, MAPVK_VK_TO_VSC);
+
+        // Keys like Home would display as Num 0 without this fix
+        switch (virtualKey)
+        {
+        case VK_INSERT:
+        case VK_DELETE:
+        case VK_HOME:
+        case VK_END:
+        case VK_PRIOR:
+        case VK_NEXT:
+        case VK_LEFT:
+        case VK_RIGHT:
+        case VK_UP:
+        case VK_DOWN:
+        case VK_NUMLOCK:
+        case VK_DIVIDE:
+        case VK_RCONTROL:
+        case VK_RMENU:
+            scanCode |= 0xE000;
+            break;
+        }
+
+        LPARAM lParam = (scanCode & 0xFF) << 16;
+        if (scanCode & 0xE000)
+            lParam |= 1 << 24;
+
+        wchar_t buf[64] = {};
+        if (GetKeyNameTextW(lParam, buf, static_cast<int>(std::size(buf))) != 0)
+            return wstring_to_string(buf);
+
+        return "Unknown";
+    }
+
+  public:
+    Keybind(std::string name, int id) : name(name), id(id) {}
+
+    void Render(CustomOptional<int>& configKey)
+    {
+        ImGui::PushID(id);
+        if (ImGui::Button(name.c_str()))
+        {
+            waitingForKey = true;
+            lastKey = 0;
+        }
+        ImGui::PopID();
+
+        if (waitingForKey)
+        {
+            ImGui::SameLine();
+            ImGui::Text("Press any key...");
+
+            if (lastKey == 0 || lastKey == VK_LBUTTON || lastKey == VK_RBUTTON || lastKey == VK_MBUTTON)
+                return;
+
+            if (lastKey == VK_ESCAPE || lastKey == VK_BACK)
+            {
+                waitingForKey = false;
+                return;
+            }
+
+            configKey = lastKey;
+            waitingForKey = false;
+            return;
+        }
+
+        ImGui::SameLine();
+        ImGui::Text(KeyNameFromVirtualKeyCode(configKey.value_or_default()).c_str());
+
+        ImGui::SameLine();
+        ImGui::PushID(id);
+        if (ImGui::Button("R"))
+        {
+            configKey.reset();
+        }
+        ImGui::PopID();
+    }
+};
+
 // Win32 message handler
 LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -516,6 +605,8 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         bool isKeyUp = (rawData.data.keyboard.Flags & RI_KEY_BREAK) != 0;
         if (isKeyUp && rawData.header.dwType == RIM_TYPEKEYBOARD && rawData.data.keyboard.VKey != 0)
         {
+            lastKey = rawData.data.keyboard.VKey;
+
             if (!inputMenu)
                 inputMenu = rawData.data.keyboard.VKey == Config::Instance()->ShortcutKey.value_or_default();
 
@@ -527,6 +618,9 @@ LRESULT MenuCommon::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     rawData.data.keyboard.VKey == Config::Instance()->FpsCycleShortcutKey.value_or_default();
         }
     }
+
+    if (!lastKey && msg == WM_KEYUP)
+        lastKey = wParam;
 
     if (!inputMenu)
         inputMenu = msg == WM_KEYUP && wParam == Config::Instance()->ShortcutKey.value_or_default();
@@ -3759,6 +3853,24 @@ bool MenuCommon::RenderMenu()
                             }
                         }
                     }
+                }
+
+                ImGui::Spacing();
+                if (ImGui::CollapsingHeader("Keybinds"))
+                {
+                    ScopedIndent indent {};
+
+                    ImGui::Spacing();
+                    ImGui::Text("Key combinations are currently NOT supported!");
+                    ImGui::Spacing();
+
+                    static auto menu = Keybind("Menu", 10);
+                    static auto fpsOverlay = Keybind("FPS Overlay", 11);
+                    static auto fpsOverlayCycle = Keybind("FPS Overlay Cycle", 12);
+
+                    menu.Render(Config::Instance()->ShortcutKey);
+                    fpsOverlay.Render(Config::Instance()->FpsShortcutKey);
+                    fpsOverlayCycle.Render(Config::Instance()->FpsCycleShortcutKey);
                 }
 
                 ImGui::EndTable();
