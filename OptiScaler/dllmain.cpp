@@ -1054,7 +1054,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         }
 
         {
-            auto nvngxReplacement = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
+            static auto nvngxReplacement = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
             if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value() &&
                 !nvngxReplacement.has_value())
             {
@@ -1109,6 +1109,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         // UnhookApis();
         // unhookStreamline();
         // unhookGdi32();
+        // unhookWintrust()
+        // unhookCrypt32();
         // DetachHooks();
 
         if (skModule != nullptr)

@@ -6,13 +6,14 @@
 
 #include "detours/detours.h"
 #include <WinTrust.h>
+#include <Softpub.h>
 
 typedef LONG (*PFN_WinVerifyTrust)(HWND hwnd, GUID* pgActionID, LPVOID pWVTData);
 static PFN_WinVerifyTrust o_WinVerifyTrust = nullptr;
 
 static LONG hkWinVerifyTrust(HWND hwnd, GUID* pgActionID, LPVOID pWVTData)
 {
-    if (!pWVTData)
+    if (!pWVTData || !IsEqualGUID(*pgActionID, WINTRUST_ACTION_GENERIC_VERIFY_V2))
         return o_WinVerifyTrust(hwnd, pgActionID, pWVTData);
 
     const auto data = reinterpret_cast<WINTRUST_DATA*>(pWVTData);

@@ -1563,11 +1563,12 @@ class KernelHooks
 
     static DWORD hk_K32_GetFileAttributesW(LPCWSTR lpFileName)
     {
-        if (!State::Instance().nvngxExists) // only to avoid extra work
+        if (!State::Instance().nvngxExists && Config::Instance()->DxgiSpoofing.value_or_default())
         {
             auto path = wstring_to_string(std::wstring(lpFileName));
 
-            if (path.contains("nvngx.dll") && !path.contains("_nvngx.dll") && !path.contains("Windows"))
+            if (path.contains("nvngx.dll") && !path.contains("_nvngx.dll") &&
+                !path.contains("Windows")) // apply the override to just one path
             {
                 LOG_DEBUG("Overriding GetFileAttributesW for nvngx");
                 return FILE_ATTRIBUTE_ARCHIVE;
@@ -1581,14 +1582,14 @@ class KernelHooks
                                      LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
                                      DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
     {
-        if (!State::Instance().nvngxExists) // only to avoid extra work
+        if (!State::Instance().nvngxExists && Config::Instance()->DxgiSpoofing.value_or_default())
         {
             auto path = wstring_to_string(std::wstring(lpFileName));
 
             static auto signedDll = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
 
-            if (path.contains("nvngx.dll") && !path.contains("_nvngx.dll") && !path.contains("Windows") &&
-                signedDll.has_value())
+            if (path.contains("nvngx.dll") && !path.contains("_nvngx.dll") && // apply the override to just one path
+                !path.contains("Windows") && signedDll.has_value())
             {
                 LOG_DEBUG("Overriding CreateFileW for nvngx with a signed dll, original path: {}", path);
                 return o_K32_CreateFileW(signedDll.value().c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes,

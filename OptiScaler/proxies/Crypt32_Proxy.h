@@ -18,30 +18,36 @@ static BOOL hkCryptQueryObject(DWORD dwObjectType, const void* pvObject, DWORD d
                                DWORD* pdwContentType, DWORD* pdwFormatType, HCERTSTORE* phCertStore, HCRYPTMSG* phMsg,
                                const void** ppvContext)
 {
-    auto originalPath = (WCHAR*) pvObject;
-    auto pathString = wstring_to_string(std::wstring(originalPath));
-    if (pathString.contains("amd_fidelityfx_dx12.dll") ||
-        pathString.contains("amd_fidelityfx_vk.dll")) // It's applied even if ffx is already signed, could be improved
+    if (dwObjectType == CERT_QUERY_OBJECT_FILE && pvObject)
     {
-        LOG_DEBUG("Replacing FFX with a signed dll");
-        WCHAR path[256] {};
-        GetModuleFileNameW(fsr4Module, path, 256);
+        std::wstring originalPath((WCHAR*) pvObject);
+        auto pathString = wstring_to_string(std::wstring(originalPath));
 
-        return o_CryptQueryObject(dwObjectType, path, dwExpectedContentTypeFlags, dwExpectedFormatTypeFlags, dwFlags,
-                                  pdwMsgAndCertEncodingType, pdwContentType, pdwFormatType, phCertStore, phMsg,
-                                  ppvContext);
-    }
-
-    if (pathString.contains("nvngx.dll") && !State::Instance().nvngxExists)
-    {
-        static auto signedDll = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
-
-        if (signedDll.has_value())
+        // It's applied even if ffx is already signed, could be improved
+        if (pathString.contains("amd_fidelityfx_dx12.dll") ||
+            pathString.contains("amd_fidelityfx_vk.dll") && fsr4Module)
         {
-            LOG_DEBUG("Replacing nvngx with a signed dll");
-            return o_CryptQueryObject(dwObjectType, signedDll.value().c_str(), dwExpectedContentTypeFlags,
-                                      dwExpectedFormatTypeFlags, dwFlags, pdwMsgAndCertEncodingType, pdwContentType,
-                                      pdwFormatType, phCertStore, phMsg, ppvContext);
+            LOG_DEBUG("Replacing FFX with a signed dll");
+            WCHAR signedDll[256] {};
+            GetModuleFileNameW(fsr4Module, signedDll, 256);
+
+            return o_CryptQueryObject(dwObjectType, signedDll, dwExpectedContentTypeFlags, dwExpectedFormatTypeFlags,
+                                      dwFlags, pdwMsgAndCertEncodingType, pdwContentType, pdwFormatType, phCertStore,
+                                      phMsg, ppvContext);
+        }
+
+        if (pathString.contains("nvngx.dll") && !State::Instance().nvngxExists &&
+            Config::Instance()->DxgiSpoofing.value_or_default())
+        {
+            static auto signedDll = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
+
+            if (signedDll.has_value())
+            {
+                LOG_DEBUG("Replacing nvngx with a signed dll");
+                return o_CryptQueryObject(dwObjectType, signedDll.value().c_str(), dwExpectedContentTypeFlags,
+                                          dwExpectedFormatTypeFlags, dwFlags, pdwMsgAndCertEncodingType, pdwContentType,
+                                          pdwFormatType, phCertStore, phMsg, ppvContext);
+            }
         }
     }
 
