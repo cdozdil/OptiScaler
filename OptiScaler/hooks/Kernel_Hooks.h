@@ -1578,8 +1578,8 @@ class KernelHooks
     }
 
     static HANDLE hk_K32_CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
-                         LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
-                         DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
+                                     LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
+                                     DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
     {
         if (!State::Instance().nvngxExists) // only to avoid extra work
         {
@@ -1592,12 +1592,12 @@ class KernelHooks
             {
                 LOG_DEBUG("Overriding CreateFileW for nvngx with a signed dll, original path: {}", path);
                 return o_K32_CreateFileW(signedDll.value().c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes,
-                                                       dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+                                         dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
             }
         }
 
         return o_K32_CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition,
-                                dwFlagsAndAttributes, hTemplateFile);
+                                 dwFlagsAndAttributes, hTemplateFile);
     }
 
   public:

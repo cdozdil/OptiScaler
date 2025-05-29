@@ -27,9 +27,9 @@ static BOOL hkCryptQueryObject(DWORD dwObjectType, const void* pvObject, DWORD d
         WCHAR path[256] {};
         GetModuleFileNameW(fsr4Module, path, 256);
 
-        return o_CryptQueryObject(dwObjectType, path, dwExpectedContentTypeFlags, dwExpectedFormatTypeFlags,
-                                         dwFlags, pdwMsgAndCertEncodingType, pdwContentType, pdwFormatType, phCertStore,
-                                         phMsg, ppvContext);
+        return o_CryptQueryObject(dwObjectType, path, dwExpectedContentTypeFlags, dwExpectedFormatTypeFlags, dwFlags,
+                                  pdwMsgAndCertEncodingType, pdwContentType, pdwFormatType, phCertStore, phMsg,
+                                  ppvContext);
     }
 
     if (pathString.contains("nvngx.dll") && !State::Instance().nvngxExists)
@@ -40,9 +40,8 @@ static BOOL hkCryptQueryObject(DWORD dwObjectType, const void* pvObject, DWORD d
         {
             LOG_DEBUG("Replacing nvngx with a signed dll");
             return o_CryptQueryObject(dwObjectType, signedDll.value().c_str(), dwExpectedContentTypeFlags,
-                                      dwExpectedFormatTypeFlags,
-                                      dwFlags, pdwMsgAndCertEncodingType, pdwContentType, pdwFormatType, phCertStore,
-                                      phMsg, ppvContext);
+                                      dwExpectedFormatTypeFlags, dwFlags, pdwMsgAndCertEncodingType, pdwContentType,
+                                      pdwFormatType, phCertStore, phMsg, ppvContext);
         }
     }
 

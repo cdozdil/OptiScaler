@@ -24,8 +24,8 @@ class Kernel32Proxy
     typedef BOOL (*PFN_GetModuleHandleExW)(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* phModule);
     typedef DWORD (*PFN_GetFileAttributesW)(LPCWSTR lpFileName);
     typedef HANDLE (*PFN_CreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
-                                        LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
-                                        DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+                                      LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
+                                      DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
 
     static void Init()
     {
