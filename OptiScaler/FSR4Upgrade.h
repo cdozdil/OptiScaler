@@ -213,9 +213,7 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
         if (o_UpdateFfxApiProvider != nullptr)
         {
             State::DisableChecks(1);
-            State::Instance().fsr4loading = true;
             auto result = o_UpdateFfxApiProvider(pData, dataSizeInBytes);
-            State::Instance().fsr4loading = false;
             LOG_INFO("UpdateFfxApiProvider called, result: {} ({:X})", result == S_OK ? "Ok" : "Error", (UINT) result);
             State::EnableChecks(1);
             return result;

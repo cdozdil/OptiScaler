@@ -18,7 +18,10 @@ static BOOL hkCryptQueryObject(DWORD dwObjectType, const void* pvObject, DWORD d
                                DWORD* pdwContentType, DWORD* pdwFormatType, HCERTSTORE* phCertStore, HCRYPTMSG* phMsg,
                                const void** ppvContext)
 {
-    if (State::Instance().fsr4loading) // TODO: make this check better, only when required? check the dll that is being attempted?
+    auto originalPath = (WCHAR*) pvObject;
+    auto pathString = wstring_to_string(std::wstring(originalPath));
+    if (pathString.contains("amd_fidelityfx_dx12.dll") ||
+        pathString.contains("amd_fidelityfx_vk.dll")) // It's applied even if ffx is already signed, could be improved
     {
         LOG_DEBUG("Replacing FFX with a signed dll");
         WCHAR path[256] {};
@@ -27,6 +30,20 @@ static BOOL hkCryptQueryObject(DWORD dwObjectType, const void* pvObject, DWORD d
         return o_CryptQueryObject(dwObjectType, path, dwExpectedContentTypeFlags, dwExpectedFormatTypeFlags,
                                          dwFlags, pdwMsgAndCertEncodingType, pdwContentType, pdwFormatType, phCertStore,
                                          phMsg, ppvContext);
+    }
+
+    if (pathString.contains("nvngx.dll") && !State::Instance().nvngxExists)
+    {
+        static auto signedDll = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
+
+        if (signedDll.has_value())
+        {
+            LOG_DEBUG("Replacing nvngx with a signed dll");
+            return o_CryptQueryObject(dwObjectType, signedDll.value().c_str(), dwExpectedContentTypeFlags,
+                                      dwExpectedFormatTypeFlags,
+                                      dwFlags, pdwMsgAndCertEncodingType, pdwContentType, pdwFormatType, phCertStore,
+                                      phMsg, ppvContext);
+        }
     }
 
     return o_CryptQueryObject(dwObjectType, pvObject, dwExpectedContentTypeFlags, dwExpectedFormatTypeFlags, dwFlags,

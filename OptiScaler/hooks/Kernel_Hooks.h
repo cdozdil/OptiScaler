@@ -49,6 +49,8 @@ class KernelHooks
     inline static Kernel32Proxy::PFN_LoadLibraryExA o_K32_LoadLibraryExA = nullptr;
     inline static Kernel32Proxy::PFN_LoadLibraryExW o_K32_LoadLibraryExW = nullptr;
     inline static Kernel32Proxy::PFN_GetProcAddress o_K32_GetProcAddress = nullptr;
+    inline static Kernel32Proxy::PFN_GetFileAttributesW o_K32_GetFileAttributesW = nullptr;
+    inline static Kernel32Proxy::PFN_CreateFileW o_K32_CreateFileW = nullptr;
 
     inline static KernelBaseProxy::PFN_FreeLibrary o_KB_FreeLibrary = nullptr;
     inline static KernelBaseProxy::PFN_LoadLibraryA o_KB_LoadLibraryA = nullptr;
@@ -1559,6 +1561,45 @@ class KernelHooks
         return o_KB_GetProcAddress(hModule, lpProcName);
     }
 
+    static DWORD hk_K32_GetFileAttributesW(LPCWSTR lpFileName)
+    {
+        if (!State::Instance().nvngxExists) // only to avoid extra work
+        {
+            auto path = wstring_to_string(std::wstring(lpFileName));
+
+            if (path.contains("nvngx.dll") && !path.contains("_nvngx.dll") && !path.contains("Windows"))
+            {
+                LOG_DEBUG("Overriding GetFileAttributesW for nvngx");
+                return FILE_ATTRIBUTE_ARCHIVE;
+            }
+        }
+
+        return o_K32_GetFileAttributesW(lpFileName);
+    }
+
+    static HANDLE hk_K32_CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
+                         LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
+                         DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
+    {
+        if (!State::Instance().nvngxExists) // only to avoid extra work
+        {
+            auto path = wstring_to_string(std::wstring(lpFileName));
+
+            static auto signedDll = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
+
+            if (path.contains("nvngx.dll") && !path.contains("_nvngx.dll") && !path.contains("Windows") &&
+                signedDll.has_value())
+            {
+                LOG_DEBUG("Overriding CreateFileW for nvngx with a signed dll, original path: {}", path);
+                return o_K32_CreateFileW(signedDll.value().c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes,
+                                                       dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+            }
+        }
+
+        return o_K32_CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition,
+                                dwFlagsAndAttributes, hTemplateFile);
+    }
+
   public:
     static void Hook()
     {
@@ -1573,6 +1614,8 @@ class KernelHooks
         o_K32_LoadLibraryExA = Kernel32Proxy::Hook_LoadLibraryExA(hk_K32_LoadLibraryExA);
         o_K32_LoadLibraryExW = Kernel32Proxy::Hook_LoadLibraryExW(hk_K32_LoadLibraryExW);
         o_K32_GetProcAddress = Kernel32Proxy::Hook_GetProcAddress(hk_K32_GetProcAddress);
+        o_K32_GetFileAttributesW = Kernel32Proxy::Hook_GetFileAttributesW(hk_K32_GetFileAttributesW);
+        o_K32_CreateFileW = Kernel32Proxy::Hook_CreateFileW(hk_K32_CreateFileW);
     }
 
     static void HookBase()

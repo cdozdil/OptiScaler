@@ -5,14 +5,28 @@
 #include "Config.h"
 
 #include "detours/detours.h"
+#include <WinTrust.h>
 
 typedef LONG (*PFN_WinVerifyTrust)(HWND hwnd, GUID* pgActionID, LPVOID pWVTData);
 static PFN_WinVerifyTrust o_WinVerifyTrust = nullptr;
 
 static LONG hkWinVerifyTrust(HWND hwnd, GUID* pgActionID, LPVOID pWVTData)
 {
-    if (State::Instance().fsr4loading)
+    if (!pWVTData)
+        return o_WinVerifyTrust(hwnd, pgActionID, pWVTData);
+
+    const auto data = reinterpret_cast<WINTRUST_DATA*>(pWVTData);
+
+    if (!data->pFile || !data->pFile->pcwszFilePath)
+        return o_WinVerifyTrust(hwnd, pgActionID, pWVTData);
+
+    const auto path = wstring_to_string(std::wstring(data->pFile->pcwszFilePath));
+
+    if (path.contains("amd_fidelityfx_dx12.dll") ||
+        path.contains("amd_fidelityfx_vk.dll"))
+    {
         return ERROR_SUCCESS;
+    }
 
     return o_WinVerifyTrust(hwnd, pgActionID, pWVTData);
 }
