@@ -11,6 +11,8 @@
 #include <proxies/XeSS_Proxy.h>
 #include <proxies/NVNGX_Proxy.h>
 #include <proxies/Gdi32_Proxy.h>
+#include <proxies/Wintrust_Proxy.h>
+#include <proxies/Crypt32_Proxy.h>
 #include "proxies/Kernel32_Proxy.h"
 #include "proxies/KernelBase_Proxy.h"
 #include <proxies/Streamline_Proxy.h>
@@ -680,6 +682,12 @@ static void CheckWorkingMode()
 
             // GDI32
             hookGdi32();
+
+            // Wintrust
+            hookWintrust();
+
+            // Crypt32
+            hookCrypt32();
 
             // hook streamline right away if it's already loaded
             HMODULE slModule = nullptr;
