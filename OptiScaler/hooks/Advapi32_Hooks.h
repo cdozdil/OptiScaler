@@ -26,7 +26,7 @@ static LSTATUS hkRegOpenKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REG
         *phkResult = signatureMark;
         return 0;
     }
-    
+
     return o_RegOpenKeyExW(hKey, lpSubKey, ulOptions, samDesired, phkResult);
 }
 
@@ -47,7 +47,7 @@ static LSTATUS hkRegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPD
 
             wcsncpy(lpValueName, key, *lpcchValueName);
             lpValueName[*lpcchValueName - 1] = L'\0';
-            *lpcchValueName =  keyLength;
+            *lpcchValueName = keyLength;
 
             if (lpType)
                 *lpType = REG_BINARY;
@@ -115,7 +115,7 @@ static void unhookAdvapi32()
     if (o_RegOpenKeyExW)
     {
         DetourDetach(&(PVOID&) o_RegOpenKeyExW, hkRegOpenKeyExW);
-        o_RegOpenKeyExW = nullptr;    
+        o_RegOpenKeyExW = nullptr;
     }
 
     if (o_RegEnumValueW)
