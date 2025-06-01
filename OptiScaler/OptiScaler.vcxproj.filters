@@ -185,12 +185,6 @@
     <ClInclude Include="DLSSG_Mod.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="proxies\Gdi32_Proxy.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="proxies\Streamline_Proxy.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="inputs\FfxApi_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -494,13 +488,19 @@
     <ClInclude Include="include\imgui\imgui_impl_win32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="proxies\Wintrust_Proxy.h">
+    <ClInclude Include="hooks\Gdi32_Hooks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="proxies\Crypt32_Proxy.h">
+    <ClInclude Include="hooks\Advapi32_Hooks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="proxies\Advapi32_Proxy.h">
+    <ClInclude Include="hooks\Crypt32_Hooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hooks\Wintrust_Hooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hooks\Streamline_Hooks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

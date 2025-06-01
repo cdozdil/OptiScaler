@@ -306,7 +306,12 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="framegen\ffx\FSRFG_Dx12.h" />
     <ClInclude Include="framegen\IFGFeature.h" />
     <ClInclude Include="framegen\IFGFeature_Dx12.h" />
+    <ClInclude Include="hooks\Advapi32_Hooks.h" />
+    <ClInclude Include="hooks\Crypt32_Hooks.h" />
+    <ClInclude Include="hooks\Gdi32_Hooks.h" />
     <ClInclude Include="hooks\Kernel_Hooks.h" />
+    <ClInclude Include="hooks\Streamline_Hooks.h" />
+    <ClInclude Include="hooks\Wintrust_Hooks.h" />
     <ClInclude Include="hudfix\Hudfix_Dx12.h" />
     <ClInclude Include="include\imgui\imgui_impl_dx11.h" />
     <ClInclude Include="include\imgui\imgui_impl_dx12.h" />
@@ -325,13 +330,10 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="menu\font\Hack_Compressed.h" />
     <ClInclude Include="misc\FrameLimit.h" />
     <ClInclude Include="OwnedMutex.h" />
-    <ClInclude Include="proxies\Advapi32_Proxy.h" />
-    <ClInclude Include="proxies\Crypt32_Proxy.h" />
     <ClInclude Include="proxies\D3D12_Proxy.h" />
     <ClInclude Include="proxies\Dxgi_Proxy.h" />
     <ClInclude Include="proxies\Kernel32_Proxy.h" />
     <ClInclude Include="proxies\KernelBase_Proxy.h" />
-    <ClInclude Include="proxies\Wintrust_Proxy.h" />
     <ClInclude Include="resource_tracking\ResTrack_dx12.h" />
     <ClInclude Include="shaders\resource_flip\precompiled\RF_Shader.h" />
     <ClInclude Include="shaders\resource_flip\RF_Common.h" />
@@ -358,7 +360,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="upscalers\fsr31\FSR31Feature_Dx12.h" />
     <ClInclude Include="upscalers\fsr31\FSR31Feature_Vk.h" />
     <ClInclude Include="DLSSG_Mod.h" />
-    <ClInclude Include="proxies\Gdi32_Proxy.h" />
     <ClInclude Include="inputs\FfxApi_Dx12.h" />
     <ClInclude Include="inputs\FSR2_Dx12.h" />
     <ClInclude Include="inputs\FSR3_Dx12.h" />
@@ -445,7 +446,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="shaders\rcas\RCAS_Dx11.h" />
     <ClInclude Include="shaders\rcas\RCAS_Dx12.h" />
     <ClInclude Include="State.h" />
-    <ClInclude Include="proxies\Streamline_Proxy.h" />
     <ClInclude Include="upscalers\xess\XeSSFeature_Dx11on12.h" />
     <ClInclude Include="upscalers\xess\XeSSFeature_Vk.h" />
     <ClInclude Include="Util.h" />

@@ -10,13 +10,13 @@
 #include "proxies/Dxgi_Proxy.h"
 #include <proxies/XeSS_Proxy.h>
 #include <proxies/NVNGX_Proxy.h>
-#include <proxies/Gdi32_Proxy.h>
-#include <proxies/Wintrust_Proxy.h>
-#include <proxies/Crypt32_Proxy.h>
-#include <proxies/Advapi32_Proxy.h>
+#include <hooks/Gdi32_Hooks.h>
+#include <hooks/Wintrust_Hooks.h>
+#include <hooks/Crypt32_Hooks.h>
+#include <hooks/Advapi32_Hooks.h>
+#include <hooks/Streamline_Hooks.h>
 #include "proxies/Kernel32_Proxy.h"
 #include "proxies/KernelBase_Proxy.h"
-#include <proxies/Streamline_Proxy.h>
 
 #include "inputs/FSR2_Dx12.h"
 #include "inputs/FSR3_Dx12.h"

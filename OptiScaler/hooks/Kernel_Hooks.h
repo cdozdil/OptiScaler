@@ -12,10 +12,9 @@
 #include <proxies/NVNGX_Proxy.h>
 #include <proxies/XeSS_Proxy.h>
 #include <proxies/FfxApi_Proxy.h>
-#include <proxies/Gdi32_Proxy.h>
 #include <proxies/Dxgi_Proxy.h>
 #include <proxies/D3D12_Proxy.h>
-#include <proxies/Streamline_Proxy.h>
+
 #include <inputs/FSR2_Dx12.h>
 #include <inputs/FSR3_Dx12.h>
 #include <inputs/FfxApiExe_Dx12.h>
@@ -25,6 +24,8 @@
 
 #include <hooks/HooksDx.h>
 #include <hooks/HooksVk.h>
+#include <hooks/Gdi32_Hooks.h>
+#include <hooks/Streamline_Hooks.h>
 
 #include <cwctype>
 
