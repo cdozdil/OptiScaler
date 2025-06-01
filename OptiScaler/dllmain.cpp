@@ -13,6 +13,7 @@
 #include <proxies/Gdi32_Proxy.h>
 #include <proxies/Wintrust_Proxy.h>
 #include <proxies/Crypt32_Proxy.h>
+#include <proxies/Advapi32_Proxy.h>
 #include "proxies/Kernel32_Proxy.h"
 #include "proxies/KernelBase_Proxy.h"
 #include <proxies/Streamline_Proxy.h>
@@ -689,6 +690,10 @@ static void CheckWorkingMode()
             // Crypt32
             hookCrypt32();
 
+            // Advapi32
+            if (Config::Instance()->DxgiSpoofing.value_or_default())
+                hookAdvapi32();
+
             // hook streamline right away if it's already loaded
             HMODULE slModule = nullptr;
             slModule = KernelBaseProxy::GetModuleHandleW_()(L"sl.interposer.dll");
@@ -1109,8 +1114,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         // UnhookApis();
         // unhookStreamline();
         // unhookGdi32();
-        // unhookWintrust()
+        // unhookWintrust();
         // unhookCrypt32();
+        // unhookAdvapi32();
         // DetachHooks();
 
         if (skModule != nullptr)
