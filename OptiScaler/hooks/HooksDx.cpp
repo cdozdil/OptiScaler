@@ -13,6 +13,7 @@
 #include <proxies/Dxgi_Proxy.h>
 #include <proxies/D3D12_Proxy.h>
 #include <proxies/KernelBase_Proxy.h>
+#include <proxies/IGDExt_Proxy.h>
 
 #include <nvapi/fakenvapi.h>
 #include <nvapi/ReflexHooks.h>
@@ -76,10 +77,33 @@ static bool skipHighPerfCheck = false;
 // DirectX
 typedef void (*PFN_CreateSampler)(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc,
                                   D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+
+typedef HRESULT (*PFN_CheckFeatureSupport)(ID3D12Device* device, D3D12_FEATURE Feature, void* pFeatureSupportData,
+                                           UINT FeatureSupportDataSize);
+
+typedef HRESULT (*PFN_CreateCommittedResource)(ID3D12Device* device, const D3D12_HEAP_PROPERTIES* pHeapProperties,
+                                               D3D12_HEAP_FLAGS HeapFlags, D3D12_RESOURCE_DESC* pDesc,
+                                               D3D12_RESOURCE_STATES InitialResourceState,
+                                               const D3D12_CLEAR_VALUE* pOptimizedClearValue, REFIID riidResource,
+                                               void** ppvResource);
+
+typedef HRESULT (*PFN_CreatePlacedResource)(ID3D12Device* device, ID3D12Heap* pHeap, UINT64 HeapOffset,
+                                            D3D12_RESOURCE_DESC* pDesc, D3D12_RESOURCE_STATES InitialState,
+                                            const D3D12_CLEAR_VALUE* pOptimizedClearValue, REFIID riid,
+                                            void** ppvResource);
+
+typedef D3D12_RESOURCE_ALLOCATION_INFO (*PFN_GetResourceAllocationInfo)(ID3D12Device* device, UINT visibleMask,
+                                                                        UINT numResourceDescs,
+                                                                        D3D12_RESOURCE_DESC* pResourceDescs);
+
 typedef HRESULT (*PFN_CreateSamplerState)(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc,
                                           ID3D11SamplerState** ppSamplerState);
 
 static PFN_CreateSampler o_CreateSampler = nullptr;
+static PFN_CheckFeatureSupport o_CheckFeatureSupport = nullptr;
+static PFN_CreateCommittedResource o_CreateCommittedResource = nullptr;
+static PFN_CreatePlacedResource o_CreatePlacedResource = nullptr;
+static PFN_GetResourceAllocationInfo o_GetResourceAllocationInfo = nullptr;
 
 static D3d12Proxy::PFN_D3D12CreateDevice o_D3D12CreateDevice = nullptr;
 static D3d12Proxy::PFN_D3D12SerializeRootSignature o_D3D12SerializeRootSignature = nullptr;
@@ -104,6 +128,24 @@ static bool _d3d12Captured = false;
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc,
                             D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor);
+
+static HRESULT hkCheckFeatureSupport(ID3D12Device* device, D3D12_FEATURE Feature, void* pFeatureSupportData,
+                                     UINT FeatureSupportDataSize);
+
+static HRESULT hkCreateCommittedResource(ID3D12Device* device, const D3D12_HEAP_PROPERTIES* pHeapProperties,
+                                         D3D12_HEAP_FLAGS HeapFlags, D3D12_RESOURCE_DESC* pDesc,
+                                         D3D12_RESOURCE_STATES InitialResourceState,
+                                         const D3D12_CLEAR_VALUE* pOptimizedClearValue, REFIID riidResource,
+                                         void** ppvResource);
+
+static HRESULT hkCreatePlacedResource(ID3D12Device* device, ID3D12Heap* pHeap, UINT64 HeapOffset,
+                                      D3D12_RESOURCE_DESC* pDesc, D3D12_RESOURCE_STATES InitialState,
+                                      const D3D12_CLEAR_VALUE* pOptimizedClearValue, REFIID riid, void** ppvResource);
+
+static D3D12_RESOURCE_ALLOCATION_INFO hkGetResourceAllocationInfo(ID3D12Device* device, UINT visibleMask,
+                                                                  UINT numResourceDescs,
+                                                                  D3D12_RESOURCE_DESC* pResourceDescs);
+
 static HRESULT hkCreateSamplerState(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc,
                                     ID3D11SamplerState** ppSamplerState);
 static HRESULT hkEnumAdapters(IDXGIFactory* This, UINT Adapter, IUnknown** ppAdapter);
@@ -1488,6 +1530,10 @@ static void HookToDevice(ID3D12Device* InDevice)
 
     // hudless
     o_CreateSampler = (PFN_CreateSampler) pVTable[22];
+    o_CheckFeatureSupport = (PFN_CheckFeatureSupport) pVTable[13];
+    o_GetResourceAllocationInfo = (PFN_GetResourceAllocationInfo) pVTable[25];
+    o_CreateCommittedResource = (PFN_CreateCommittedResource) pVTable[27];
+    o_CreatePlacedResource = (PFN_CreatePlacedResource) pVTable[29];
 
     // Apply the detour
     if (o_CreateSampler != nullptr)
@@ -1497,6 +1543,23 @@ static void HookToDevice(ID3D12Device* InDevice)
 
         if (o_CreateSampler != nullptr)
             DetourAttach(&(PVOID&) o_CreateSampler, hkCreateSampler);
+
+        if (Config::Instance()->UESpoofIntelAtomics64.value_or_default())
+        {
+            if (o_CheckFeatureSupport != nullptr)
+                DetourAttach(&(PVOID&) o_CheckFeatureSupport, hkCheckFeatureSupport);
+
+            if (o_CreateCommittedResource != nullptr)
+                DetourAttach(&(PVOID&) o_CreateCommittedResource, hkCreateCommittedResource);
+
+            if (o_CreatePlacedResource != nullptr)
+                DetourAttach(&(PVOID&) o_CreatePlacedResource, hkCreatePlacedResource);
+
+            // This does not work but luckily 
+            // UE works without Intel Extension for it
+            // if (o_GetResourceAllocationInfo != nullptr)
+            //     DetourAttach(&(PVOID&) o_GetResourceAllocationInfo, hkGetResourceAllocationInfo);
+        }
 
         DetourTransactionCommit();
     }
@@ -1824,11 +1887,10 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 #endif
 
-#if _DEBUG
+    DXGI_ADAPTER_DESC desc {};
     if (pAdapter != nullptr)
     {
         State::Instance().skipSpoofing = true;
-        DXGI_ADAPTER_DESC desc;
         if (pAdapter->GetDesc(&desc) == S_OK)
         {
             std::wstring szName(desc.Description);
@@ -1836,7 +1898,6 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         }
         State::Instance().skipSpoofing = false;
     }
-#endif
 
     auto minLevel = MinimumFeatureLevel;
     if (Config::Instance()->SpoofFeatureLevel.value_or_default())
@@ -1845,13 +1906,24 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         minLevel = D3D_FEATURE_LEVEL_11_0;
     }
 
+    if (desc.VendorId == 0x8086)
+        State::Instance().skipSpoofing = true;
+
     auto result = o_D3D12CreateDevice(pAdapter, minLevel, riid, ppDevice);
+
+    if (desc.VendorId == 0x8086)
+        State::Instance().skipSpoofing = false;
+
     LOG_DEBUG("o_D3D12CreateDevice result: {:X}", (UINT) result);
 
     if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
     {
         LOG_DEBUG("Device captured: {0:X}", (size_t) *ppDevice);
         State::Instance().currentD3D12Device = (ID3D12Device*) *ppDevice;
+
+        if (desc.VendorId == 0x8086 && Config::Instance()->UESpoofIntelAtomics64.value_or_default())
+            IGDExtProxy::EnableAtomicSupport(State::Instance().currentD3D12Device);
+
         HookToDevice(State::Instance().currentD3D12Device);
         _d3d12Captured = true;
 
@@ -1947,6 +2019,121 @@ static HRESULT hkD3D12SerializeRootSignature(D3d12Proxy::D3D12_ROOT_SIGNATURE_DE
     }
 
     return o_D3D12SerializeRootSignature(pRootSignature, Version, ppBlob, ppErrorBlob);
+}
+
+static HRESULT hkCheckFeatureSupport(ID3D12Device* device, D3D12_FEATURE Feature, void* pFeatureSupportData,
+                                     UINT FeatureSupportDataSize)
+{
+    auto result = o_CheckFeatureSupport(device, Feature, pFeatureSupportData, FeatureSupportDataSize);
+
+    if (Config::Instance()->UESpoofIntelAtomics64.value_or_default() && Feature == D3D12_FEATURE_D3D12_OPTIONS9)
+    {
+        auto featureSupport = (D3D12_FEATURE_DATA_D3D12_OPTIONS9*) pFeatureSupportData;
+        LOG_INFO("Spoofing AtomicInt64OnTypedResourceSupported");
+        featureSupport->AtomicInt64OnTypedResourceSupported = true;
+    }
+
+    return result;
+}
+
+struct UE_D3D12_RESOURCE_DESC
+{
+    D3D12_RESOURCE_DIMENSION Dimension;
+    UINT64 Alignment;
+    UINT64 Width;
+    UINT Height;
+    UINT16 DepthOrArraySize;
+    UINT16 MipLevels;
+    DXGI_FORMAT Format;
+    DXGI_SAMPLE_DESC SampleDesc;
+    D3D12_TEXTURE_LAYOUT Layout;
+    D3D12_RESOURCE_FLAGS Flags;
+
+    // UE Part
+    uint8_t PixelFormat { 0 };
+    uint8_t UAVPixelFormat { 0 };
+    bool bRequires64BitAtomicSupport : 1 = false;
+    bool bReservedResource : 1 = false;
+    bool bBackBuffer : 1 = false;
+    bool bExternal : 1 = false;
+};
+
+static bool skipCommitedResource = false;
+
+static HRESULT hkCreateCommittedResource(ID3D12Device* device, const D3D12_HEAP_PROPERTIES* pHeapProperties,
+                                         D3D12_HEAP_FLAGS HeapFlags, D3D12_RESOURCE_DESC* pDesc,
+                                         D3D12_RESOURCE_STATES InitialResourceState,
+                                         const D3D12_CLEAR_VALUE* pOptimizedClearValue, REFIID riidResource,
+                                         void** ppvResource)
+{
+    if (!skipCommitedResource)
+    {
+        auto ueDesc = reinterpret_cast<UE_D3D12_RESOURCE_DESC*>(pDesc);
+
+        if (Config::Instance()->UESpoofIntelAtomics64.value_or_default() && ueDesc != nullptr &&
+            ueDesc->bRequires64BitAtomicSupport)
+        {
+            skipCommitedResource = true;
+            auto result = IGDExtProxy::CreateCommitedResource(pHeapProperties, HeapFlags, pDesc, InitialResourceState,
+                                                              pOptimizedClearValue, riidResource, ppvResource);
+            skipCommitedResource = false;
+
+            return result;
+        }
+    }
+
+    return o_CreateCommittedResource(device, pHeapProperties, HeapFlags, pDesc, InitialResourceState,
+                                     pOptimizedClearValue, riidResource, ppvResource);
+}
+
+static bool skipPlacedResource = false;
+
+static HRESULT hkCreatePlacedResource(ID3D12Device* device, ID3D12Heap* pHeap, UINT64 HeapOffset,
+                                      D3D12_RESOURCE_DESC* pDesc, D3D12_RESOURCE_STATES InitialState,
+                                      const D3D12_CLEAR_VALUE* pOptimizedClearValue, REFIID riid, void** ppvResource)
+{
+    if (!skipPlacedResource)
+    {
+        auto ueDesc = reinterpret_cast<UE_D3D12_RESOURCE_DESC*>(pDesc);
+
+        if (Config::Instance()->UESpoofIntelAtomics64.value_or_default() && ueDesc != nullptr &&
+            ueDesc->bRequires64BitAtomicSupport)
+        {
+            skipPlacedResource = true;
+            auto result = IGDExtProxy::CreatePlacedResource(pHeap, HeapOffset, pDesc, InitialState,
+                                                            pOptimizedClearValue, riid, ppvResource);
+            skipPlacedResource = false;
+
+            return result;
+        }
+    }
+
+    return o_CreatePlacedResource(device, pHeap, HeapOffset, pDesc, InitialState, pOptimizedClearValue, riid,
+                                  ppvResource);
+}
+
+static bool skipGetResourceAllocationInfo = false;
+
+static D3D12_RESOURCE_ALLOCATION_INFO hkGetResourceAllocationInfo(ID3D12Device* device, UINT visibleMask,
+                                                                  UINT numResourceDescs,
+                                                                  D3D12_RESOURCE_DESC* pResourceDescs)
+{
+    if (!skipGetResourceAllocationInfo)
+    {
+        auto ueDesc = reinterpret_cast<UE_D3D12_RESOURCE_DESC*>(pResourceDescs);
+
+        if (Config::Instance()->UESpoofIntelAtomics64.value_or_default() && ueDesc != nullptr &&
+            ueDesc->bRequires64BitAtomicSupport)
+        {
+            skipGetResourceAllocationInfo = true;
+            auto result = IGDExtProxy::GetResourceAllocationInfo(visibleMask, numResourceDescs, pResourceDescs);
+            skipGetResourceAllocationInfo = false;
+
+            return result;
+        }
+    }
+
+    return o_GetResourceAllocationInfo(device, visibleMask, numResourceDescs, pResourceDescs);
 }
 
 static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDesc,

@@ -327,6 +327,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="OwnedMutex.h" />
     <ClInclude Include="proxies\D3D12_Proxy.h" />
     <ClInclude Include="proxies\Dxgi_Proxy.h" />
+    <ClInclude Include="proxies\IGDExt_Proxy.h" />
     <ClInclude Include="proxies\Kernel32_Proxy.h" />
     <ClInclude Include="proxies\KernelBase_Proxy.h" />
     <ClInclude Include="resource_tracking\ResTrack_dx12.h" />

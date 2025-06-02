@@ -14,6 +14,7 @@
 #include "proxies/Kernel32_Proxy.h"
 #include "proxies/KernelBase_Proxy.h"
 #include <proxies/Streamline_Proxy.h>
+#include <proxies/IGDExt_Proxy.h>
 
 #include "inputs/FSR2_Dx12.h"
 #include "inputs/FSR3_Dx12.h"
@@ -778,6 +779,39 @@ static void CheckWorkingMode()
             if (Config::Instance()->FsrAgilitySDKUpgrade.value_or_default())
             {
                 RunAgilityUpgrade(KernelBaseProxy::GetModuleHandleW_()(L"d3d12.dll"));
+            }
+
+            // Intel Extension Framework
+            if (Config::Instance()->UESpoofIntelAtomics64.value_or_default())
+            {
+                HMODULE igdext = KernelBaseProxy::LoadLibraryW_()(L"igdext64.dll");
+
+                if (igdext == nullptr)
+                {
+                    auto paths = GetDriverStore();
+                    
+                    for (size_t i = 0; i < paths.size(); i++)
+                    {
+                        auto dllPath = paths[i] / L"igdext64.dll";
+                        LOG_DEBUG("Trying to load: {}", wstring_to_string(dllPath.c_str()));
+                        igdext = KernelBaseProxy::LoadLibraryExW_()(dllPath.c_str(), NULL, 0);
+
+                        if (igdext != nullptr)
+                        {
+                            LOG_INFO("igdext64.dll loaded from {}", dllPath.string());
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    LOG_INFO("igdext64.dll loaded from game folder");
+                }
+
+                if (igdext != nullptr)
+                    IGDExtProxy::Init(igdext);
+                else
+                    LOG_ERROR("Failed to load igdext64.dll");
             }
         }
 

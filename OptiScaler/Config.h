@@ -214,10 +214,10 @@ class Config
     CustomOptional<int> ShortcutKey { VK_INSERT };
     CustomOptional<bool> ExtendedLimits { false };
     CustomOptional<bool> ShowFps { false };
-    CustomOptional<int> FpsOverlayPos { 0 }; // 0 Top Left, 1 Top Right, 2 Bottom Left, 3 Bottom Right
-    CustomOptional<int> FpsOverlayType {
-        0
-    }; // 0 Only FPS, 1 +Frame Time, 2 +Upscaler Time, 3 +Frame Time Graph, 4 +Upscaler Time Graph
+    /// 0 Top Left, 1 Top Right, 2 Bottom Left, 3 Bottom Right
+    CustomOptional<int> FpsOverlayPos { 0 };
+    /// 0 Only FPS, 1 +Frame Time, 2 +Upscaler Time, 3 +Frame Time Graph, 4 +Upscaler Time Graph
+    CustomOptional<int> FpsOverlayType { 0 };
     CustomOptional<int> FpsShortcutKey { VK_PRIOR };
     CustomOptional<int> FpsCycleShortcutKey { VK_NEXT };
     CustomOptional<bool> FpsOverlayHorizontal { false };
@@ -332,6 +332,7 @@ class Config
     CustomOptional<uint32_t, NoDefault> TargetVendorId;
     CustomOptional<uint32_t, NoDefault> TargetDeviceId;
     CustomOptional<std::wstring> SpoofedGPUName { L"NVIDIA GeForce RTX 4090" };
+    CustomOptional<bool> UESpoofIntelAtomics64 { false };
 
     // Plugins
     CustomOptional<std::wstring> PluginPath { L"plugins" };

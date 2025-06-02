@@ -412,6 +412,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             SpoofedDeviceId.set_from_config(readUInt("Spoofing", "SpoofedDeviceId"));
             TargetVendorId.set_from_config(readUInt("Spoofing", "TargetVendorId"));
             TargetDeviceId.set_from_config(readUInt("Spoofing", "TargetDeviceId"));
+            UESpoofIntelAtomics64.set_from_config(readBool("Spoofing", "UEIntelAtomics"));
         }
 
         // Inputs
@@ -938,6 +939,8 @@ bool Config::SaveIni()
         ini.SetValue("Spoofing", "SpoofHAGS", GetBoolValue(Instance()->SpoofHAGS.value_for_config()).c_str());
         ini.SetValue("Spoofing", "D3DFeatureLevel",
                      GetBoolValue(Instance()->SpoofFeatureLevel.value_for_config()).c_str());
+        ini.SetValue("Spoofing", "UEIntelAtomics",
+                     GetBoolValue(Instance()->UESpoofIntelAtomics64.value_for_config()).c_str());
         ini.SetValue("Spoofing", "SpoofedVendorId",
                      GetIntValue(Instance()->SpoofedVendorId.value_for_config(), true).c_str());
         ini.SetValue("Spoofing", "SpoofedDeviceId",
