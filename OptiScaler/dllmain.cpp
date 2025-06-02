@@ -802,7 +802,7 @@ static void CheckWorkingMode()
                 if (igdext == nullptr)
                 {
                     auto paths = GetDriverStore();
-                    
+
                     for (size_t i = 0; i < paths.size(); i++)
                     {
                         auto dllPath = paths[i] / L"igdext64.dll";

@@ -1555,7 +1555,7 @@ static void HookToDevice(ID3D12Device* InDevice)
             if (o_CreatePlacedResource != nullptr)
                 DetourAttach(&(PVOID&) o_CreatePlacedResource, hkCreatePlacedResource);
 
-            // This does not work but luckily 
+            // This does not work but luckily
             // UE works without Intel Extension for it
             // if (o_GetResourceAllocationInfo != nullptr)
             //     DetourAttach(&(PVOID&) o_GetResourceAllocationInfo, hkGetResourceAllocationInfo);

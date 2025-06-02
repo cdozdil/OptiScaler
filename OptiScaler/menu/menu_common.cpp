@@ -3167,12 +3167,11 @@ bool MenuCommon::RenderMenu()
 
                         if (currentFeature != nullptr)
                         {
-                            ImGui::Text("Output Scaling is %s, Target Res: %dx%d\nJitter Count: %d",
-                                        Config::Instance()->OutputScalingEnabled.value_or_default() ? "ENABLED"
-                                                                                                    : "DISABLED",
-                                        (uint32_t) (currentFeature->DisplayWidth() * _ssRatio),
-                                        (uint32_t) (currentFeature->DisplayHeight() * _ssRatio),
-                                        currentFeature->JitterCount());
+                            ImGui::Text(
+                                "Output Scaling is %s, Target Res: %dx%d\nJitter Count: %d",
+                                Config::Instance()->OutputScalingEnabled.value_or_default() ? "ENABLED" : "DISABLED",
+                                (uint32_t) (currentFeature->DisplayWidth() * _ssRatio),
+                                (uint32_t) (currentFeature->DisplayHeight() * _ssRatio), currentFeature->JitterCount());
                         }
 
                         ImGui::EndDisabled();

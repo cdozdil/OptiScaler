@@ -209,7 +209,7 @@ class IGDExtProxy
             return false;
 
         INTCExtensionAppInfo1 appInfo {};
-        
+
         appInfo.pApplicationName = string_to_wstring(State::Instance().GameName.empty() ? State::Instance().GameExe
                                                                                         : State::Instance().GameName)
                                        .c_str();
@@ -284,7 +284,6 @@ class IGDExtProxy
     }
 
   public:
-
     static void Init(HMODULE module)
     {
         if (module == nullptr)
