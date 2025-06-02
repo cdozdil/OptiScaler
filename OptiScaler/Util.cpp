@@ -362,7 +362,7 @@ std::optional<std::filesystem::path> Util::FindFilePath(const std::filesystem::p
                 if (!entry.is_directory() && entry.path().filename() == fileName)
                 {
                     LOG_INFO("{} found at {}", fileName.string(), entry.path().parent_path().string());
-                    return entry.path().parent_path();
+                    return entry.path();
                 }
             }
 

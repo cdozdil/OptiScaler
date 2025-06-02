@@ -167,6 +167,7 @@ class State
     bool nvngxIniDetected = false;
 
     bool nvngxExists = false;
+    std::optional<std::string> nvngxReplacement = std::nullopt;
     bool libxessExists = false;
     bool fsrHooks = false;
 

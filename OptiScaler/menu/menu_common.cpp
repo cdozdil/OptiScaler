@@ -1670,25 +1670,30 @@ bool MenuCommon::RenderMenu()
                 else
                     ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default() * 3.0);
 
-                if (State::Instance().nvngxExists ||
+                if (State::Instance().nvngxExists || State::Instance().nvngxReplacement.has_value() ||
                     (State::Instance().libxessExists || XeSSProxy::Module() != nullptr))
                 {
                     ImGui::Spacing();
 
-                    ImGui::Text("Please select %s%s%s%s%s as upscaler\nfrom game options and enter the game\nto enable "
+                    std::vector<std::string> upscalers;
+
+                    if (State::Instance().fsrHooks)
+                        upscalers.push_back("FSR");
+
+                    if (State::Instance().nvngxExists || State::Instance().nvngxReplacement.has_value() ||
+                        State::Instance().isRunningOnNvidia)
+                        upscalers.push_back("DLSS");
+
+                    if (State::Instance().libxessExists || XeSSProxy::Module() != nullptr)
+                        upscalers.push_back("XeSS");
+
+                    auto joined = upscalers | std::views::join_with(std::string { " or " });
+
+                    std::string joinedUpscalers(joined.begin(), joined.end());
+
+                    ImGui::Text("Please select %s as upscaler\nfrom game options and enter the game\nto enable "
                                 "upscaler settings.\n",
-                                State::Instance().fsrHooks ? "FSR" : "",
-                                State::Instance().fsrHooks &&
-                                        (State::Instance().nvngxExists || State::Instance().isRunningOnNvidia)
-                                    ? " or "
-                                    : "",
-                                (State::Instance().nvngxExists || State::Instance().isRunningOnNvidia) ? "DLSS" : "",
-                                ((State::Instance().nvngxExists || State::Instance().isRunningOnNvidia) ||
-                                 State::Instance().fsrHooks) &&
-                                        State::Instance().libxessExists
-                                    ? " or "
-                                    : "",
-                                (State::Instance().libxessExists || XeSSProxy::Module() != nullptr) ? "XeSS" : "");
+                                joinedUpscalers.c_str());
 
                     if (Config::Instance()->UseHQFont.value_or_default())
                         ImGui::PopFontSize();
@@ -1696,11 +1701,15 @@ bool MenuCommon::RenderMenu()
                         ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
 
                     ImGui::Spacing();
-                    ImGui::Text("nvngx.dll: %sExist",
-                                State::Instance().nvngxExists || State::Instance().isRunningOnNvidia ? "" : "Not ");
-                    ImGui::Text("libxess.dll: %sExist",
-                                (State::Instance().libxessExists || XeSSProxy::Module() != nullptr) ? "" : "Not ");
-                    ImGui::Text("fsr: %sExist", State::Instance().fsrHooks ? "" : "Not ");
+                    ImGui::Text("nvngx.dll: %s", State::Instance().nvngxExists || State::Instance().isRunningOnNvidia
+                                                     ? "Exists"
+                                                     : "Doesn't Exist");
+                    ImGui::Text("nvngx replacement: %s",
+                                State::Instance().nvngxReplacement.has_value() ? "Exists" : "Doesn't Exist");
+                    ImGui::Text("libxess.dll: %s", (State::Instance().libxessExists || XeSSProxy::Module() != nullptr)
+                                                       ? "Exists"
+                                                       : "Doesn't Exist");
+                    ImGui::Text("fsr: %s", State::Instance().fsrHooks ? "Exists" : "Doesn't Exist");
                     ImGui::Spacing();
                 }
                 else

@@ -13,6 +13,7 @@
 typedef HRESULT(__cdecl* PFN_AmdExtD3DCreateInterface)(IUnknown* pOuter, REFIID riid, void** ppvObject);
 
 static HMODULE moduleAmdxc64 = nullptr;
+static HMODULE fsr4Module = nullptr;
 
 #pragma region GDI32
 
@@ -166,7 +167,7 @@ struct AmdExtFfxApi : public IAmdExtFfxApi
 
         if (o_UpdateFfxApiProvider == nullptr)
         {
-            auto fsr4Module = KernelBaseProxy::LoadLibraryExW_()(L"amdxcffx64.dll", NULL, 0);
+            fsr4Module = KernelBaseProxy::LoadLibraryExW_()(L"amdxcffx64.dll", NULL, 0);
 
             if (fsr4Module == nullptr)
             {
