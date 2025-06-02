@@ -1048,7 +1048,7 @@ void Config::CheckUpscalerFiles()
     if (auto nvngxReplacement = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
         nvngxReplacement.has_value())
     {
-        State::Instance().nvngxReplacement = nvngxReplacement.value().string();
+        State::Instance().nvngxReplacement = nvngxReplacement.value().wstring();
     }
 
     State::Instance().libxessExists = std::filesystem::exists(Util::ExePath().parent_path() / L"libxess.dll");
