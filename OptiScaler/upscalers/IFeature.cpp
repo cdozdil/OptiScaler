@@ -219,6 +219,14 @@ void IFeature::GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned i
     //	InParameters->Set(NVSDK_NGX_Parameter_Scale, 1.0f);
     //	InParameters->Set(NVSDK_NGX_Parameter_SuperSampling_ScaleFactor, 1.0f);
     // }
+
+    JitterInfo ji {};
+    if (_jitterInfo.size() < 350 &&
+        InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &ji.x) == NVSDK_NGX_Result_Success &&
+        InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &ji.y) == NVSDK_NGX_Result_Success)
+    {
+        _jitterInfo.insert(std::make_pair(ji.x, ji.y));
+    }
 }
 
 float IFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)

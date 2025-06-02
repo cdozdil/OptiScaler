@@ -1,7 +1,10 @@
 #pragma once
 #include <pch.h>
+
 #include <nvsdk_ngx.h>
 #include <nvsdk_ngx_defs.h>
+
+#include <unordered_set>
 
 #define DLSS_MOD_ID_OFFSET 1000000
 
@@ -22,9 +25,27 @@ class IFeature
   private:
     bool _isInited = false;
     int _featureFlags = 0;
-    InitFlags _initFlags {};
+    InitFlags _initFlags = {};
 
     NVSDK_NGX_PerfQuality_Value _perfQualityValue;
+
+    struct JitterInfo
+    {
+        float x;
+        float y;
+    };
+
+    struct hashFunction
+    {
+        size_t operator()(const std::pair<float, float>& p) const
+        {
+            size_t h1 = std::hash<float>()(p.first);
+            size_t h2 = std::hash<float>()(p.second);
+            return h1 ^ (h2 << 1);
+        }
+    };
+
+    std::unordered_set<std::pair<float, float>, hashFunction> _jitterInfo;
 
   protected:
     bool _initParameters = false;
@@ -64,6 +85,8 @@ class IFeature
 
     virtual feature_version Version() = 0;
     virtual std::string Name() const = 0;
+
+    size_t JitterCount() { return _jitterInfo.size(); }
 
     bool UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters);
     unsigned int DisplayWidth() const { return _displayWidth; };
