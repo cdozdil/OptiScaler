@@ -22,6 +22,10 @@ class Kernel32Proxy
     typedef HMODULE (*PFN_GetModuleHandleW)(LPCWSTR lpModuleName);
     typedef BOOL (*PFN_GetModuleHandleExA)(DWORD dwFlags, LPCSTR lpModuleName, HMODULE* phModule);
     typedef BOOL (*PFN_GetModuleHandleExW)(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE* phModule);
+    typedef DWORD (*PFN_GetFileAttributesW)(LPCWSTR lpFileName);
+    typedef HANDLE (*PFN_CreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
+                                      LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
+                                      DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
 
     static void Init()
     {
@@ -46,6 +50,8 @@ class Kernel32Proxy
         _GetModuleHandleExA = (PFN_GetModuleHandleExA) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExA");
         _GetModuleHandleExW = (PFN_GetModuleHandleExW) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExW");
         _GetProcAddress = (PFN_GetProcAddress) KernelBaseProxy::GetProcAddress_()(_dll, "GetProcAddress");
+        _GetFileAttributesW = (PFN_GetFileAttributesW) KernelBaseProxy::GetProcAddress_()(_dll, "GetFileAttributesW");
+        _CreateFileW = (PFN_CreateFileW) KernelBaseProxy::GetProcAddress_()(_dll, "CreateFileW");
     }
 
     static HMODULE Module() { return _dll; }
@@ -60,6 +66,8 @@ class Kernel32Proxy
     static PFN_GetModuleHandleW GetModuleHandleW_() { return _GetModuleHandleW; }
     static PFN_GetModuleHandleExA GetModuleHandleExA_() { return _GetModuleHandleExA; }
     static PFN_GetModuleHandleExW GetModuleHandleExW_() { return _GetModuleHandleExW; }
+    static PFN_GetFileAttributesW GetFileAttributesW_() { return _GetFileAttributesW; }
+    static PFN_CreateFileW CreateFileW_() { return _CreateFileW; }
 
     static PFN_FreeLibrary FreeLibrary_Hooked()
     {
@@ -100,6 +108,14 @@ class Kernel32Proxy
     static PFN_GetModuleHandleExW GetModuleHandleExW_Hooked()
     {
         return (PFN_GetModuleHandleExW) KernelBaseProxy::GetProcAddress_()(_dll, "GetModuleHandleExW");
+    }
+    static PFN_GetFileAttributesW GetFileAttributesW_Hooked()
+    {
+        return (PFN_GetFileAttributesW) KernelBaseProxy::GetProcAddress_()(_dll, "GetFileAttributesW");
+    }
+    static PFN_CreateFileW CreateFileW_Hooked()
+    {
+        return (PFN_CreateFileW) KernelBaseProxy::GetProcAddress_()(_dll, "CreateFileW");
     }
 
     static PFN_FreeLibrary Hook_FreeLibrary(PVOID method)
@@ -232,6 +248,32 @@ class Kernel32Proxy
         return addr;
     }
 
+    static PFN_GetFileAttributesW Hook_GetFileAttributesW(PVOID method)
+    {
+        auto addr = GetFileAttributesW_Hooked();
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&) addr, method);
+        DetourTransactionCommit();
+
+        _GetFileAttributesW = addr;
+        return addr;
+    }
+
+    static PFN_CreateFileW Hook_CreateFileW(PVOID method)
+    {
+        auto addr = CreateFileW_Hooked();
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&) addr, method);
+        DetourTransactionCommit();
+
+        _CreateFileW = addr;
+        return addr;
+    }
+
   private:
     inline static HMODULE _dll = nullptr;
 
@@ -245,4 +287,6 @@ class Kernel32Proxy
     inline static PFN_GetModuleHandleW _GetModuleHandleW = nullptr;
     inline static PFN_GetModuleHandleExA _GetModuleHandleExA = nullptr;
     inline static PFN_GetModuleHandleExW _GetModuleHandleExW = nullptr;
+    inline static PFN_GetFileAttributesW _GetFileAttributesW = nullptr;
+    inline static PFN_CreateFileW _CreateFileW = nullptr;
 };

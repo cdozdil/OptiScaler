@@ -1048,6 +1048,12 @@ void Config::CheckUpscalerFiles()
         LOG_INFO("nvngx.dll found in game folder");
     }
 
+    if (auto nvngxReplacement = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
+        nvngxReplacement.has_value())
+    {
+        State::Instance().nvngxReplacement = nvngxReplacement.value().wstring();
+    }
+
     State::Instance().libxessExists = std::filesystem::exists(Util::ExePath().parent_path() / L"libxess.dll");
     if (!State::Instance().libxessExists)
     {

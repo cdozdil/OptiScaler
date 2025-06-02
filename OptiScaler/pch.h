@@ -10,6 +10,7 @@
 #include <string>
 #include <stdint.h>
 #include <libloaderapi.h>
+#include <ranges>
 
 #define NV_WINDOWS
 #define NVSDK_NGX
@@ -113,4 +114,9 @@ inline static std::wstring string_to_wstring(const std::string& str)
     std::wstring wstr(len, L'\0');
     MultiByteToWideChar(CP_UTF8, 0, str.c_str(), slength, &wstr[0], len);
     return wstr;
+}
+
+inline static void to_lower_in_place(std::string& string)
+{
+    std::transform(string.begin(), string.end(), string.begin(), ::tolower);
 }

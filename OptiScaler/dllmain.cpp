@@ -10,10 +10,13 @@
 #include "proxies/Dxgi_Proxy.h"
 #include <proxies/XeSS_Proxy.h>
 #include <proxies/NVNGX_Proxy.h>
-#include <proxies/Gdi32_Proxy.h>
+#include <hooks/Gdi32_Hooks.h>
+#include <hooks/Wintrust_Hooks.h>
+#include <hooks/Crypt32_Hooks.h>
+#include <hooks/Advapi32_Hooks.h>
+#include <hooks/Streamline_Hooks.h>
 #include "proxies/Kernel32_Proxy.h"
 #include "proxies/KernelBase_Proxy.h"
-#include <proxies/Streamline_Proxy.h>
 #include <proxies/IGDExt_Proxy.h>
 
 #include "inputs/FSR2_Dx12.h"
@@ -682,6 +685,16 @@ static void CheckWorkingMode()
             // GDI32
             hookGdi32();
 
+            // Wintrust
+            hookWintrust();
+
+            // Crypt32
+            hookCrypt32();
+
+            // Advapi32
+            if (Config::Instance()->DxgiSpoofing.value_or_default())
+                hookAdvapi32();
+
             // hook streamline right away if it's already loaded
             HMODULE slModule = nullptr;
             slModule = KernelBaseProxy::GetModuleHandleW_()(L"sl.interposer.dll");
@@ -1079,10 +1092,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             LoadAsiPlugins();
         }
 
-        if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value())
+        if (!Config::Instance()->DxgiSpoofing.has_value() && !State::Instance().nvngxReplacement.has_value())
         {
-            LOG_WARN("No nvngx.dll found disabling spoofing!");
-            Config::Instance()->DxgiSpoofing.set_volatile_value(false);
+            LOG_WARN("Nvngx replacement not found!");
+
+            if (!State::Instance().nvngxExists)
+            {
+                LOG_WARN("nvngx.dll not found! - disabling spoofing");
+                Config::Instance()->DxgiSpoofing.set_volatile_value(false);
+            }
         }
 
         handle = KernelBaseProxy::GetModuleHandleW_()(fsr2NamesW[0].c_str());
@@ -1131,6 +1149,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         // UnhookApis();
         // unhookStreamline();
         // unhookGdi32();
+        // unhookWintrust();
+        // unhookCrypt32();
+        // unhookAdvapi32();
         // DetachHooks();
 
         if (skModule != nullptr)

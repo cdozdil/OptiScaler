@@ -88,92 +88,10 @@ if exist %selectedFilename% (
     
     echo.
     if "!overwriteChoice!"=="y" (
-        goto queryGPU
+        goto completeSetup
     )
 
     goto selectFilename
-)
-
-:queryGPU
-if exist %windir%\system32\nvapi64.dll (
-    echo.
-    echo Nvidia driver files detected.
-    set isNvidia=true
-) else (
-    set isNvidia=false
-)
-
-REM Query user for GPU type
-echo.
-echo Are you using an Nvidia GPU or AMD/Intel GPU?
-echo [1] AMD/Intel
-echo [2] Nvidia
-if "isNvidia"=="true" (
-    set /p gpuChoice="Enter 1 or 2 (or press Enter for Nvidia): "
-) else (
-    set /p gpuChoice="Enter 1 or 2 (or press Enter for AMD/Intel): "
-)
-
-if "%gpuChoice%"=="2" (
-    REM Nvidia
-    echo Nvidia GPU selected. Skipping "nvngx_dlss.dll" handling step.
-    goto completeSetup
-) else if "%gpuChoice%"=="1" (
-    REM AMD/Intel
-    echo AMD/Intel GPU selected. Proceeding with "nvngx_dlss.dll" handling.
-    goto checkFile
-) else (
-    if "%gpuChoice%"=="" (
-        if "isNvidia"=="true" (
-            REM Nvidia
-            echo Nvidia GPU selected. Skipping "nvngx_dlss.dll" handling step.
-            set gpuChoice=2
-            goto completeSetup
-        )
-        
-        REM AMD/Intel
-        echo AMD/Intel GPU selected. Proceeding with "nvngx_dlss.dll" handling.
-        set gpuChoice=1
-        goto checkFile
-    )
-    
-    echo.
-    echo Invalid choice. Please enter 1 or 2.
-    echo.
-    goto queryGPU
-)
-
-:checkFile
-REM Query user for DLSS
-echo.
-echo Will you try to use DLSS inputs? (enables spoofing, required for DLSS FG, Reflex-^>AL2)
-echo [1] Yes
-echo [2] No
-set /p copyNvngx="Enter 1 or 2 (or press Enter for Yes): "
-
-if "%copyNvngx%"=="2" (
-    echo Skipping "nvngx_dlss.dll"...
-    goto completeSetup
-) else if NOT "%copyNvngx%"=="1" (
-    if NOT "%copyNvngx%"=="" (
-        echo.
-        echo Invalid choice. Please enter 1 or 2.
-        goto checkFile
-    )
-)
-
-set dlssFile = 
-goto check_nvngx_dlss
-:resume_nvngx_dlss
-
-REM Copy nvngx_dlss.dll file
-echo.
-echo Copying "nvngx_dlss.dll" to game folder...
-copy /y "%dlssFile%" .\nvngx_dlss_copy.dll 
-if errorlevel 1 (
-    echo.
-    echo ERROR: Failed to copy "nvngx_dlss.dll".
-    goto end
 )
 
 :completeSetup
@@ -190,19 +108,6 @@ if errorlevel 1 (
     echo.
     echo ERROR: Failed to rename OptiScaler file to %selectedFilename%.
     goto end
-)
-
-REM Rename nvngx_dlss.dll file if AMD/Intel is selected
-if NOT "%copyNvngx%"=="2" (
-    if "%gpuChoice%"=="1" (
-        echo Renaming "nvngx_dlss_copy.dll" file to "nvngx.dll"...
-        rename nvngx_dlss_copy.dll nvngx.dll
-        if errorlevel 1 (
-            echo.
-            echo ERROR: Failed to rename "nvngx_dlss.dll" to "nvngx.dll".
-            goto end
-        )
-    )
 )
 
 goto create_uninstaller
@@ -227,65 +132,7 @@ if "%setupSuccess%"=="true" (
     del %0
 )
 
-REM Remove leftover "nvngx_dlss_copy.dll"
-if exist "nvngx_dlss_copy.dll" (
-    del /y "nvngx_dlss_copy.dll"
-)
-
 exit /b
-
-REM check for nvngx_dlss.dll
-:check_nvngx_dlss
-if exist "nvngx_dlss.dll" (
-    echo Found "nvngx_dlss.dll" in the current folder.
-    set dlssFile=nvngx_dlss.dll
-    goto resume_nvngx_dlss
-)
-
-REM Search for nvngx_dlss.dll in the current folder and subfolders
-set fileToSearch=nvngx_dlss.dll
-set foundFile=
-
-for /f "delims=" %%F in ('dir /s /b %fileToSearch% 2^>nul') do (
-    set dlssFile=%%F
-    goto fileFound
-)
-
-REM Check for UE Win64 folder
-cd ..
-if exist Win64 (
-    echo.
-    echo Going to root folder of Unreal Engine game and searching again
-    cd ..
-    cd ..
-
-    for /f "delims=" %%F in ('dir /s /b %fileToSearch% 2^>nul') do (
-        set dlssFile=%%F
-        goto fileFound
-    )
-) else (
-    if exist WinGDK (
-    echo.
-    echo Going to root folder of Unreal Engine game and searching again
-    cd ..
-    cd ..
-
-    for /f "delims=" %%F in ('dir /s /b %fileToSearch% 2^>nul') do (
-        set dlssFile=%%F
-        goto fileFound
-    )
-)
-)
-
-:fileNotFound
-cd "%gamePath%"
-echo ERROR: "nvngx_dlss.dll" not found in expected locations. Please manually copy it and run setup again.
-goto end
-
-:fileFound
-cd "%gamePath%"
-echo File found at %dlssFile%
-goto resume_nvngx_dlss
 
 :create_uninstaller
 copy /y NUL "Remove OptiScaler.bat"
@@ -307,11 +154,6 @@ echo.
 echo set /p removeChoice="Do you want to remove OptiScaler? [y/n]: "
 echo.
 echo if "%%removeChoice%%"=="y" ^(
-if NOT "%copyNvngx%"=="2" (
-    if "%gpuChoice%"=="1" (
-        echo    del nvngx.dll
-    )
-)
 echo    del OptiScaler.log
 echo    del OptiScaler.ini
 echo    del %selectedFilename%
