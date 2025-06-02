@@ -6,7 +6,7 @@
 
 #include "detours/detours.h"
 
-static HKEY signatureMark = (HKEY) 0xFFFFFFFF13372137;
+const HKEY signatureMark = (HKEY) 0xFFFFFFFF13372137;
 
 typedef LSTATUS (*PFN_RegOpenKeyExW)(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult);
 typedef LSTATUS (*PFN_RegEnumValueW)(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPDWORD lpcchValueName,
@@ -33,7 +33,10 @@ static LSTATUS hkRegOpenKeyExW(HKEY hKey, LPCWSTR lpSubKey, DWORD ulOptions, REG
 static LSTATUS hkRegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPDWORD lpcchValueName, LPDWORD lpReserved,
                                LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
 {
-    if (hKey == signatureMark && dwIndex == 0)
+    if (hKey != signatureMark)
+        return o_RegEnumValueW(hKey, dwIndex, lpValueName, lpcchValueName, lpReserved, lpType, lpData, lpcbData);
+
+    if (dwIndex == 0)
     {
         if (lpValueName && lpcchValueName && lpData && lpcbData)
         {
@@ -71,8 +74,6 @@ static LSTATUS hkRegEnumValueW(HKEY hKey, DWORD dwIndex, LPWSTR lpValueName, LPD
     {
         return ERROR_NO_MORE_ITEMS;
     }
-
-    return o_RegEnumValueW(hKey, dwIndex, lpValueName, lpcchValueName, lpReserved, lpType, lpData, lpcbData);
 }
 
 static LSTATUS hkRegCloseKey(HKEY hKey)

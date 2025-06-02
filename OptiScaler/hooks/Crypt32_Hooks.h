@@ -22,6 +22,7 @@ static BOOL hkCryptQueryObject(DWORD dwObjectType, const void* pvObject, DWORD d
     {
         std::wstring originalPath((WCHAR*) pvObject);
         auto pathString = wstring_to_string(std::wstring(originalPath));
+        to_lower_in_place(pathString);
 
         // It's applied even if ffx is already signed, could be improved
         if (pathString.contains("amd_fidelityfx_dx12.dll") ||

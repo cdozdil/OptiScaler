@@ -1562,15 +1562,48 @@ class KernelHooks
         return o_KB_GetProcAddress(hModule, lpProcName);
     }
 
+    static inline void NormalizePath(std::string& path)
+    {
+        while (!path.empty() && (path.back() == '\\' || path.back() == '/'))
+            path.pop_back();
+    }
+
+    static inline bool IsInsideWindowsDirectory(const std::string& path)
+    {
+        char windowsDir[MAX_PATH];
+        UINT len = GetWindowsDirectoryA(windowsDir, MAX_PATH);
+
+        if (len == 0 || len >= MAX_PATH)
+            return false;
+
+        std::string pathToCheck(path);
+        std::string windowsPath(windowsDir);
+
+        NormalizePath(pathToCheck);
+        NormalizePath(windowsPath);
+
+        to_lower_in_place(pathToCheck);
+        to_lower_in_place(windowsPath);
+
+        // Check if pathToCheck starts with windowsPath, while having a slash after that
+        if (pathToCheck.compare(0, windowsPath.size(), windowsPath) == 0 &&
+            (pathToCheck.size() == windowsPath.size() || pathToCheck[windowsPath.size()] == '\\' ||
+             pathToCheck[windowsPath.size()] == '/'))
+            return true;
+
+        return false;
+    }
+
     static DWORD hk_K32_GetFileAttributesW(LPCWSTR lpFileName)
     {
         if (!State::Instance().nvngxExists && State::Instance().nvngxReplacement.has_value() &&
             Config::Instance()->DxgiSpoofing.value_or_default())
         {
             auto path = wstring_to_string(std::wstring(lpFileName));
+            to_lower_in_place(path);
 
             if (path.contains("nvngx.dll") && !path.contains("_nvngx.dll") &&
-                !path.contains("Windows")) // apply the override to just one path
+                !IsInsideWindowsDirectory(path)) // apply the override to just one path
             {
                 LOG_DEBUG("Overriding GetFileAttributesW for nvngx");
                 return FILE_ATTRIBUTE_ARCHIVE;
@@ -1588,11 +1621,12 @@ class KernelHooks
             Config::Instance()->DxgiSpoofing.value_or_default())
         {
             auto path = wstring_to_string(std::wstring(lpFileName));
+            to_lower_in_place(path);
 
             static auto signedDll = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
 
             if (path.contains("nvngx.dll") && !path.contains("_nvngx.dll") && // apply the override to just one path
-                !path.contains("Windows") && signedDll.has_value())
+                !IsInsideWindowsDirectory(path) && signedDll.has_value())
             {
                 LOG_DEBUG("Overriding CreateFileW for nvngx with a signed dll, original path: {}", path);
                 return o_K32_CreateFileW(signedDll.value().c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes,

@@ -21,7 +21,8 @@ static LONG hkWinVerifyTrust(HWND hwnd, GUID* pgActionID, LPVOID pWVTData)
     if (!data->pFile || !data->pFile->pcwszFilePath)
         return o_WinVerifyTrust(hwnd, pgActionID, pWVTData);
 
-    const auto path = wstring_to_string(std::wstring(data->pFile->pcwszFilePath));
+    auto path = wstring_to_string(std::wstring(data->pFile->pcwszFilePath));
+    to_lower_in_place(path);
 
     if (path.contains("amd_fidelityfx_dx12.dll") || path.contains("amd_fidelityfx_vk.dll"))
     {
