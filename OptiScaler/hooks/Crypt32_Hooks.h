@@ -37,17 +37,13 @@ static BOOL hkCryptQueryObject(DWORD dwObjectType, const void* pvObject, DWORD d
         }
 
         if (pathString.contains("nvngx.dll") && !State::Instance().nvngxExists &&
-            Config::Instance()->DxgiSpoofing.value_or_default())
+            State::Instance().nvngxReplacement.has_value() && Config::Instance()->DxgiSpoofing.value_or_default())
         {
-            static auto signedDll = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
-
-            if (signedDll.has_value())
-            {
-                LOG_DEBUG("Replacing nvngx with a signed dll");
-                return o_CryptQueryObject(dwObjectType, signedDll.value().c_str(), dwExpectedContentTypeFlags,
-                                          dwExpectedFormatTypeFlags, dwFlags, pdwMsgAndCertEncodingType, pdwContentType,
-                                          pdwFormatType, phCertStore, phMsg, ppvContext);
-            }
+            LOG_DEBUG("Replacing nvngx with a signed dll");
+            return o_CryptQueryObject(dwObjectType, State::Instance().nvngxReplacement.value().c_str(),
+                                      dwExpectedContentTypeFlags, dwExpectedFormatTypeFlags, dwFlags,
+                                      pdwMsgAndCertEncodingType, pdwContentType, pdwFormatType, phCertStore, phMsg,
+                                      ppvContext);
         }
     }
 

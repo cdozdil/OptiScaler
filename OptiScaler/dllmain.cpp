@@ -1058,12 +1058,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             LoadAsiPlugins();
         }
 
+        if (!Config::Instance()->DxgiSpoofing.has_value() && !State::Instance().nvngxReplacement.has_value())
         {
-            static auto nvngxReplacement = Util::FindFilePath(Util::DllPath().remove_filename(), "nvngx_dlss.dll");
-            if (!State::Instance().nvngxExists && !Config::Instance()->DxgiSpoofing.has_value() &&
-                !nvngxReplacement.has_value())
+            LOG_WARN("Nvngx replacement not found!");
+
+            if (!State::Instance().nvngxExists)
             {
-                LOG_WARN("No nvngx.dll found disabling spoofing!");
+                LOG_WARN("nvngx.dll not found! - disabling spoofing");
                 Config::Instance()->DxgiSpoofing.set_volatile_value(false);
             }
         }

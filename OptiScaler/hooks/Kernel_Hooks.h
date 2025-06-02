@@ -1564,7 +1564,8 @@ class KernelHooks
 
     static DWORD hk_K32_GetFileAttributesW(LPCWSTR lpFileName)
     {
-        if (!State::Instance().nvngxExists && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (!State::Instance().nvngxExists && State::Instance().nvngxReplacement.has_value() &&
+            Config::Instance()->DxgiSpoofing.value_or_default())
         {
             auto path = wstring_to_string(std::wstring(lpFileName));
 
@@ -1583,7 +1584,8 @@ class KernelHooks
                                      LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition,
                                      DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
     {
-        if (!State::Instance().nvngxExists && Config::Instance()->DxgiSpoofing.value_or_default())
+        if (!State::Instance().nvngxExists && State::Instance().nvngxReplacement.has_value() &&
+            Config::Instance()->DxgiSpoofing.value_or_default())
         {
             auto path = wstring_to_string(std::wstring(lpFileName));
 

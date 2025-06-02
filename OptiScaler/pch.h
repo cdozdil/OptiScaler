@@ -10,6 +10,7 @@
 #include <string>
 #include <stdint.h>
 #include <libloaderapi.h>
+#include <ranges>
 
 #define NV_WINDOWS
 #define NVSDK_NGX
