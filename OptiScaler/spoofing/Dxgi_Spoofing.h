@@ -57,10 +57,15 @@ inline static bool SkipSpoofing()
     auto skip = !Config::Instance()->DxgiSpoofing.value_or_default() ||
                 State::Instance().skipSpoofing; // || State::Instance().isRunningOnLinux;
 
-#ifdef METHOD_BASED_SPOOFING_CHECK || FILE_BASED_SPOOFING_CHECK
     if (skip)
+    {
         LOG_TRACE("DxgiSpoofing: {}, skipSpoofing: {}, skipping spoofing",
                   Config::Instance()->DxgiSpoofing.value_or_default(), State::Instance().skipSpoofing);
+
+        return true;
+    }
+
+#ifdef METHOD_BASED_SPOOFING_CHECK || FILE_BASED_SPOOFING_CHECK
 
     HANDLE process = GetCurrentProcess();
 

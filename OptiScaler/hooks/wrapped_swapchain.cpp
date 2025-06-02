@@ -600,7 +600,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCoun
         OwnedLockGuard lock(_localMutex, 2);
 #endif
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (State::Instance().activeFgType == OptiFG && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
         LOG_TRACE("Waiting ffxMutex 3, current: {}", State::Instance().currentFG->Mutex.getOwner());
         State::Instance().currentFG->Mutex.lock(3);
@@ -705,7 +705,7 @@ HRESULT STDMETHODCALLTYPE WrappedIDXGISwapChain4::ResizeBuffers1(UINT BufferCoun
 
     LOG_DEBUG("result: {0:X}", (UINT) result);
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (State::Instance().activeFgType == OptiFG && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
     {
         LOG_TRACE("Releasing ffxMutex: {}", State::Instance().currentFG->Mutex.getOwner());
         State::Instance().currentFG->Mutex.unlockThis(3);
