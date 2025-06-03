@@ -79,6 +79,8 @@ class IFeature
     virtual void SetInit(bool InValue) { _isInited = InValue; }
 
   public:
+    bool featureFrozen = false;
+
     NVSDK_NGX_Handle* Handle() const { return _handle; };
     static unsigned int GetNextHandleId() { return handleCounter++; }
     int GetFeatureFlags() const { return _featureFlags; }
