@@ -88,10 +88,58 @@ if exist %selectedFilename% (
     
     echo.
     if "!overwriteChoice!"=="y" (
-        goto completeSetup
+        goto queryGPU
     )
 
     goto selectFilename
+)
+
+:queryGPU
+if exist %windir%\system32\nvapi64.dll (
+    echo.
+    echo Nvidia driver files detected.
+    set isNvidia=true
+) else (
+    set isNvidia=false
+)
+
+REM Query user for GPU type
+echo.
+echo Are you using an Nvidia GPU or AMD/Intel GPU?
+echo [1] AMD/Intel
+echo [2] Nvidia
+if "%isNvidia%"=="true" (
+    set /p gpuChoice="Enter 1 or 2 (or press Enter for Nvidia): "
+) else (
+    set /p gpuChoice="Enter 1 or 2 (or press Enter for AMD/Intel): "
+)
+
+REM Skip spoofing if Nvidia
+if "%gpuChoice%"=="2" (
+    goto completeSetup
+)
+
+if "%gpuChoice%"=="" (
+    if "%isNvidia%"=="true" (
+        goto completeSetup
+    )
+)
+
+REM Query user for DLSS
+echo.
+echo Will you try to use DLSS inputs? (enables spoofing, required for DLSS FG, Reflex-^>AL2)
+echo [1] Yes
+echo [2] No
+set /p enablingSpoofing="Enter 1 or 2 (or press Enter for Yes): "
+
+set configFile=OptiScaler.ini
+if "%enablingSpoofing%"=="2" (
+    if not exist "%configFile%" (
+        echo Config file not found: %configFile%
+        pause
+    )
+
+    powershell -Command "(Get-Content '%configFile%') -replace 'Dxgi=auto', 'Dxgi=false' | Set-Content '%configFile%'"
 )
 
 :completeSetup
