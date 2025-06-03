@@ -88,13 +88,24 @@ if exist %selectedFilename% (
     
     echo.
     if "!overwriteChoice!"=="y" (
-        goto queryGPU
+        goto checkWine
     )
 
     goto selectFilename
 )
 
-:queryGPU
+REM Wine doesn't support powershell
+:checkWine
+reg query HKEY_CURRENT_USER\Software\Wine >nul 2>&1
+if %errorlevel%==0 (
+    echo.
+    echo Using wine, skipping over spoofing checks.
+    echo If you need, you can disable spoofing by setting Dxgi=false in the config
+    echo.
+    pause
+    goto completeSetup
+) 
+
 if exist %windir%\system32\nvapi64.dll (
     echo.
     echo Nvidia driver files detected.
