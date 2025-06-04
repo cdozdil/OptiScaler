@@ -173,6 +173,10 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
 
     State::Instance().swapchainApi = Vulkan;
 
+    // Tick feature to let it know if it's frozen
+    if (auto currentFeature = State::Instance().currentFeature; currentFeature != nullptr)
+        currentFeature->TickFrozenCheck();
+
     // render menu if needed
     if (!MenuOverlayVk::QueuePresent(queue, pPresentInfo))
     {
