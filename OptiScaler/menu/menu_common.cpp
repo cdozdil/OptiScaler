@@ -1458,7 +1458,7 @@ bool MenuCommon::RenderMenu()
 
             if (Config::Instance()->FpsOverlayType.value_or_default() == 0)
             {
-                if (currentFeature != nullptr)
+                if (currentFeature != nullptr && !currentFeature->IsFrozen())
                     ImGui::Text("%s | FPS: %5.1f, %6.2f ms | %s -> %s %d.%d.%d", api.c_str(), frameRate, frameTime,
                                 State::Instance().currentInputApiName.c_str(), currentFeature->Name().c_str(),
                                 State::Instance().currentFeature->Version().major,
@@ -1469,7 +1469,7 @@ bool MenuCommon::RenderMenu()
             }
             else
             {
-                if (currentFeature != nullptr)
+                if (currentFeature != nullptr && !currentFeature->IsFrozen())
                     ImGui::Text("%s | FPS: %5.1f, Avg: %5.1f | %s -> %s %d.%d.%d", api.c_str(), frameRate,
                                 1000.0f / averageFrameTime, State::Instance().currentInputApiName.c_str(),
                                 currentFeature->Name().c_str(), State::Instance().currentFeature->Version().major,
@@ -1710,6 +1710,7 @@ bool MenuCommon::RenderMenu()
                                                        ? "Exists"
                                                        : "Doesn't Exist");
                     ImGui::Text("fsr: %s", State::Instance().fsrHooks ? "Exists" : "Doesn't Exist");
+
                     ImGui::Spacing();
                 }
                 else
@@ -1725,12 +1726,29 @@ bool MenuCommon::RenderMenu()
                         ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
                 }
             }
+            else if (currentFeature->IsFrozen())
+            {
+                ImGui::Spacing();
+
+                if (Config::Instance()->UseHQFont.value_or_default())
+                    ImGui::PushFontSize(std::round(fontSize * Config::Instance()->MenuScale.value_or_default() * 3.0));
+                else
+                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default() * 3.0);
+
+                ImGui::Text("%s is active but not currently used by the game\nPlease enter the game",
+                            currentFeature->Name().c_str());
+
+                if (Config::Instance()->UseHQFont.value_or_default())
+                    ImGui::PopFont();
+                else
+                    ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
+            }
 
             if (ImGui::BeginTable("main", 2, ImGuiTableFlags_SizingStretchSame))
             {
                 ImGui::TableNextColumn();
 
-                if (currentFeature != nullptr)
+                if (currentFeature != nullptr && !currentFeature->IsFrozen())
                 {
                     // UPSCALERS -----------------------------
                     ImGui::SeparatorText("Upscalers");
@@ -1879,7 +1897,7 @@ bool MenuCommon::RenderMenu()
                 {
                     ImGui::SeparatorText("Frame Generation (OptiFG)");
 
-                    if (currentFeature != nullptr && FfxApiProxy::InitFfxDx12())
+                    if (currentFeature != nullptr && !currentFeature->IsFrozen() && FfxApiProxy::InitFfxDx12())
                     {
                         bool fgActive = Config::Instance()->FGEnabled.value_or_default();
                         if (ImGui::Checkbox("FG Active", &fgActive))
@@ -2259,7 +2277,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         ImGui::Spacing();
                     }
-                    else if (currentFeature == nullptr)
+                    else if (currentFeature == nullptr || currentFeature->IsFrozen())
                     {
                         ImGui::Text("Upscaler is not active"); // Probably never will be visible
                     }
@@ -2332,7 +2350,7 @@ bool MenuCommon::RenderMenu()
                     }
                 }
 
-                if (currentFeature != nullptr)
+                if (currentFeature != nullptr && !currentFeature->IsFrozen())
                 {
                     // Dx11 with Dx12
                     if (State::Instance().api == DX11 &&
@@ -3080,7 +3098,7 @@ bool MenuCommon::RenderMenu()
                     }
                 }
 
-                if (currentFeature != nullptr)
+                if (currentFeature != nullptr && !currentFeature->IsFrozen())
                 {
                     // OUTPUT SCALING -----------------------------
                     if (State::Instance().api == DX12 || State::Instance().api == DX11)
@@ -3165,7 +3183,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::SliderFloat("Ratio", &_ssRatio, 0.5f, 3.0f, "%.2f");
                         ImGui::EndDisabled();
 
-                        if (currentFeature != nullptr)
+                        if (currentFeature != nullptr && !currentFeature->IsFrozen())
                         {
                             ImGui::Text(
                                 "Output Scaling is %s, Target Res: %dx%d\nJitter Count: %d",
@@ -3181,7 +3199,7 @@ bool MenuCommon::RenderMenu()
                 // NEXT COLUMN -----------------
                 ImGui::TableNextColumn();
 
-                if (currentFeature != nullptr)
+                if (currentFeature != nullptr && !currentFeature->IsFrozen())
                 {
                     // SHARPNESS -----------------------------
                     ImGui::SeparatorText("Sharpness");
@@ -3487,7 +3505,7 @@ bool MenuCommon::RenderMenu()
                 {
                     ScopedIndent indent {};
                     ImGui::Spacing();
-                    if (currentFeature != nullptr)
+                    if (currentFeature != nullptr && !currentFeature->IsFrozen())
                     {
                         bool extendedLimits = Config::Instance()->ExtendedLimits.value_or_default();
                         if (ImGui::Checkbox("Enable Extended Limits", &extendedLimits))
@@ -3628,8 +3646,9 @@ bool MenuCommon::RenderMenu()
 
                 // ADVANCED SETTINGS -----------------------------
                 ImGui::Spacing();
-                if (ImGui::CollapsingHeader("Upscaler Inputs",
-                                            currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+                if (ImGui::CollapsingHeader("Upscaler Inputs", (currentFeature == nullptr || currentFeature->IsFrozen())
+                                                                   ? ImGuiTreeNodeFlags_DefaultOpen
+                                                                   : 0))
                 {
                     ScopedIndent indent {};
                     ImGui::Spacing();
@@ -3662,8 +3681,9 @@ bool MenuCommon::RenderMenu()
                 {
                     // MIPMAP BIAS & Anisotropy -----------------------------
                     ImGui::Spacing();
-                    if (ImGui::CollapsingHeader("Mipmap Bias",
-                                                currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+                    if (ImGui::CollapsingHeader("Mipmap Bias", (currentFeature == nullptr || currentFeature->IsFrozen())
+                                                                   ? ImGuiTreeNodeFlags_DefaultOpen
+                                                                   : 0))
                     {
                         ScopedIndent indent {};
                         ImGui::Spacing();
@@ -3747,7 +3767,7 @@ bool MenuCommon::RenderMenu()
                         }
                         ImGui::EndDisabled();
 
-                        if (currentFeature != nullptr)
+                        if (currentFeature != nullptr && !currentFeature->IsFrozen())
                         {
                             ImGui::SameLine(0.0f, 6.0f);
 
@@ -3787,7 +3807,9 @@ bool MenuCommon::RenderMenu()
 
                     ImGui::Spacing();
                     if (ImGui::CollapsingHeader("Anisotropic Filtering",
-                                                currentFeature == nullptr ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+                                                (currentFeature == nullptr || currentFeature->IsFrozen())
+                                                    ? ImGuiTreeNodeFlags_DefaultOpen
+                                                    : 0))
                     {
                         ScopedIndent indent {};
                         ImGui::Spacing();
@@ -3824,7 +3846,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::Text("Will be applied after RESOLUTION/PRESET change !!!");
                     }
 
-                    if (currentFeature != nullptr)
+                    if (currentFeature != nullptr && !currentFeature->IsFrozen())
                     {
                         // Non-DLSS hotfixes -----------------------------
                         if (currentBackend != "dlss")
@@ -3898,7 +3920,7 @@ bool MenuCommon::RenderMenu()
                                                       State::Instance().frameTimes.end());
                     ImGui::PlotLines(ft.c_str(), frameTimeArray.data(), (int) frameTimeArray.size());
 
-                    if (currentFeature != nullptr)
+                    if (currentFeature != nullptr && !currentFeature->IsFrozen())
                     {
                         ImGui::TableNextColumn();
                         ImGui::Text("Upscaler");
@@ -3917,7 +3939,7 @@ bool MenuCommon::RenderMenu()
                 ImGui::Separator();
                 ImGui::Spacing();
 
-                if (currentFeature != nullptr)
+                if (currentFeature != nullptr && !currentFeature->IsFrozen())
                 {
                     ImGui::Text("%dx%d -> %dx%d (%.1f) [%dx%d (%.1f)]", currentFeature->RenderWidth(),
                                 currentFeature->RenderHeight(), currentFeature->TargetWidth(),
@@ -4007,7 +4029,7 @@ bool MenuCommon::RenderMenu()
                     float posX;
                     float posY;
 
-                    if (currentFeature != nullptr)
+                    if (currentFeature != nullptr && !currentFeature->IsFrozen())
                     {
                         posX = ((float) State::Instance().currentFeature->DisplayWidth() - winSize.x) / 2.0f;
                         posY = ((float) State::Instance().currentFeature->DisplayHeight() - winSize.y) / 2.0f;
@@ -4032,7 +4054,8 @@ bool MenuCommon::RenderMenu()
             }
 
             // Mipmap calculation window
-            if (_showMipmapCalcWindow && currentFeature != nullptr && currentFeature->IsInited())
+            if (_showMipmapCalcWindow && currentFeature != nullptr && !currentFeature->IsFrozen() &&
+                currentFeature->IsInited())
             {
                 auto posX = (State::Instance().currentFeature->DisplayWidth() - 450.0f) / 2.0f;
                 auto posY = (State::Instance().currentFeature->DisplayHeight() - 200.0f) / 2.0f;

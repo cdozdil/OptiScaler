@@ -68,6 +68,7 @@ class IFeature
     unsigned int _displayHeight = 0;
 
     long _frameCount = 0;
+    bool _featureFrozen = false;
     bool _moduleLoaded = false;
 
     void SetHandle(unsigned int InHandleId);
@@ -88,6 +89,8 @@ class IFeature
 
     size_t JitterCount() { return _jitterInfo.size(); }
 
+    void TickFrozenCheck();
+    bool IsFrozen() const { return _featureFrozen; };
     bool UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters);
     unsigned int DisplayWidth() const { return _displayWidth; };
     unsigned int DisplayHeight() const { return _displayHeight; };
