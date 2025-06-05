@@ -247,7 +247,8 @@ float IFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
     return sharpness;
 }
 
-void IFeature::TickFrozenCheck() {
+void IFeature::TickFrozenCheck()
+{
     static long updatesWithoutFramecountChange = 0;
 
     if (_isInited)

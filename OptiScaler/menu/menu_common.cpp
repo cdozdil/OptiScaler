@@ -1735,13 +1735,13 @@ bool MenuCommon::RenderMenu()
                 else
                     ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default() * 3.0);
 
-                ImGui::Text("%s is active but not currently used by the game\nPlease enter the game", currentFeature->Name().c_str());
+                ImGui::Text("%s is active but not currently used by the game\nPlease enter the game",
+                            currentFeature->Name().c_str());
 
                 if (Config::Instance()->UseHQFont.value_or_default())
                     ImGui::PopFont();
                 else
                     ImGui::SetWindowFontScale(Config::Instance()->MenuScale.value_or_default());
-
             }
 
             if (ImGui::BeginTable("main", 2, ImGuiTableFlags_SizingStretchSame))
