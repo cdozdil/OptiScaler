@@ -13,7 +13,7 @@ assignees: ''
 *Example:* Cyberpunk 2077 (Steam), Avowed (GamePass/UWP)
 
 #### Mods and mod versions used 
-*Example:* OptiScaler_v0.7.7-pre7_20250316 + Fakenvapi 1.2.1 + Nukem 0.122 - Optiscaler version most important
+*Example:* OptiScaler_v0.7.7-pre7_20250316 + Fakenvapi 1.2.1 + Nukem 0.122 - OptiScaler version most important
 
 #### GPU
 *Example:*  RTX 4070Ti, RX 7800XT
@@ -39,6 +39,6 @@ Also please mention in description which upscaler inputs are used (which upscale
 *Example:* I am using DLSS in game settings and the game is crashing when switching to FSR4.
 
 #### I have attached
- - [ ] OptiScaler.log _(set `LogLevel=0` and `LogToFile=true` in Optiscaler.ini, zip it if too big)_
+ - [ ] OptiScaler.log _(set `LogLevel=0` and `LogToFile=true` in OptiScaler.ini, zip it if too big)_
  - [ ] Screenshot of game folder _(where you placed Opti)_
  - [ ] Screenshot of Opti overlay in-game _(opens with shortcut, default Insert)_
