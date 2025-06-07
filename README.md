@@ -19,7 +19,7 @@
 **OptiScaler** is a tool that lets you replace upscalers in games that ***already support DLSS2+ / FSR2+ / XeSS*** ($`^1`$), now also supports ***enabling frame generation*** in those same games (through ***Nukem's dlssg-to-fsr3*** or ***OptiFG***). It also offers extensive customization options for all users, including those with Nvidia GPUs using DLSS.
 
 > [!TIP]
-> _For example, if a game has DLSS only, Optiscaler can be used to replace DLSS with XeSS or FSR 3.1 (also works for FSR2-only games, like The Outer Worlds Spacer's Choice)._
+> _For example, if a game has DLSS only, OptiScaler can be used to replace DLSS with XeSS or FSR 3.1 (also works for FSR2-only games, like The Outer Worlds Spacer's Choice)._
 
 **Key aspects of OptiScaler:**
 - Enables usage of XeSS, FSR2, FSR3, **FSR4**$`^2`$ (_RDNA4 only_) and DLSS in upscaler-enabled games
@@ -32,7 +32,7 @@
 
 > [!IMPORTANT]
 > _**Always check the [Wiki Compatibility list](https://github.com/cdozdil/OptiScaler/wiki) for known game issues and workarounds.**_  
-> Also please check the  [***Optiscaler known issues***](#known-issues) at the end regarding **RTSS** compatibility.  
+> Also please check the  [***OptiScaler known issues***](#known-issues) at the end regarding **RTSS** compatibility.
 > A separate [***FSR4 Compatibility list***](https://github.com/cdozdil/OptiScaler/wiki/FSR4-Compatibility-List) is available for community-sourced tested games.  
 > ***[3]** For **not bundled** items, please check [Installation](#installation).*  
 
@@ -56,7 +56,7 @@
 ## How it works?
 OptiScaler implements the necessary API methods of DLSS2+ & NVAPI, XeSS and FSR2+ to act as a middleware. It intercepts upscaler calls from the game (_**Inputs**_) and redirects them to the chosen upscaling backend (_**Output**_), allowing games using one technology to use another of your choice. **Inputs -> OptiScaler -> Outputs**
 > [!NOTE]
-> Pressing **`Insert`** should open the Optiscaler **Overlay** in-game with all of the options (`ShortcutKey=` can be changed in the config file). Pressing **`Page Up`** shows the performance stats overlay in the top left, and can be cycled between different modes with **`Page Down`**.
+> Pressing **`Insert`** should open the OptiScaler **Overlay** in-game with all of the options (`ShortcutKey=` can be changed in the config file). Pressing **`Page Up`** shows the performance stats overlay in the top left, and can be cycled between different modes with **`Page Down`**.
 
 
 ![image](https://github.com/user-attachments/assets/e138c979-c5d9-499f-a89b-165bb7cfcb32)
@@ -84,7 +84,7 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 > <details>
 >  <summary><b>Expand for [1]</b></summary>
 >
-> _**[1]** These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows many more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler. These implementations **do not support Linux** and will result in a black screen._
+> _**[1]** These implementations use a background DirectX12 device to be able to use Dirext12-only upscalers. There is a 10-15% performance penalty for this method, but allows many more upscaler options. Also native DirectX11 implementation of FSR 2.2.1 is a backport from Unity renderer and has its own problems of which some were fixed by OptiScaler._
 > </details>
 
 #### For Vulkan

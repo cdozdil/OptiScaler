@@ -497,6 +497,11 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         return presentResult;
     }
 
+    // Tick feature to let it know if it's frozen
+    if (auto currentFeature = State::Instance().currentFeature; currentFeature != nullptr)
+        currentFeature->TickFrozenCheck();
+
+    // Draw overlay
     MenuOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd, isUWP);
 
     if (State::Instance().activeFgType == OptiFG)

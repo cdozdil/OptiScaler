@@ -247,6 +247,25 @@ float IFeature::GetSharpness(const NVSDK_NGX_Parameter* InParameters)
     return sharpness;
 }
 
+void IFeature::TickFrozenCheck()
+{
+    static long updatesWithoutFramecountChange = 0;
+
+    if (_isInited)
+    {
+        static auto lastFrameCount = _frameCount;
+
+        if (_frameCount == lastFrameCount)
+            updatesWithoutFramecountChange++;
+        else
+            updatesWithoutFramecountChange = 0;
+
+        lastFrameCount = _frameCount;
+
+        _featureFrozen = updatesWithoutFramecountChange > 10;
+    }
+}
+
 bool IFeature::UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters)
 {
     // Check for FSR's dynamic resolution output

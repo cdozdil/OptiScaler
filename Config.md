@@ -65,7 +65,7 @@ For DirectX11 with `fsr21_12`, `fsr22_12` and `xess` upscaler options, OptiScale
 
 ```ini
 [Dx11withDx12]
-; Syncing meathods for Dx11 with Dx12
+; Syncing methods for Dx11 with Dx12
 ;
 ; Valid values are;
 ;	0 - No syncing                                  (fastest, most prone to errors)
