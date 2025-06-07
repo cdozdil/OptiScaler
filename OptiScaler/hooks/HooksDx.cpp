@@ -1526,7 +1526,7 @@ static void HookToDevice(ID3D12Device* InDevice)
 
     ID3D12Device* realDevice = nullptr;
     if (CheckForRealObject(__FUNCTION__, InDevice, (IUnknown**) &realDevice))
-        PVOID* pVTable = *(PVOID**) realDevice;
+        pVTable = *(PVOID**) realDevice;
 
     // hudless
     o_CreateSampler = (PFN_CreateSampler) pVTable[22];
@@ -1558,7 +1558,7 @@ static void HookToDevice(ID3D12Device* InDevice)
             // This does not work but luckily
             // UE works without Intel Extension for it
             // if (o_GetResourceAllocationInfo != nullptr)
-            //     DetourAttach(&(PVOID&) o_GetResourceAllocationInfo, hkGetResourceAllocationInfo);
+            //    DetourAttach(&(PVOID&) o_GetResourceAllocationInfo, hkGetResourceAllocationInfo);
         }
 
         DetourTransactionCommit();
@@ -2118,6 +2118,9 @@ static D3D12_RESOURCE_ALLOCATION_INFO hkGetResourceAllocationInfo(ID3D12Device* 
                                                                   UINT numResourceDescs,
                                                                   D3D12_RESOURCE_DESC* pResourceDescs)
 {
+    if (State::Instance().currentD3D12Device != device)
+        device = State::Instance().currentD3D12Device;
+
     if (!skipGetResourceAllocationInfo)
     {
         auto ueDesc = reinterpret_cast<UE_D3D12_RESOURCE_DESC*>(pResourceDescs);
