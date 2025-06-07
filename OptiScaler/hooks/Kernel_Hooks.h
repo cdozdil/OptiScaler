@@ -29,6 +29,8 @@
 
 #include <cwctype>
 
+#pragma intrinsic(_ReturnAddress)
+
 // Enables hooking of GetModuleHandle
 // which might create issues, not tested very well
 // #define HOOK_GET_MODULE
@@ -1003,52 +1005,52 @@ class KernelHooks
         {
             if (lpLibrary == dllModule)
             {
-                LOG_WARN("Call for OptiScaler");
+                LOG_WARN("Call for OptiScaler, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == FfxApiProxy::Dx12Module())
             {
-                LOG_WARN("Call for FFX Dx12");
+                LOG_WARN("Call for FFX Dx12, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == FfxApiProxy::VkModule())
             {
-                LOG_WARN("Call for FFX Vulkan");
+                LOG_WARN("Call for FFX Vulkan, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == XeSSProxy::Module())
             {
-                LOG_WARN("Call for XeSS");
+                LOG_WARN("Call for XeSS, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == DxgiProxy::Module())
             {
-                LOG_WARN("Call for DXGI");
+                LOG_WARN("Call for DXGI, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == D3d12Proxy::Module())
             {
-                LOG_WARN("Call for D3D12");
+                LOG_WARN("Call for D3D12, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == Kernel32Proxy::Module())
             {
-                LOG_WARN("Call for Kernel32");
+                LOG_WARN("Call for Kernel32, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == KernelBaseProxy::Module())
             {
-                LOG_WARN("Call for KernelBase");
+                LOG_WARN("Call for KernelBase, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == vulkanModule)
             {
-                LOG_WARN("Call for Vulkan");
+                LOG_WARN("Call for Vulkan, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == d3d11Module)
             {
-                LOG_WARN("Call for D3D11");
+                LOG_WARN("Call for D3D11, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
         }
@@ -1065,52 +1067,52 @@ class KernelHooks
         {
             if (lpLibrary == dllModule)
             {
-                LOG_WARN("Call for OptiScaler");
+                LOG_WARN("Call for OptiScaler, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == FfxApiProxy::Dx12Module())
             {
-                LOG_WARN("Call for FFX Dx12");
+                LOG_WARN("Call for FFX Dx12, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == FfxApiProxy::VkModule())
             {
-                LOG_WARN("Call for FFX Vulkan");
+                LOG_WARN("Call for FFX Vulkan, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == XeSSProxy::Module())
             {
-                LOG_WARN("Call for XeSS");
+                LOG_WARN("Call for XeSS, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == DxgiProxy::Module())
             {
-                LOG_WARN("Call for DXGI");
+                LOG_WARN("Call for DXGI, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == D3d12Proxy::Module())
             {
-                LOG_WARN("Call for D3D12");
+                LOG_WARN("Call for D3D12, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == Kernel32Proxy::Module())
             {
-                LOG_WARN("Call for Kernel32");
+                LOG_WARN("Call for Kernel32, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == KernelBaseProxy::Module())
             {
-                LOG_WARN("Call for KernelBase");
+                LOG_WARN("Call for KernelBase, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == vulkanModule)
             {
-                LOG_WARN("Call for Vulkan");
+                LOG_WARN("Call for Vulkan, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
             else if (lpLibrary == d3d11Module)
             {
-                LOG_WARN("Call for D3D11");
+                LOG_WARN("Call for D3D11, caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
                 return TRUE;
             }
         }
@@ -1150,7 +1152,7 @@ class KernelHooks
         }
 
 #if _DEBUG
-        LOG_TRACE("{}", lcaseLibName);
+        LOG_TRACE("{}, caller: {}", lcaseLibName, Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
@@ -1199,7 +1201,7 @@ class KernelHooks
         }
 
 #if _DEBUG
-        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("{}, caller: {}", wstring_to_string(lcaseLibName), Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
@@ -1226,7 +1228,7 @@ class KernelHooks
         std::string lcaseLibName(libName);
 
 #if _DEBUG
-        LOG_TRACE("{}", lcaseLibName);
+        LOG_TRACE("{}, caller: {}", lcaseLibName, Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         for (size_t i = 0; i < lcaseLibName.size(); i++)
@@ -1277,7 +1279,7 @@ class KernelHooks
         std::wstring lcaseLibName(libName);
 
 #if _DEBUG
-        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("{}, caller: {}", wstring_to_string(lcaseLibName), Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         for (size_t i = 0; i < lcaseLibName.size(); i++)
@@ -1351,7 +1353,7 @@ class KernelHooks
         }
 
 #if _DEBUG
-        LOG_TRACE("{}", lcaseLibName);
+        LOG_TRACE("{}, caller: {}", lcaseLibName, Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
@@ -1402,7 +1404,7 @@ class KernelHooks
         }
 
 #if _DEBUG
-        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("{}, caller: {}", wstring_to_string(lcaseLibName), Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
@@ -1453,7 +1455,7 @@ class KernelHooks
         }
 
 #if _DEBUG
-        LOG_TRACE("{}", lcaseLibName);
+        LOG_TRACE("{}, caller: {}", lcaseLibName, Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
         auto moduleHandle = LoadLibraryCheck(lcaseLibName, lpLibFileName);
 
@@ -1502,7 +1504,7 @@ class KernelHooks
         }
 
 #if _DEBUG
-        LOG_TRACE("{}", wstring_to_string(lcaseLibName));
+        LOG_TRACE("{}, caller: {}", wstring_to_string(lcaseLibName), Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         auto moduleHandle = LoadLibraryCheckW(lcaseLibName, lpLibFileName);
@@ -1531,7 +1533,10 @@ class KernelHooks
         }
 
         if (hModule == dllModule && lpProcName != nullptr)
-            LOG_TRACE("Trying to get process address of {0}", lpProcName);
+        {
+            LOG_TRACE("Trying to get process address of {}, caller: {}", lpProcName,
+                      Util::WhoIsTheCaller(_ReturnAddress()));
+        }
 
         if (State::Instance().isRunningOnLinux && lpProcName != nullptr &&
             hModule == KernelBaseProxy::GetModuleHandleW_()(L"gdi32.dll") &&
@@ -1552,7 +1557,10 @@ class KernelHooks
         }
 
         if (hModule == dllModule && lpProcName != nullptr)
-            LOG_TRACE("Trying to get process address of {0}", lpProcName);
+        {
+            LOG_TRACE("Trying to get process address of {}, caller: {}", lpProcName,
+                      Util::WhoIsTheCaller(_ReturnAddress()));
+        }
 
         if (State::Instance().isRunningOnLinux && lpProcName != nullptr &&
             hModule == KernelBaseProxy::GetModuleHandleW_()(L"gdi32.dll") &&

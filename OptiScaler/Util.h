@@ -29,6 +29,7 @@ std::wstring GetExeProductName();
 std::wstring GetWindowTitle(HWND hwnd);
 std::optional<std::filesystem::path> FindFilePath(const std::filesystem::path& startDir,
                                                   const std::filesystem::path fileName);
+std::string WhoIsTheCaller(void* returnAddress);
 }; // namespace Util
 
 inline void ThrowIfFailed(HRESULT hr)

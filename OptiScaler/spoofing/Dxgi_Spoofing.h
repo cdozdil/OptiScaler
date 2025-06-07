@@ -20,6 +20,8 @@
 // #define FILE_BASED_SPOOFING_CHECK
 #endif
 
+#pragma intrinsic(_ReturnAddress)
+
 typedef HRESULT (*PFN_GetDesc)(IDXGIAdapter* This, DXGI_ADAPTER_DESC* pDesc);
 typedef HRESULT (*PFN_GetDesc1)(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc);
 typedef HRESULT (*PFN_GetDesc2)(IDXGIAdapter2* This, DXGI_ADAPTER_DESC2* pDesc);
@@ -177,7 +179,7 @@ inline static bool SkipSpoofing()
         auto result = o_GetDesc3(This, pDesc);
 
 #if _DEBUG
-        LOG_TRACE("result: {:X}", (UINT) result);
+        LOG_TRACE("result: {:X}, caller: {}", (UINT) result, Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         if (result == S_OK)
@@ -227,7 +229,7 @@ inline static bool SkipSpoofing()
         auto result = o_GetDesc2(This, pDesc);
 
 #if _DEBUG
-        LOG_TRACE("result: {:X}", (UINT) result);
+        LOG_TRACE("result: {:X}, caller: {}", (UINT) result, Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         if (result == S_OK)
@@ -277,7 +279,7 @@ inline static bool SkipSpoofing()
         auto result = o_GetDesc1(This, pDesc);
 
 #if _DEBUG
-        LOG_TRACE("result: {:X}", (UINT) result);
+        LOG_TRACE("result: {:X}, caller: {}", (UINT) result, Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         if (result == S_OK)
@@ -327,7 +329,7 @@ inline static bool SkipSpoofing()
         auto result = o_GetDesc(This, pDesc);
 
 #if _DEBUG
-        LOG_TRACE("result: {:X}", (UINT) result);
+        LOG_TRACE("result: {:X}, caller: {}", (UINT) result, Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         if (result == S_OK)
@@ -389,7 +391,8 @@ inline static bool SkipSpoofing()
             AttachToAdapter(*ppvAdapter);
 
 #if _DEBUG
-        LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}", (UINT) result, Adapter, (size_t) *ppvAdapter);
+        LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}, caller: {}", (UINT) result, Adapter, (size_t) *ppvAdapter,
+                  Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         return result;
@@ -408,7 +411,8 @@ inline static bool SkipSpoofing()
             AttachToAdapter(*ppvAdapter);
 
 #if _DEBUG
-        LOG_TRACE("result: {:X}, pAdapter: {:X}", (UINT) result, (size_t) *ppvAdapter);
+        LOG_TRACE("result: {:X}, pAdapter: {:X}, caller: {}", (UINT) result, (size_t) *ppvAdapter,
+                  Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         return result;
@@ -486,7 +490,8 @@ inline static bool SkipSpoofing()
             AttachToAdapter(*ppAdapter);
 
 #if _DEBUG
-        LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}", (UINT) result, Adapter, (size_t) *ppAdapter);
+        LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}, caller: {}", (UINT) result, Adapter, (size_t) *ppAdapter,
+                  Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         return result;
@@ -560,7 +565,8 @@ inline static bool SkipSpoofing()
             AttachToAdapter(*ppAdapter);
 
 #if _DEBUG
-        LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}", (UINT) result, Adapter, (size_t) *ppAdapter);
+        LOG_TRACE("result: {:X}, Adapter: {}, pAdapter: {:X}, caller: {}", (UINT) result, Adapter, (size_t) *ppAdapter,
+                  Util::WhoIsTheCaller(_ReturnAddress()));
 #endif
 
         return result;
@@ -574,6 +580,10 @@ inline static bool SkipSpoofing()
     {
         HRESULT result = o_CreateDxgiFactory(riid, ppFactory);
 
+#if _DEBUG
+        LOG_TRACE("result: {:X}, caller: {}", (UINT) result, Util::WhoIsTheCaller(_ReturnAddress()));
+#endif
+
         if (result == S_OK)
             AttachToFactory(*ppFactory);
 
@@ -584,6 +594,10 @@ inline static bool SkipSpoofing()
     {
         HRESULT result = o_CreateDxgiFactory1(riid, ppFactory);
 
+#if _DEBUG
+        LOG_TRACE("result: {:X}, caller: {}", (UINT) result, Util::WhoIsTheCaller(_ReturnAddress()));
+#endif
+
         if (result == S_OK)
             AttachToFactory(*ppFactory);
 
@@ -593,6 +607,10 @@ inline static bool SkipSpoofing()
     inline static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2 * *ppFactory)
     {
         HRESULT result = o_CreateDxgiFactory2(Flags, riid, ppFactory);
+
+#if _DEBUG
+        LOG_TRACE("result: {:X}, caller: {}", (UINT) result, Util::WhoIsTheCaller(_ReturnAddress()));
+#endif
 
         if (result == S_OK)
             AttachToFactory(*ppFactory);
