@@ -16,8 +16,8 @@ typedef struct VkDummyProps
     void* pNext;
 } VkDummyProps;
 
-typedef VkResult (*PFN_vkAllocateMemory_Local)(VkDevice device, VkMemoryAllocateInfo* pAllocateInfo,
-                                               const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory);
+// typedef VkResult (*PFN_vkAllocateMemory_Local)(VkDevice device, VkMemoryAllocateInfo* pAllocateInfo,
+//                                                const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory);
 
 static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
 static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
@@ -29,12 +29,13 @@ static PFN_vkGetPhysicalDeviceMemoryProperties2 o_vkGetPhysicalDeviceMemoryPrope
 static PFN_vkGetPhysicalDeviceMemoryProperties2KHR o_vkGetPhysicalDeviceMemoryProperties2KHR = nullptr;
 static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
 static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
-static PFN_vkAllocateMemory_Local o_vkAllocateMemory = nullptr;
+// static PFN_vkAllocateMemory_Local o_vkAllocateMemory = nullptr;
+// static PFN_vkGetBufferDeviceAddressEXT o_vkGetBufferDeviceAddressEXT = nullptr;
+// static PFN_vkGetBufferDeviceAddress o_vkGetBufferDeviceAddress = nullptr;
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
-static bool _deviceBufferExtSwapped = false;
-static bool _extDeviceBufferSupported = false;
+// static bool _deviceBufferExtSwapped = false;
 
 inline static void hkvkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice,
                                                          VkPhysicalDeviceMemoryProperties* pMemoryProperties)
@@ -229,42 +230,59 @@ inline static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev
     }
 }
 
-inline static VkResult hkvkAllocateMemory(VkDevice device, VkMemoryAllocateInfo* pAllocateInfo,
-                                          const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
-{
-    if (_deviceBufferExtSwapped)
-    {
-        VkMemoryAllocateFlagsInfoKHR allocFlagsInfo = {};
-        allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
-        allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+// inline static VkDeviceAddress hkvkGetBufferDeviceAddressEXT(VkDevice device, const VkBufferDeviceAddressInfo* pInfo)
+//{
+//     if (o_vkGetBufferDeviceAddress == nullptr)
+//     {
+//         LOG_DEBUG("o_vkGetBufferDeviceAddress == nullptr");
+//         return o_vkGetBufferDeviceAddressEXT(device, pInfo);
+//     }
+//
+//     VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo = {};
+//     bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
+//     bufferDeviceAddressInfo.buffer = pInfo->buffer;
+//
+//     LOG_DEBUG("");
+//
+//     return o_vkGetBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+// }
 
-        auto next = (VkDummyProps*) pAllocateInfo;
-        bool addFlags = true;
-
-        while (next->pNext != nullptr)
-        {
-            if (next->sType == VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR)
-            {
-                addFlags = false;
-                break;
-            }
-
-            next = (VkDummyProps*) next->pNext;
-        }
-
-        if (addFlags)
-        {
-            next->pNext = &allocFlagsInfo;
-            LOG_DEBUG("Set VkMemoryAllocateFlagsInfoKHR for VK_KHR_buffer_device_address!");
-        }
-        else
-        {
-            LOG_DEBUG("Flags info is already set, skipping!");
-        }
-    }
-
-    return o_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
-}
+// inline static VkResult hkvkAllocateMemory(VkDevice device, VkMemoryAllocateInfo* pAllocateInfo,
+//                                           const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
+//{
+//     if (_deviceBufferExtSwapped)
+//     {
+//         VkMemoryAllocateFlagsInfoKHR allocFlagsInfo = {};
+//         allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
+//         allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+//
+//         auto next = (VkDummyProps*) pAllocateInfo;
+//         bool addFlags = true;
+//
+//         while (next->pNext != nullptr)
+//         {
+//             if (next->sType == VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR)
+//             {
+//                 addFlags = false;
+//                 break;
+//             }
+//
+//             next = (VkDummyProps*) next->pNext;
+//         }
+//
+//         if (addFlags)
+//         {
+//             next->pNext = &allocFlagsInfo;
+//             LOG_DEBUG("Set VkMemoryAllocateFlagsInfoKHR for VK_KHR_buffer_device_address!");
+//         }
+//         else
+//         {
+//             LOG_DEBUG("Flags info is already set, skipping!");
+//         }
+//     }
+//
+//     return o_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+// }
 
 inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator,
                                           VkInstance* pInstance)
@@ -332,21 +350,23 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
         if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() && !State::Instance().isRunningOnNvidia &&
             (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 ||
              std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0 ||
+             std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0 ||
              std::strcmp(pCreateInfo->ppEnabledExtensionNames[i],
                          VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME) == 0 ||
              std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NV_LOW_LATENCY_EXTENSION_NAME) == 0))
         {
             LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
         }
-        else if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() &&
-                 !State::Instance().isRunningOnNvidia &&
-                 std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0)
-        {
-            LOG_DEBUG("converting {} to {}", VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-                      VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-            _deviceBufferExtSwapped = true;
-            newExtensionList.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-        }
+        // else if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() &&
+        //          !State::Instance().isRunningOnNvidia &&
+        //          std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) ==
+        //          0)
+        //{
+        //     LOG_DEBUG("converting {} to {}", VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+        //               VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        //     _deviceBufferExtSwapped = true;
+        //     newExtensionList.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        // }
         else
         {
             LOG_DEBUG("adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
@@ -381,6 +401,24 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
 
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+
+    // if (_deviceBufferExtSwapped)
+    //{
+    //     auto next = (VkDummyProps*) pCreateInfo;
+
+    //    while (next->pNext != nullptr)
+    //    {
+    //        if (next->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT)
+    //        {
+    //            next->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
+    //            LOG_DEBUG("Swapped ..DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT with "
+    //                      "..DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR");
+    //            break;
+    //        }
+
+    //        next = (VkDummyProps*) next->pNext;
+    //    }
+    //}
 
     // Skip spoofing for Intel Arc
     State::Instance().skipSpoofing = true;
@@ -556,8 +594,12 @@ inline void HookForVulkanExtensionSpoofing(HMODULE vulkanModule)
             KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkEnumerateInstanceExtensionProperties"));
         o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(
             KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkEnumerateDeviceExtensionProperties"));
-        o_vkAllocateMemory = reinterpret_cast<PFN_vkAllocateMemory_Local>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkAllocateMemory"));
+        // o_vkAllocateMemory = reinterpret_cast<PFN_vkAllocateMemory_Local>(
+        //     KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkAllocateMemory"));
+        // o_vkGetBufferDeviceAddressEXT = reinterpret_cast<PFN_vkGetBufferDeviceAddressEXT>(
+        //     KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetBufferDeviceAddressEXT"));
+        // o_vkGetBufferDeviceAddress = reinterpret_cast<PFN_vkGetBufferDeviceAddress>(
+        //     KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetBufferDeviceAddress"));
 
         if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
         {
@@ -579,8 +621,11 @@ inline void HookForVulkanExtensionSpoofing(HMODULE vulkanModule)
             if (o_vkCreateInstance)
                 DetourAttach(&(PVOID&) o_vkCreateInstance, hkvkCreateInstance);
 
-            if (o_vkAllocateMemory)
-                DetourAttach(&(PVOID&) o_vkAllocateMemory, hkvkAllocateMemory);
+            // if (o_vkAllocateMemory)
+            //     DetourAttach(&(PVOID&) o_vkAllocateMemory, hkvkAllocateMemory);
+
+            // if (o_vkGetBufferDeviceAddressEXT)
+            //     DetourAttach(&(PVOID&) o_vkGetBufferDeviceAddressEXT, hkvkGetBufferDeviceAddressEXT);
 
             DetourTransactionCommit();
         }
