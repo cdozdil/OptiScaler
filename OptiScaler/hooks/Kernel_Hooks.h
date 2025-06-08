@@ -157,7 +157,7 @@ class KernelHooks
 
             return streamlineModule;
         }
-        
+
         // sl.dlss.dll
         if (CheckDllName(&lcaseLibName, &slDlssNames))
         {
@@ -1615,7 +1615,7 @@ class KernelHooks
         return o_K32_GetProcAddress(hModule, lpProcName);
     }
 
-    static HMODULE hk_K32_GetModuleHandleA(LPCSTR lpModuleName) 
+    static HMODULE hk_K32_GetModuleHandleA(LPCSTR lpModuleName)
     {
         if (lpModuleName != NULL && strcmp(lpModuleName, "nvngx_dlssg.dll") == 0)
         {

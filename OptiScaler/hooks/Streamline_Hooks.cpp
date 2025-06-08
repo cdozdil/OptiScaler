@@ -76,7 +76,7 @@ sl::Result StreamlineHooks::hkslInit(sl::Preferences* pref, uint64_t sdkVersion)
 }
 
 sl::Result StreamlineHooks::hkslSetTag(sl::ViewportHandle& viewport, sl::ResourceTag* tags, uint32_t numTags,
-                             sl::CommandBuffer* cmdBuffer)
+                                       sl::CommandBuffer* cmdBuffer)
 {
     for (uint32_t i = 0; i < numTags; i++)
     {
@@ -129,8 +129,8 @@ bool StreamlineHooks::hkslInit_sl1(sl1::Preferences* pref, int applicationId)
 }
 
 bool StreamlineHooks::hkslOnPluginLoad(PFN_slOnPluginLoad o_slOnPluginLoad, std::string& config, void* params,
-                                              const char* loaderJSON, const char** pluginJSON)
-{ 
+                                       const char* loaderJSON, const char** pluginJSON)
+{
     LOG_FUNC();
 
     auto result = o_slOnPluginLoad(params, loaderJSON, pluginJSON);
@@ -175,7 +175,7 @@ void* StreamlineHooks::hkdlss_slGetPluginFunction(const char* functionName)
         return &hkdlss_slOnPluginLoad;
     }
 
-    return o_dlss_slGetPluginFunction(functionName); 
+    return o_dlss_slGetPluginFunction(functionName);
 }
 
 void* StreamlineHooks::hkdlssg_slGetPluginFunction(const char* functionName)
