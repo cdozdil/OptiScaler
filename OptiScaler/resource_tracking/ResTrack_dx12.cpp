@@ -797,8 +797,8 @@ HRESULT ResTrack_Dx12::hkCreateDescriptorHeap(ID3D12Device* This, D3D12_DESCRIPT
         auto gpuEnd = gpuStart + (increment * numDescriptors);
         auto type = (UINT) pDescriptorHeapDesc->Type;
 
-        LOG_TRACE("Heap type: {}, Cpu: {}-{}, Gpu: {}-{}, Desc count: {}", type, cpuStart, cpuEnd, gpuStart, gpuEnd,
-                  numDescriptors);
+        LOG_TRACE("Heap: {:X}, Heap type: {}, Cpu: {}-{}, Gpu: {}-{}, Desc count: {}", (size_t) *ppvHeap, type,
+                  cpuStart, cpuEnd, gpuStart, gpuEnd, numDescriptors);
         {
             std::unique_lock<std::shared_mutex> lock(heapMutex);
             fgHeaps[fgHeapIndex] = std::make_unique<HeapInfo>(heap, cpuStart, cpuEnd, gpuStart, gpuEnd, numDescriptors,

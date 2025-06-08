@@ -371,6 +371,7 @@ class IGDExtProxy
         INTC_D3D12_RESOURCE_DESC_0001 localDesc {};
         localDesc.pD3D12Desc = pDesc;
         localDesc.EmulatedTyped64bitAtomics = true;
+        localDesc.Texture2DArrayMipPack = false;
 
         auto result =
             _INTC_D3D12_CreateCommittedResource(_context, pHeapProperties, HeapFlags, &localDesc, InitialResourceState,
@@ -400,6 +401,7 @@ class IGDExtProxy
         INTC_D3D12_RESOURCE_DESC_0001 localDesc {};
         localDesc.pD3D12Desc = pDesc;
         localDesc.EmulatedTyped64bitAtomics = true;
+        localDesc.Texture2DArrayMipPack = false;
 
         auto result = _INTC_D3D12_CreatePlacedResource(_context, pHeap, HeapOffset, &localDesc, InitialState,
                                                        pOptimizedClearValue, riid, ppvResource);
