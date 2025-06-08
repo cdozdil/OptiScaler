@@ -52,6 +52,7 @@ class KernelHooks
     inline static Kernel32Proxy::PFN_LoadLibraryExA o_K32_LoadLibraryExA = nullptr;
     inline static Kernel32Proxy::PFN_LoadLibraryExW o_K32_LoadLibraryExW = nullptr;
     inline static Kernel32Proxy::PFN_GetProcAddress o_K32_GetProcAddress = nullptr;
+    inline static Kernel32Proxy::PFN_GetModuleHandleA o_K32_GetModuleHandleA = nullptr;
     inline static Kernel32Proxy::PFN_GetFileAttributesW o_K32_GetFileAttributesW = nullptr;
     inline static Kernel32Proxy::PFN_CreateFileW o_K32_CreateFileW = nullptr;
 
@@ -141,7 +142,7 @@ class KernelHooks
 
         // sl.interposer.dll
         if (Config::Instance()->FGType.value_or_default() == FGType::Nukems &&
-            CheckDllName(&lcaseLibName, &streamlineNames))
+            CheckDllName(&lcaseLibName, &slInterposerNames))
         {
             auto streamlineModule = KernelBaseProxy::LoadLibraryExA_()(lpLibFullPath, NULL, 0);
 
@@ -155,6 +156,40 @@ class KernelHooks
             }
 
             return streamlineModule;
+        }
+        
+        // sl.dlss.dll
+        if (CheckDllName(&lcaseLibName, &slDlssNames))
+        {
+            auto dlssModule = KernelBaseProxy::LoadLibraryExA_()(lpLibFullPath, NULL, 0);
+
+            if (dlssModule != nullptr)
+            {
+                hookDlss(dlssModule);
+            }
+            else
+            {
+                LOG_ERROR("Trying to load dll: {}", lcaseLibName);
+            }
+
+            return dlssModule;
+        }
+
+        // sl.dlss_g.dll
+        if (CheckDllName(&lcaseLibName, &slDlssgNames))
+        {
+            auto dlssgModule = KernelBaseProxy::LoadLibraryExA_()(lpLibFullPath, NULL, 0);
+
+            if (dlssgModule != nullptr)
+            {
+                hookDlssg(dlssgModule);
+            }
+            else
+            {
+                LOG_ERROR("Trying to load dll: {}", lcaseLibName);
+            }
+
+            return dlssgModule;
         }
 
         // nvngx_dlss
@@ -529,7 +564,7 @@ class KernelHooks
 
         // sl.interposer.dll
         if (Config::Instance()->FGType.value_or_default() == FGType::Nukems &&
-            CheckDllNameW(&lcaseLibName, &streamlineNamesW))
+            CheckDllNameW(&lcaseLibName, &slInterposerNamesW))
         {
             auto streamlineModule = KernelBaseProxy::LoadLibraryExW_()(lpLibFullPath, NULL, 0);
 
@@ -543,6 +578,40 @@ class KernelHooks
             }
 
             return streamlineModule;
+        }
+
+        // sl.dlss.dll
+        if (CheckDllNameW(&lcaseLibName, &slDlssNamesW))
+        {
+            auto dlssModule = KernelBaseProxy::LoadLibraryExW_()(lpLibFullPath, NULL, 0);
+
+            if (dlssModule != nullptr)
+            {
+                hookDlss(dlssModule);
+            }
+            else
+            {
+                LOG_ERROR("Trying to load dll: {}", lcaseLibNameA);
+            }
+
+            return dlssModule;
+        }
+
+        // sl.dlss_g.dll
+        if (CheckDllNameW(&lcaseLibName, &slDlssgNamesW))
+        {
+            auto dlssgModule = KernelBaseProxy::LoadLibraryExW_()(lpLibFullPath, NULL, 0);
+
+            if (dlssgModule != nullptr)
+            {
+                hookDlssg(dlssgModule);
+            }
+            else
+            {
+                LOG_ERROR("Trying to load dll: {}", lcaseLibNameA);
+            }
+
+            return dlssgModule;
         }
 
         if (Config::Instance()->DisableOverlays.value_or_default() && CheckDllNameW(&lcaseLibName, &blockOverlayNamesW))
@@ -1546,6 +1615,18 @@ class KernelHooks
         return o_K32_GetProcAddress(hModule, lpProcName);
     }
 
+    static HMODULE hk_K32_GetModuleHandleA(LPCSTR lpModuleName) 
+    {
+        if (lpModuleName != NULL && strcmp(lpModuleName, "nvngx_dlssg.dll") == 0)
+        {
+            LOG_TRACE("Trying to get module handle of {}, caller: {}", lpModuleName,
+                      Util::WhoIsTheCaller(_ReturnAddress()));
+            return dllModule;
+        }
+
+        return o_K32_GetModuleHandleA(lpModuleName);
+    }
+
     static FARPROC hk_KB_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
     {
         if ((size_t) lpProcName < 0x000000000000F000)
@@ -1660,6 +1741,7 @@ class KernelHooks
         o_K32_LoadLibraryExA = Kernel32Proxy::Hook_LoadLibraryExA(hk_K32_LoadLibraryExA);
         o_K32_LoadLibraryExW = Kernel32Proxy::Hook_LoadLibraryExW(hk_K32_LoadLibraryExW);
         o_K32_GetProcAddress = Kernel32Proxy::Hook_GetProcAddress(hk_K32_GetProcAddress);
+        o_K32_GetModuleHandleA = Kernel32Proxy::Hook_GetModuleHandleA(hk_K32_GetModuleHandleA);
         o_K32_GetFileAttributesW = Kernel32Proxy::Hook_GetFileAttributesW(hk_K32_GetFileAttributesW);
         o_K32_CreateFileW = Kernel32Proxy::Hook_CreateFileW(hk_K32_CreateFileW);
     }

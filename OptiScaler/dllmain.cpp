@@ -704,6 +704,22 @@ static void CheckWorkingMode()
                 hookStreamline(slModule);
             }
 
+            HMODULE slDlss = nullptr;
+            slDlss = KernelBaseProxy::GetModuleHandleW_()(L"sl.dlss.dll");
+            if (slDlss != nullptr)
+            {
+                LOG_DEBUG("sl.dlss.dll already in memory");
+                hookDlss(slDlss);
+            }
+
+            HMODULE slDlssg = nullptr;
+            slDlssg = KernelBaseProxy::GetModuleHandleW_()(L"sl.dlss_g.dll");
+            if (slDlssg != nullptr)
+            {
+                LOG_DEBUG("sl.dlss_g.dll already in memory");
+                hookDlssg(slDlssg);
+            }
+
             // XeSS
             HMODULE xessModule = nullptr;
             xessModule = KernelBaseProxy::GetModuleHandleW_()(L"libxess.dll");

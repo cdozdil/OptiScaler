@@ -2,24 +2,33 @@
 
 #include "pch.h"
 
-#include <Util.h>
-#include <Config.h>
-
-#include <proxies/KernelBase_Proxy.h>
-
+#include <d3d12.h>
 #include <sl.h>
 #include <sl1.h>
-
+#include <json.hpp>
 #include "detours/detours.h"
 
-#include <d3d12.h>
+#include <Util.h>
+#include <Config.h>
+#include <proxies/KernelBase_Proxy.h>
 
+
+// interposer
 static decltype(&slInit) o_slInit = nullptr;
 static decltype(&slSetTag) o_slSetTag = nullptr;
 static decltype(&sl1::slInit) o_slInit_sl1 = nullptr;
 
 static sl::PFun_LogMessageCallback* o_logCallback = nullptr;
 static sl1::pfunLogMessageCallback* o_logCallback_sl1 = nullptr;
+
+// dlss / dlssg
+typedef void* (*PFN_slGetPluginFunction)(const char* functionName);
+typedef bool (*PFN_slOnPluginLoad)(void* params, const char* loaderJSON, const char** pluginJSON);
+
+static PFN_slGetPluginFunction o_dlss_slGetPluginFunction = nullptr;
+static PFN_slOnPluginLoad o_dlss_slOnPluginLoad = nullptr;
+static PFN_slGetPluginFunction o_dlssg_slGetPluginFunction = nullptr;
+static PFN_slOnPluginLoad o_dlssg_slOnPluginLoad = nullptr;
 
 static char* trimStreamlineLog(const char* msg)
 {
@@ -129,8 +138,71 @@ static bool hkslInit_sl1(sl1::Preferences* pref, int applicationId)
     return o_slInit_sl1(*pref, applicationId);
 }
 
+static bool hkslOnPluginLoad(PFN_slOnPluginLoad o_slOnPluginLoad, std::string &config, void* params, const char* loaderJSON, const char** pluginJSON)
+{ 
+    LOG_FUNC();
+
+    auto result = o_slOnPluginLoad(params, loaderJSON, pluginJSON);
+
+    if (Config::Instance()->VulkanExtensionSpoofing.value_or_default())
+    {
+        nlohmann::json configJson = nlohmann::json::parse(*pluginJSON);
+
+        configJson["external"]["vk"]["instance"]["extensions"].clear();
+        configJson["external"]["vk"]["device"]["extensions"].clear();
+        configJson["external"]["vk"]["device"]["1.2_features"].clear();
+
+        config = configJson.dump();
+
+        *pluginJSON = config.c_str();
+    }
+
+    return result;
+}
+
+static bool hkdlss_slOnPluginLoad(void* params, const char* loaderJSON, const char** pluginJSON) 
+{
+    // TODO: do it better than "static" and hoping for the best
+    static std::string config;
+    return hkslOnPluginLoad(o_dlss_slOnPluginLoad, config, params, loaderJSON, pluginJSON);
+}
+
+static bool hkdlssg_slOnPluginLoad(void* params, const char* loaderJSON, const char** pluginJSON)
+{
+    // TODO: do it better than "static" and hoping for the best
+    static std::string config;
+    return hkslOnPluginLoad(o_dlssg_slOnPluginLoad, config, params, loaderJSON, pluginJSON);
+}
+
+static void* hkdlss_slGetPluginFunction(const char* functionName) {
+    LOG_DEBUG("{}", functionName);
+
+    if (strcmp(functionName, "slOnPluginLoad") == 0)
+    {
+        o_dlss_slOnPluginLoad = (PFN_slOnPluginLoad) o_dlss_slGetPluginFunction(functionName);
+        return &hkdlss_slOnPluginLoad;
+    }
+
+    return o_dlss_slGetPluginFunction(functionName); 
+}
+
+static void* hkdlssg_slGetPluginFunction(const char* functionName)
+{
+    LOG_DEBUG("{}", functionName);
+
+    if (strcmp(functionName, "slOnPluginLoad") == 0)
+    {
+        o_dlssg_slOnPluginLoad = (PFN_slOnPluginLoad) o_dlssg_slGetPluginFunction(functionName);
+        return &hkdlssg_slOnPluginLoad;
+    }
+
+    return o_dlssg_slGetPluginFunction(functionName);
+}
+
 static void unhookStreamline()
 {
+    LOG_FUNC();
+
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
 
@@ -174,10 +246,7 @@ static void hookStreamline(HMODULE slInterposer)
     State::DisableChecks(7, "sl.interposer");
 
     if (o_slSetTag || o_slInit || o_slInit_sl1)
-    {
-        LOG_TRACE("Unhook");
         unhookStreamline();
-    }
 
     {
         char dllPath[MAX_PATH];
@@ -226,4 +295,90 @@ static void hookStreamline(HMODULE slInterposer)
     }
 
     State::EnableChecks(7);
+}
+
+static void unhookDlss() {
+    LOG_FUNC();
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
+    if (o_dlss_slGetPluginFunction)
+    {
+        DetourDetach(&(PVOID&) o_dlss_slGetPluginFunction, hkdlss_slGetPluginFunction);
+        o_dlss_slGetPluginFunction = nullptr;
+    }
+
+    DetourTransactionCommit();
+}
+
+static void hookDlss(HMODULE slDlss) {
+    LOG_FUNC();
+
+    if (!slDlss)
+    {
+        LOG_WARN("Dlss module in NULL");
+        return;
+    }
+
+    if (o_dlss_slGetPluginFunction)
+        unhookDlss();
+
+    o_dlss_slGetPluginFunction =
+        reinterpret_cast<PFN_slGetPluginFunction>(KernelBaseProxy::GetProcAddress_()(slDlss, "slGetPluginFunction"));
+
+    if (o_dlss_slGetPluginFunction != nullptr)
+    {
+        LOG_TRACE("Hooking slGetPluginFunction in sl.dlss");
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        DetourAttach(&(PVOID&) o_dlss_slGetPluginFunction, hkdlss_slGetPluginFunction);
+
+        DetourTransactionCommit();
+    }
+}
+
+static void unhookDlssg()
+{
+    LOG_FUNC();
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+
+    if (o_dlssg_slGetPluginFunction)
+    {
+        DetourDetach(&(PVOID&) o_dlssg_slGetPluginFunction, hkdlssg_slGetPluginFunction);
+        o_dlssg_slGetPluginFunction = nullptr;
+    }
+
+    DetourTransactionCommit();
+}
+
+static void hookDlssg(HMODULE slDlssg)
+{
+    LOG_FUNC();
+
+    if (!slDlssg)
+    {
+        LOG_WARN("Dlssg module in NULL");
+        return;
+    }
+
+    if (o_dlssg_slGetPluginFunction)
+        unhookDlssg();
+
+    o_dlssg_slGetPluginFunction =
+        reinterpret_cast<PFN_slGetPluginFunction>(KernelBaseProxy::GetProcAddress_()(slDlssg, "slGetPluginFunction"));
+
+    if (o_dlssg_slGetPluginFunction != nullptr)
+    {
+        LOG_TRACE("Hooking slGetPluginFunction in sl.dlssg");
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        DetourAttach(&(PVOID&) o_dlssg_slGetPluginFunction, hkdlssg_slGetPluginFunction);
+
+        DetourTransactionCommit();
+    }
 }
