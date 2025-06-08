@@ -16,6 +16,9 @@ typedef struct VkDummyProps
     void* pNext;
 } VkDummyProps;
 
+typedef VkResult (*PFN_vkAllocateMemory_Local)(VkDevice device, VkMemoryAllocateInfo* pAllocateInfo,
+                                               const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory);
+
 static PFN_vkCreateDevice o_vkCreateDevice = nullptr;
 static PFN_vkCreateInstance o_vkCreateInstance = nullptr;
 static PFN_vkGetPhysicalDeviceProperties o_vkGetPhysicalDeviceProperties = nullptr;
@@ -26,9 +29,12 @@ static PFN_vkGetPhysicalDeviceMemoryProperties2 o_vkGetPhysicalDeviceMemoryPrope
 static PFN_vkGetPhysicalDeviceMemoryProperties2KHR o_vkGetPhysicalDeviceMemoryProperties2KHR = nullptr;
 static PFN_vkEnumerateDeviceExtensionProperties o_vkEnumerateDeviceExtensionProperties = nullptr;
 static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtensionProperties = nullptr;
+static PFN_vkAllocateMemory_Local o_vkAllocateMemory = nullptr;
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
+static bool _deviceBufferExtSwapped = false;
+static bool _extDeviceBufferSupported = false;
 
 inline static void hkvkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice,
                                                          VkPhysicalDeviceMemoryProperties* pMemoryProperties)
@@ -223,6 +229,43 @@ inline static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev
     }
 }
 
+inline static VkResult hkvkAllocateMemory(VkDevice device, VkMemoryAllocateInfo* pAllocateInfo,
+                                          const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
+{
+    if (_deviceBufferExtSwapped)
+    {
+        VkMemoryAllocateFlagsInfoKHR allocFlagsInfo = {};
+        allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
+        allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+
+        auto next = (VkDummyProps*) pAllocateInfo;
+        bool addFlags = true;
+
+        while (next->pNext != nullptr)
+        {
+            if (next->sType == VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR)
+            {
+                addFlags = false;
+                break;
+            }
+
+            next = (VkDummyProps*) next->pNext;
+        }
+
+        if (addFlags)
+        {
+            next->pNext = &allocFlagsInfo;
+            LOG_DEBUG("Set VkMemoryAllocateFlagsInfoKHR for VK_KHR_buffer_device_address!");
+        }
+        else
+        {
+            LOG_DEBUG("Flags info is already set, skipping!");
+        }
+    }
+
+    return o_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+}
+
 inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator,
                                           VkInstance* pInstance)
 {
@@ -295,6 +338,15 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
         {
             LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
         }
+        else if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() &&
+                 !State::Instance().isRunningOnNvidia &&
+                 std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0)
+        {
+            LOG_DEBUG("converting {} to {}", VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                      VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+            _deviceBufferExtSwapped = true;
+            newExtensionList.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        }
         else
         {
             LOG_DEBUG("adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
@@ -361,7 +413,7 @@ inline static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
 
     if (pLayerName == nullptr && pProperties == nullptr && count == 0)
     {
-        *pPropertyCount += 4;
+        *pPropertyCount += 5;
         vkEnumerateDeviceExtensionPropertiesCount = *pPropertyCount;
         LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName,
                   vkEnumerateDeviceExtensionPropertiesCount);
@@ -385,6 +437,10 @@ inline static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
 
         VkExtensionProperties ll { VK_NV_LOW_LATENCY_EXTENSION_NAME, VK_NV_LOW_LATENCY_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 4], &ll, sizeof(VkExtensionProperties));
+
+        VkExtensionProperties bda { VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                                    VK_EXT_BUFFER_DEVICE_ADDRESS_SPEC_VERSION };
+        memcpy(&pProperties[*pPropertyCount - 5], &bda, sizeof(VkExtensionProperties));
 
         LOG_DEBUG("Extensions returned:");
         for (size_t i = 0; i < *pPropertyCount; i++)
@@ -500,6 +556,8 @@ inline void HookForVulkanExtensionSpoofing(HMODULE vulkanModule)
             KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkEnumerateInstanceExtensionProperties"));
         o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(
             KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkEnumerateDeviceExtensionProperties"));
+        o_vkAllocateMemory = reinterpret_cast<PFN_vkAllocateMemory_Local>(
+            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkAllocateMemory"));
 
         if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
         {
@@ -520,6 +578,9 @@ inline void HookForVulkanExtensionSpoofing(HMODULE vulkanModule)
 
             if (o_vkCreateInstance)
                 DetourAttach(&(PVOID&) o_vkCreateInstance, hkvkCreateInstance);
+
+            if (o_vkAllocateMemory)
+                DetourAttach(&(PVOID&) o_vkAllocateMemory, hkvkAllocateMemory);
 
             DetourTransactionCommit();
         }
