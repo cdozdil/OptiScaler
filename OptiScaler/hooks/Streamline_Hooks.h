@@ -199,7 +199,9 @@ static void* hkdlssg_slGetPluginFunction(const char* functionName)
     return o_dlssg_slGetPluginFunction(functionName);
 }
 
-static void unhookStreamline()
+// SL INTERPOSER
+
+static void unhookSlInterposer()
 {
     LOG_FUNC();
 
@@ -231,7 +233,7 @@ static void unhookStreamline()
 }
 
 // Call it just after sl.interposer's load or if sl.interposer is already loaded
-static void hookStreamline(HMODULE slInterposer)
+static void hookSlInterposer(HMODULE slInterposer)
 {
     LOG_FUNC();
 
@@ -246,7 +248,7 @@ static void hookStreamline(HMODULE slInterposer)
     State::DisableChecks(7, "sl.interposer");
 
     if (o_slSetTag || o_slInit || o_slInit_sl1)
-        unhookStreamline();
+        unhookSlInterposer();
 
     {
         char dllPath[MAX_PATH];
@@ -297,7 +299,9 @@ static void hookStreamline(HMODULE slInterposer)
     State::EnableChecks(7);
 }
 
-static void unhookDlss() {
+// SL DLSS
+
+static void unhookSlDlss() {
     LOG_FUNC();
 
     DetourTransactionBegin();
@@ -312,7 +316,7 @@ static void unhookDlss() {
     DetourTransactionCommit();
 }
 
-static void hookDlss(HMODULE slDlss) {
+static void hookSlDlss(HMODULE slDlss) {
     LOG_FUNC();
 
     if (!slDlss)
@@ -322,7 +326,7 @@ static void hookDlss(HMODULE slDlss) {
     }
 
     if (o_dlss_slGetPluginFunction)
-        unhookDlss();
+        unhookSlDlss();
 
     o_dlss_slGetPluginFunction =
         reinterpret_cast<PFN_slGetPluginFunction>(KernelBaseProxy::GetProcAddress_()(slDlss, "slGetPluginFunction"));
@@ -339,7 +343,9 @@ static void hookDlss(HMODULE slDlss) {
     }
 }
 
-static void unhookDlssg()
+// SL DLSSG
+
+static void unhookSlDlssg()
 {
     LOG_FUNC();
 
@@ -355,7 +361,7 @@ static void unhookDlssg()
     DetourTransactionCommit();
 }
 
-static void hookDlssg(HMODULE slDlssg)
+static void hookSlDlssg(HMODULE slDlssg)
 {
     LOG_FUNC();
 
@@ -366,7 +372,7 @@ static void hookDlssg(HMODULE slDlssg)
     }
 
     if (o_dlssg_slGetPluginFunction)
-        unhookDlssg();
+        unhookSlDlssg();
 
     o_dlssg_slGetPluginFunction =
         reinterpret_cast<PFN_slGetPluginFunction>(KernelBaseProxy::GetProcAddress_()(slDlssg, "slGetPluginFunction"));

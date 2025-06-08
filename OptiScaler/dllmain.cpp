@@ -701,7 +701,7 @@ static void CheckWorkingMode()
             if (slModule != nullptr)
             {
                 LOG_DEBUG("sl.interposer.dll already in memory");
-                hookStreamline(slModule);
+                hookSlInterposer(slModule);
             }
 
             HMODULE slDlss = nullptr;
@@ -709,7 +709,7 @@ static void CheckWorkingMode()
             if (slDlss != nullptr)
             {
                 LOG_DEBUG("sl.dlss.dll already in memory");
-                hookDlss(slDlss);
+                hookSlDlss(slDlss);
             }
 
             HMODULE slDlssg = nullptr;
@@ -717,7 +717,7 @@ static void CheckWorkingMode()
             if (slDlssg != nullptr)
             {
                 LOG_DEBUG("sl.dlss_g.dll already in memory");
-                hookDlssg(slDlssg);
+                hookSlDlssg(slDlssg);
             }
 
             // XeSS

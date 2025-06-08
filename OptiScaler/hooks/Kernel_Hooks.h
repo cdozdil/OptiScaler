@@ -148,7 +148,7 @@ class KernelHooks
 
             if (streamlineModule != nullptr)
             {
-                hookStreamline(streamlineModule);
+                hookSlInterposer(streamlineModule);
             }
             else
             {
@@ -165,7 +165,7 @@ class KernelHooks
 
             if (dlssModule != nullptr)
             {
-                hookDlss(dlssModule);
+                hookSlDlss(dlssModule);
             }
             else
             {
@@ -182,7 +182,7 @@ class KernelHooks
 
             if (dlssgModule != nullptr)
             {
-                hookDlssg(dlssgModule);
+                hookSlDlssg(dlssgModule);
             }
             else
             {
@@ -570,7 +570,7 @@ class KernelHooks
 
             if (streamlineModule != nullptr)
             {
-                hookStreamline(streamlineModule);
+                hookSlInterposer(streamlineModule);
             }
             else
             {
@@ -587,7 +587,7 @@ class KernelHooks
 
             if (dlssModule != nullptr)
             {
-                hookDlss(dlssModule);
+                hookSlDlss(dlssModule);
             }
             else
             {
@@ -604,7 +604,7 @@ class KernelHooks
 
             if (dlssgModule != nullptr)
             {
-                hookDlssg(dlssgModule);
+                hookSlDlssg(dlssgModule);
             }
             else
             {
