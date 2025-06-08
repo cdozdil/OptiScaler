@@ -1,10 +1,5 @@
-#pragma once
+#include "Streamline_Hooks.h"
 
-#include "pch.h"
-
-#include <d3d12.h>
-#include <sl.h>
-#include <sl1.h>
 #include <json.hpp>
 #include "detours/detours.h"
 
@@ -12,25 +7,20 @@
 #include <Config.h>
 #include <proxies/KernelBase_Proxy.h>
 
-
 // interposer
-static decltype(&slInit) o_slInit = nullptr;
-static decltype(&slSetTag) o_slSetTag = nullptr;
-static decltype(&sl1::slInit) o_slInit_sl1 = nullptr;
+decltype(&slInit) StreamlineHooks::o_slInit = nullptr;
+decltype(&slSetTag) StreamlineHooks::o_slSetTag = nullptr;
+decltype(&sl1::slInit) StreamlineHooks::o_slInit_sl1 = nullptr;
 
-static sl::PFun_LogMessageCallback* o_logCallback = nullptr;
-static sl1::pfunLogMessageCallback* o_logCallback_sl1 = nullptr;
+sl::PFun_LogMessageCallback* StreamlineHooks::o_logCallback = nullptr;
+sl1::pfunLogMessageCallback* StreamlineHooks::o_logCallback_sl1 = nullptr;
 
-// dlss / dlssg
-typedef void* (*PFN_slGetPluginFunction)(const char* functionName);
-typedef bool (*PFN_slOnPluginLoad)(void* params, const char* loaderJSON, const char** pluginJSON);
+StreamlineHooks::PFN_slGetPluginFunction StreamlineHooks::o_dlss_slGetPluginFunction = nullptr;
+StreamlineHooks::PFN_slOnPluginLoad StreamlineHooks::o_dlss_slOnPluginLoad = nullptr;
+StreamlineHooks::PFN_slGetPluginFunction StreamlineHooks::o_dlssg_slGetPluginFunction = nullptr;
+StreamlineHooks::PFN_slOnPluginLoad StreamlineHooks::o_dlssg_slOnPluginLoad = nullptr;
 
-static PFN_slGetPluginFunction o_dlss_slGetPluginFunction = nullptr;
-static PFN_slOnPluginLoad o_dlss_slOnPluginLoad = nullptr;
-static PFN_slGetPluginFunction o_dlssg_slGetPluginFunction = nullptr;
-static PFN_slOnPluginLoad o_dlssg_slOnPluginLoad = nullptr;
-
-static char* trimStreamlineLog(const char* msg)
+char* StreamlineHooks::trimStreamlineLog(const char* msg)
 {
     int bracket_count = 0;
 
@@ -49,7 +39,7 @@ static char* trimStreamlineLog(const char* msg)
     return result;
 }
 
-static void streamlineLogCallback(sl::LogType type, const char* msg)
+void StreamlineHooks::streamlineLogCallback(sl::LogType type, const char* msg)
 {
     char* trimmed_msg = trimStreamlineLog(msg);
 
@@ -75,7 +65,7 @@ static void streamlineLogCallback(sl::LogType type, const char* msg)
         o_logCallback(type, msg);
 }
 
-static sl::Result hkslInit(sl::Preferences* pref, uint64_t sdkVersion)
+sl::Result StreamlineHooks::hkslInit(sl::Preferences* pref, uint64_t sdkVersion)
 {
     LOG_FUNC();
     if (pref->logMessageCallback != &streamlineLogCallback)
@@ -85,7 +75,7 @@ static sl::Result hkslInit(sl::Preferences* pref, uint64_t sdkVersion)
     return o_slInit(*pref, sdkVersion);
 }
 
-static sl::Result hkslSetTag(sl::ViewportHandle& viewport, sl::ResourceTag* tags, uint32_t numTags,
+sl::Result StreamlineHooks::hkslSetTag(sl::ViewportHandle& viewport, sl::ResourceTag* tags, uint32_t numTags,
                              sl::CommandBuffer* cmdBuffer)
 {
     for (uint32_t i = 0; i < numTags; i++)
@@ -102,7 +92,7 @@ static sl::Result hkslSetTag(sl::ViewportHandle& viewport, sl::ResourceTag* tags
     return result;
 }
 
-static void streamlineLogCallback_sl1(sl1::LogType type, const char* msg)
+void StreamlineHooks::streamlineLogCallback_sl1(sl1::LogType type, const char* msg)
 {
     char* trimmed_msg = trimStreamlineLog(msg);
 
@@ -128,7 +118,7 @@ static void streamlineLogCallback_sl1(sl1::LogType type, const char* msg)
         o_logCallback_sl1(type, msg);
 }
 
-static bool hkslInit_sl1(sl1::Preferences* pref, int applicationId)
+bool StreamlineHooks::hkslInit_sl1(sl1::Preferences* pref, int applicationId)
 {
     LOG_FUNC();
     if (pref->logMessageCallback != &streamlineLogCallback_sl1)
@@ -138,7 +128,8 @@ static bool hkslInit_sl1(sl1::Preferences* pref, int applicationId)
     return o_slInit_sl1(*pref, applicationId);
 }
 
-static bool hkslOnPluginLoad(PFN_slOnPluginLoad o_slOnPluginLoad, std::string &config, void* params, const char* loaderJSON, const char** pluginJSON)
+bool StreamlineHooks::hkslOnPluginLoad(PFN_slOnPluginLoad o_slOnPluginLoad, std::string& config, void* params,
+                                              const char* loaderJSON, const char** pluginJSON)
 { 
     LOG_FUNC();
 
@@ -160,21 +151,22 @@ static bool hkslOnPluginLoad(PFN_slOnPluginLoad o_slOnPluginLoad, std::string &c
     return result;
 }
 
-static bool hkdlss_slOnPluginLoad(void* params, const char* loaderJSON, const char** pluginJSON) 
+bool StreamlineHooks::hkdlss_slOnPluginLoad(void* params, const char* loaderJSON, const char** pluginJSON)
 {
     // TODO: do it better than "static" and hoping for the best
     static std::string config;
     return hkslOnPluginLoad(o_dlss_slOnPluginLoad, config, params, loaderJSON, pluginJSON);
 }
 
-static bool hkdlssg_slOnPluginLoad(void* params, const char* loaderJSON, const char** pluginJSON)
+bool StreamlineHooks::hkdlssg_slOnPluginLoad(void* params, const char* loaderJSON, const char** pluginJSON)
 {
     // TODO: do it better than "static" and hoping for the best
     static std::string config;
     return hkslOnPluginLoad(o_dlssg_slOnPluginLoad, config, params, loaderJSON, pluginJSON);
 }
 
-static void* hkdlss_slGetPluginFunction(const char* functionName) {
+void* StreamlineHooks::hkdlss_slGetPluginFunction(const char* functionName)
+{
     LOG_DEBUG("{}", functionName);
 
     if (strcmp(functionName, "slOnPluginLoad") == 0)
@@ -186,7 +178,7 @@ static void* hkdlss_slGetPluginFunction(const char* functionName) {
     return o_dlss_slGetPluginFunction(functionName); 
 }
 
-static void* hkdlssg_slGetPluginFunction(const char* functionName)
+void* StreamlineHooks::hkdlssg_slGetPluginFunction(const char* functionName)
 {
     LOG_DEBUG("{}", functionName);
 
@@ -201,7 +193,7 @@ static void* hkdlssg_slGetPluginFunction(const char* functionName)
 
 // SL INTERPOSER
 
-static void unhookSlInterposer()
+void StreamlineHooks::unhookInterposer()
 {
     LOG_FUNC();
 
@@ -233,7 +225,7 @@ static void unhookSlInterposer()
 }
 
 // Call it just after sl.interposer's load or if sl.interposer is already loaded
-static void hookSlInterposer(HMODULE slInterposer)
+void StreamlineHooks::hookInterposer(HMODULE slInterposer)
 {
     LOG_FUNC();
 
@@ -248,7 +240,7 @@ static void hookSlInterposer(HMODULE slInterposer)
     State::DisableChecks(7, "sl.interposer");
 
     if (o_slSetTag || o_slInit || o_slInit_sl1)
-        unhookSlInterposer();
+        unhookInterposer();
 
     {
         char dllPath[MAX_PATH];
@@ -301,7 +293,8 @@ static void hookSlInterposer(HMODULE slInterposer)
 
 // SL DLSS
 
-static void unhookSlDlss() {
+void StreamlineHooks::unhookDlss()
+{
     LOG_FUNC();
 
     DetourTransactionBegin();
@@ -316,7 +309,8 @@ static void unhookSlDlss() {
     DetourTransactionCommit();
 }
 
-static void hookSlDlss(HMODULE slDlss) {
+void StreamlineHooks::hookDlss(HMODULE slDlss)
+{
     LOG_FUNC();
 
     if (!slDlss)
@@ -326,7 +320,7 @@ static void hookSlDlss(HMODULE slDlss) {
     }
 
     if (o_dlss_slGetPluginFunction)
-        unhookSlDlss();
+        unhookDlss();
 
     o_dlss_slGetPluginFunction =
         reinterpret_cast<PFN_slGetPluginFunction>(KernelBaseProxy::GetProcAddress_()(slDlss, "slGetPluginFunction"));
@@ -345,7 +339,7 @@ static void hookSlDlss(HMODULE slDlss) {
 
 // SL DLSSG
 
-static void unhookSlDlssg()
+void StreamlineHooks::unhookDlssg()
 {
     LOG_FUNC();
 
@@ -361,7 +355,7 @@ static void unhookSlDlssg()
     DetourTransactionCommit();
 }
 
-static void hookSlDlssg(HMODULE slDlssg)
+void StreamlineHooks::hookDlssg(HMODULE slDlssg)
 {
     LOG_FUNC();
 
@@ -372,7 +366,7 @@ static void hookSlDlssg(HMODULE slDlssg)
     }
 
     if (o_dlssg_slGetPluginFunction)
-        unhookSlDlssg();
+        unhookDlssg();
 
     o_dlssg_slGetPluginFunction =
         reinterpret_cast<PFN_slGetPluginFunction>(KernelBaseProxy::GetProcAddress_()(slDlssg, "slGetPluginFunction"));
