@@ -24,6 +24,7 @@
 
 #include "sl1_consts.h"
 
+#undef SL_API
 //#define SL_API extern "C"
 #define SL_API
 
