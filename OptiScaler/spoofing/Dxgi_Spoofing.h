@@ -174,7 +174,7 @@ inline static bool SkipSpoofing()
         return skip;
     }
 
-    inline static HRESULT detGetDesc3(IDXGIAdapter4 * This, DXGI_ADAPTER_DESC3 * pDesc)
+    inline static HRESULT hkGetDesc3(IDXGIAdapter4 * This, DXGI_ADAPTER_DESC3 * pDesc)
     {
         auto result = o_GetDesc3(This, pDesc);
 
@@ -224,7 +224,7 @@ inline static bool SkipSpoofing()
         return result;
     }
 
-    inline static HRESULT detGetDesc2(IDXGIAdapter2 * This, DXGI_ADAPTER_DESC2 * pDesc)
+    inline static HRESULT hkGetDesc2(IDXGIAdapter2 * This, DXGI_ADAPTER_DESC2 * pDesc)
     {
         auto result = o_GetDesc2(This, pDesc);
 
@@ -274,7 +274,7 @@ inline static bool SkipSpoofing()
         return result;
     }
 
-    inline static HRESULT detGetDesc1(IDXGIAdapter1 * This, DXGI_ADAPTER_DESC1 * pDesc)
+    inline static HRESULT hkGetDesc1(IDXGIAdapter1 * This, DXGI_ADAPTER_DESC1 * pDesc)
     {
         auto result = o_GetDesc1(This, pDesc);
 
@@ -324,7 +324,7 @@ inline static bool SkipSpoofing()
         return result;
     }
 
-    inline static HRESULT detGetDesc(IDXGIAdapter * This, DXGI_ADAPTER_DESC * pDesc)
+    inline static HRESULT hkGetDesc(IDXGIAdapter * This, DXGI_ADAPTER_DESC * pDesc)
     {
         auto result = o_GetDesc(This, pDesc);
 
@@ -378,7 +378,7 @@ inline static bool SkipSpoofing()
 
 #pragma region DXGI Factory methods
 
-    inline static HRESULT detEnumAdapterByGpuPreference(
+    inline static HRESULT hkEnumAdapterByGpuPreference(
         IDXGIFactory6 * This, UINT Adapter, DXGI_GPU_PREFERENCE GpuPreference, REFIID riid, IDXGIAdapter * *ppvAdapter)
     {
         AttachToFactory(This);
@@ -398,8 +398,8 @@ inline static bool SkipSpoofing()
         return result;
     }
 
-    inline static HRESULT detEnumAdapterByLuid(IDXGIFactory4 * This, LUID AdapterLuid, REFIID riid,
-                                               IDXGIAdapter * *ppvAdapter)
+    inline static HRESULT hkEnumAdapterByLuid(IDXGIFactory4 * This, LUID AdapterLuid, REFIID riid,
+                                              IDXGIAdapter * *ppvAdapter)
     {
         AttachToFactory(This);
 
@@ -418,10 +418,8 @@ inline static bool SkipSpoofing()
         return result;
     }
 
-    inline static HRESULT detEnumAdapters1(IDXGIFactory1 * This, UINT Adapter, IDXGIAdapter1 * *ppAdapter)
+    inline static HRESULT hkEnumAdapters1(IDXGIFactory1 * This, UINT Adapter, IDXGIAdapter1 * *ppAdapter)
     {
-        LOG_TRACE("dllmain");
-
         AttachToFactory(This);
 
         HRESULT result = S_OK;
@@ -497,7 +495,7 @@ inline static bool SkipSpoofing()
         return result;
     }
 
-    inline static HRESULT detEnumAdapters(IDXGIFactory * This, UINT Adapter, IDXGIAdapter * *ppAdapter)
+    inline static HRESULT hkEnumAdapters(IDXGIFactory * This, UINT Adapter, IDXGIAdapter * *ppAdapter)
     {
         AttachToFactory(This);
 
@@ -656,7 +654,7 @@ inline static bool SkipSpoofing()
 
             o_GetDesc = (PFN_GetDesc) pVTable[8];
 
-            DetourAttach(&(PVOID&) o_GetDesc, detGetDesc);
+            DetourAttach(&(PVOID&) o_GetDesc, hkGetDesc);
 
             DetourTransactionCommit();
         }
@@ -674,7 +672,7 @@ inline static bool SkipSpoofing()
 
             o_GetDesc1 = (PFN_GetDesc1) pVTable[10];
 
-            DetourAttach(&(PVOID&) o_GetDesc1, detGetDesc1);
+            DetourAttach(&(PVOID&) o_GetDesc1, hkGetDesc1);
 
             DetourTransactionCommit();
         }
@@ -692,7 +690,7 @@ inline static bool SkipSpoofing()
 
             o_GetDesc2 = (PFN_GetDesc2) pVTable[11];
 
-            DetourAttach(&(PVOID&) o_GetDesc2, detGetDesc2);
+            DetourAttach(&(PVOID&) o_GetDesc2, hkGetDesc2);
 
             DetourTransactionCommit();
         }
@@ -710,7 +708,7 @@ inline static bool SkipSpoofing()
 
             o_GetDesc3 = (PFN_GetDesc3) pVTable[18];
 
-            DetourAttach(&(PVOID&) o_GetDesc3, detGetDesc3);
+            DetourAttach(&(PVOID&) o_GetDesc3, hkGetDesc3);
 
             DetourTransactionCommit();
         }
@@ -735,7 +733,7 @@ inline static bool SkipSpoofing()
 
             o_EnumAdapters = (PFN_EnumAdapters) pVTable[7];
 
-            DetourAttach(&(PVOID&) o_EnumAdapters, detEnumAdapters);
+            DetourAttach(&(PVOID&) o_EnumAdapters, hkEnumAdapters);
 
             DetourTransactionCommit();
 
@@ -751,7 +749,7 @@ inline static bool SkipSpoofing()
 
             o_EnumAdapters1 = (PFN_EnumAdapters1) pVTable[12];
 
-            DetourAttach(&(PVOID&) o_EnumAdapters1, detEnumAdapters1);
+            DetourAttach(&(PVOID&) o_EnumAdapters1, hkEnumAdapters1);
 
             DetourTransactionCommit();
 
@@ -767,7 +765,7 @@ inline static bool SkipSpoofing()
 
             o_EnumAdapterByLuid = (PFN_EnumAdapterByLuid) pVTable[26];
 
-            DetourAttach(&(PVOID&) o_EnumAdapterByLuid, detEnumAdapterByLuid);
+            DetourAttach(&(PVOID&) o_EnumAdapterByLuid, hkEnumAdapterByLuid);
 
             DetourTransactionCommit();
 
@@ -783,7 +781,7 @@ inline static bool SkipSpoofing()
 
             o_EnumAdapterByGpuPreference = (PFN_EnumAdapterByGpuPreference) pVTable[29];
 
-            DetourAttach(&(PVOID&) o_EnumAdapterByGpuPreference, detEnumAdapterByGpuPreference);
+            DetourAttach(&(PVOID&) o_EnumAdapterByGpuPreference, hkEnumAdapterByGpuPreference);
 
             DetourTransactionCommit();
 
