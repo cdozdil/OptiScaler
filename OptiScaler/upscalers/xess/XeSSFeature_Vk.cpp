@@ -49,6 +49,16 @@ static xess_vk_image_view_info NV_to_XeSS(NVSDK_NGX_Resource_VK* nvResource)
     xessResource.imageView = nvResource->Resource.ImageViewInfo.ImageView;
     xessResource.subresourceRange = nvResource->Resource.ImageViewInfo.SubresourceRange;
     xessResource.width = nvResource->Resource.ImageViewInfo.Width;
+    xessResource.subresourceRange.layerCount = 1;
+    xessResource.subresourceRange.levelCount = 1;
+
+    // LOG_DEBUG("{}x{}, format: {}, image: {:X}, imageView: {:X}", xessResource.width, xessResource.height,
+    //           (UINT) xessResource.format, (size_t) xessResource.image, (size_t) xessResource.imageView);
+
+    // LOG_DEBUG("aspectMask: {:X}, baseArrayLayer: {}, baseMipLevel: {}, layerCount: {}, levelCount: {}",
+    //           (UINT) xessResource.subresourceRange.aspectMask, xessResource.subresourceRange.baseArrayLayer,
+    //           xessResource.subresourceRange.baseMipLevel, xessResource.subresourceRange.layerCount,
+    //           xessResource.subresourceRange.levelCount);
 
     return xessResource;
 }

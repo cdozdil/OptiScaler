@@ -29,6 +29,8 @@ static PFN_vkEnumerateInstanceExtensionProperties o_vkEnumerateInstanceExtension
 
 static uint32_t vkEnumerateInstanceExtensionPropertiesCount = 0;
 static uint32_t vkEnumerateDeviceExtensionPropertiesCount = 0;
+static bool vkEnumerateDeviceExtensionPropertiesListed = false;
+static bool vkEnumerateInstanceExtensionPropertiesListed = false;
 
 inline static void hkvkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice,
                                                          VkPhysicalDeviceMemoryProperties* pMemoryProperties)
@@ -42,7 +44,7 @@ inline static void hkvkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physic
     {
         if (pMemoryProperties->memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
         {
-            uint64_t newMemSize = (uint64_t) Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            uint64_t newMemSize = (uint64_t) Config::Instance()->VulkanVRAM.value() * 1073741824; // 1024 * 1024 * 1024
             pMemoryProperties->memoryHeaps[i].size = newMemSize;
         }
     }
@@ -61,7 +63,7 @@ inline static void hkvkGetPhysicalDeviceMemoryProperties2(VkPhysicalDevice physi
     {
         if (pMemoryProperties->memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
         {
-            uint64_t newMemSize = (uint64_t) Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            uint64_t newMemSize = (uint64_t) Config::Instance()->VulkanVRAM.value() * 1073741824; // 1024 * 1024 * 1024
             pMemoryProperties->memoryProperties.memoryHeaps[i].size = newMemSize;
         }
     }
@@ -80,7 +82,7 @@ inline static void hkvkGetPhysicalDeviceMemoryProperties2KHR(VkPhysicalDevice ph
     {
         if (pMemoryProperties->memoryProperties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
         {
-            uint64_t newMemSize = (uint64_t) Config::Instance()->VulkanVRAM.value() * 1024 * 1024 * 1024;
+            uint64_t newMemSize = (uint64_t) Config::Instance()->VulkanVRAM.value() * 1073741824; // 1024 * 1024 * 1024
             pMemoryProperties->memoryProperties.memoryHeaps[i].size = newMemSize;
         }
     }
@@ -91,21 +93,25 @@ inline static void hkvkGetPhysicalDeviceProperties(VkPhysicalDevice physical_dev
 {
     o_vkGetPhysicalDeviceProperties(physical_device, properties);
 
-    if (properties->vendorID != 0x1414 &&
-        !State::Instance().adapterDescs.contains(properties->vendorID | properties->deviceID))
+    // Report adapter info
+    auto uniqueId = properties->vendorID | properties->deviceID;
+    if (properties->vendorID != 0x1414 && !State::Instance().adapterDescs.contains(uniqueId))
     {
         std::string szName(properties->deviceName);
         std::string descStr = std::format("Adapter: {}, VendorId: {:#x}, DeviceId: {:#x}", szName, properties->vendorID,
                                           properties->deviceID);
         LOG_INFO("{}", descStr);
-        State::Instance().adapterDescs.insert_or_assign(properties->vendorID | properties->deviceID, descStr);
+        State::Instance().adapterDescs.insert_or_assign(uniqueId, descStr);
     }
 
-    if (!State::Instance().skipSpoofing &&
-        (!Config::Instance()->TargetVendorId.has_value() ||
-         Config::Instance()->TargetVendorId.value() == properties->vendorID) &&
-        (!Config::Instance()->TargetDeviceId.has_value() ||
-         Config::Instance()->TargetDeviceId.value() == properties->deviceID))
+    auto targetVendorIdMatches = !Config::Instance()->TargetVendorId.has_value() ||
+                                 Config::Instance()->TargetVendorId.value() == properties->vendorID;
+
+    auto targetDeviceIdMatches = !Config::Instance()->TargetDeviceId.has_value() ||
+                                 Config::Instance()->TargetDeviceId.value() == properties->deviceID;
+
+    // Spoof
+    if (!State::Instance().skipSpoofing && targetVendorIdMatches && targetDeviceIdMatches)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties->deviceName, deviceName.c_str());
@@ -124,22 +130,25 @@ inline static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, V
 {
     o_vkGetPhysicalDeviceProperties2(phys_dev, properties2);
 
-    if (properties2->properties.vendorID != 0x1414 &&
-        !State::Instance().adapterDescs.contains(properties2->properties.vendorID | properties2->properties.deviceID))
+    // Report adapter info
+    auto uniqueId = properties2->properties.vendorID | properties2->properties.deviceID;
+    if (properties2->properties.vendorID != 0x1414 && !State::Instance().adapterDescs.contains(uniqueId))
     {
         std::string szName(properties2->properties.deviceName);
         std::string descStr = std::format("Adapter: {}, VendorId: {:#x}, DeviceId: {:#x}", szName,
                                           properties2->properties.vendorID, properties2->properties.deviceID);
         LOG_INFO("{}", descStr);
-        State::Instance().adapterDescs.insert_or_assign(
-            properties2->properties.vendorID | properties2->properties.deviceID, descStr);
+        State::Instance().adapterDescs.insert_or_assign(uniqueId, descStr);
     }
 
-    if (!State::Instance().skipSpoofing &&
-        (!Config::Instance()->TargetVendorId.has_value() ||
-         Config::Instance()->TargetVendorId.value() == properties2->properties.vendorID) &&
-        (!Config::Instance()->TargetDeviceId.has_value() ||
-         Config::Instance()->TargetDeviceId.value() == properties2->properties.deviceID))
+    auto targetVendorIdMatches = !Config::Instance()->TargetVendorId.has_value() ||
+                                 Config::Instance()->TargetVendorId.value() == properties2->properties.vendorID;
+
+    auto targetDeviceIdMatches = !Config::Instance()->TargetDeviceId.has_value() ||
+                                 Config::Instance()->TargetDeviceId.value() == properties2->properties.deviceID;
+
+    // Spoof
+    if (!State::Instance().skipSpoofing && targetVendorIdMatches && targetDeviceIdMatches)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
@@ -147,6 +156,7 @@ inline static void hkvkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, V
         properties2->properties.deviceID = Config::Instance()->SpoofedDeviceId.value_or_default();
         properties2->properties.driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
 
+        // If spoofing Nvidia
         if (Config::Instance()->SpoofedVendorId.value_or_default() == 0x10de)
         {
             auto next = (VkDummyProps*) properties2->pNext;
@@ -176,22 +186,25 @@ inline static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev
 {
     o_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
 
-    if (properties2->properties.vendorID != 0x1414 &&
-        !State::Instance().adapterDescs.contains(properties2->properties.vendorID | properties2->properties.deviceID))
+    // Report adapter info
+    auto uniqueId = properties2->properties.vendorID | properties2->properties.deviceID;
+    if (properties2->properties.vendorID != 0x1414 && !State::Instance().adapterDescs.contains(uniqueId))
     {
         std::string szName(properties2->properties.deviceName);
         std::string descStr = std::format("Adapter: {}, VendorId: {:#x}, DeviceId: {:#x}", szName,
                                           properties2->properties.vendorID, properties2->properties.deviceID);
         LOG_INFO("{}", descStr);
-        State::Instance().adapterDescs.insert_or_assign(
-            properties2->properties.vendorID | properties2->properties.deviceID, descStr);
+        State::Instance().adapterDescs.insert_or_assign(uniqueId, descStr);
     }
 
-    if (!State::Instance().skipSpoofing &&
-        (!Config::Instance()->TargetVendorId.has_value() ||
-         Config::Instance()->TargetVendorId.value() == properties2->properties.vendorID) &&
-        (!Config::Instance()->TargetDeviceId.has_value() ||
-         Config::Instance()->TargetDeviceId.value() == properties2->properties.deviceID))
+    auto targetVendorIdMatches = !Config::Instance()->TargetVendorId.has_value() ||
+                                 Config::Instance()->TargetVendorId.value() == properties2->properties.vendorID;
+
+    auto targetDeviceIdMatches = !Config::Instance()->TargetDeviceId.has_value() ||
+                                 Config::Instance()->TargetDeviceId.value() == properties2->properties.deviceID;
+
+    // Spoof
+    if (!State::Instance().skipSpoofing && targetVendorIdMatches && targetDeviceIdMatches)
     {
         auto deviceName = wstring_to_string(Config::Instance()->SpoofedGPUName.value_or_default());
         std::strcpy(properties2->properties.deviceName, deviceName.c_str());
@@ -199,6 +212,7 @@ inline static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev
         properties2->properties.deviceID = Config::Instance()->SpoofedDeviceId.value_or_default();
         properties2->properties.driverVersion = VK_MAKE_API_VERSION(999, 99, 0, 0);
 
+        // If spoofing Nvidia
         if (Config::Instance()->SpoofedVendorId.value_or_default() == 0x10de)
         {
             auto next = (VkDummyProps*) properties2->pNext;
@@ -227,14 +241,14 @@ inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, con
                                           VkInstance* pInstance)
 {
     if (pCreateInfo->pApplicationInfo->pApplicationName != nullptr)
-        LOG_DEBUG("for {0}", pCreateInfo->pApplicationInfo->pApplicationName);
+        LOG_DEBUG("ApplicationName: {}", pCreateInfo->pApplicationInfo->pApplicationName);
 
     std::vector<const char*> newExtensionList;
 
-    LOG_DEBUG("extensions ({0}):", pCreateInfo->enabledExtensionCount);
+    LOG_DEBUG("Extensions ({}):", pCreateInfo->enabledExtensionCount);
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
     {
-        LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+        LOG_DEBUG("  {}", pCreateInfo->ppEnabledExtensionNames[i]);
         newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
     }
 
@@ -249,9 +263,9 @@ inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, con
     LOG_INFO("Adding FFX Vulkan extensions");
     newExtensionList.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-    LOG_DEBUG("layers ({0}):", pCreateInfo->enabledLayerCount);
+    LOG_DEBUG("Layer count: {}", pCreateInfo->enabledLayerCount);
     for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
-        LOG_DEBUG("  {0}", pCreateInfo->ppEnabledLayerNames[i]);
+        LOG_DEBUG("  {}", pCreateInfo->ppEnabledLayerNames[i]);
 
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
     pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
@@ -261,7 +275,7 @@ inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, con
     auto result = o_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
     State::Instance().skipSpoofing = false;
 
-    LOG_DEBUG("o_vkCreateInstance result: {0:X}", (INT) result);
+    LOG_DEBUG("o_vkCreateInstance result: {:X}", (INT) result);
 
     if (result == VK_SUCCESS)
         State::Instance().VulkanInstance = *pInstance;
@@ -270,7 +284,7 @@ inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, con
     while (head->pNext != nullptr)
     {
         head = (VkBaseInStructure*) head->pNext;
-        LOG_DEBUG("o_vkCreateInstance type: {0:X}", (UINT) head->sType);
+        LOG_DEBUG("o_vkCreateInstance type: {:X}", (UINT) head->sType);
     }
 
     return result;
@@ -283,23 +297,27 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
 
     std::vector<const char*> newExtensionList;
 
-    LOG_DEBUG("Checking extensions and removing VK_NVX_BINARY_IMPORT & VK_NVX_IMAGE_VIEW_HANDLE from list");
+    LOG_DEBUG("Checking extensions and removing Streamline ones");
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
     {
-        if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() && !State::Instance().isRunningOnNvidia &&
-            (std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0 ||
-             std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0 ||
-             std::strcmp(pCreateInfo->ppEnabledExtensionNames[i],
-                         VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME) == 0 ||
-             std::strcmp(pCreateInfo->ppEnabledExtensionNames[i], VK_NV_LOW_LATENCY_EXTENSION_NAME) == 0))
+        if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() && !State::Instance().isRunningOnNvidia)
         {
-            LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+            auto extName = pCreateInfo->ppEnabledExtensionNames[i];
+            auto binaryImport = std::strcmp(extName, VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0;
+            auto imgViewHandle = std::strcmp(extName, VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0;
+            auto bufferDeviceAddr = std::strcmp(extName, VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0;
+            auto mvPerViewAttr = std::strcmp(extName, VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES_EXTENSION_NAME) == 0;
+            auto nvLowLatency = std::strcmp(extName, VK_NV_LOW_LATENCY_EXTENSION_NAME) == 0;
+
+            if (binaryImport || imgViewHandle || bufferDeviceAddr || mvPerViewAttr || nvLowLatency)
+            {
+                LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+                continue;
+            }
         }
-        else
-        {
-            LOG_DEBUG("adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
-            newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
-        }
+
+        LOG_DEBUG("adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+        newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
     }
 
     if (State::Instance().isRunningOnNvidia)
@@ -325,10 +343,15 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
     pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
 
     LOG_DEBUG("final extension count: {0}", pCreateInfo->enabledExtensionCount);
+
+    /*
+    We already listing extensions above, no need for this
+
     LOG_DEBUG("final extensions:");
 
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
         LOG_DEBUG("  {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+    */
 
     // Skip spoofing for Intel Arc
     State::Instance().skipSpoofing = true;
@@ -346,7 +369,10 @@ inline static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
 {
     LOG_FUNC();
 
-    auto count = *pPropertyCount;
+    uint32_t count = 0;
+
+    if (pPropertyCount != nullptr)
+        count = *pPropertyCount;
 
     if (pProperties == nullptr)
         count = 0;
@@ -355,24 +381,27 @@ inline static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
 
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("o_vkEnumerateDeviceExtensionProperties({0}, {1}) result: {2:X}", pLayerName, count, (UINT) result);
+        LOG_ERROR("o_vkEnumerateDeviceExtensionProperties({}) result: {:X}", count, (UINT) result);
         return result;
     }
 
-    if (pLayerName == nullptr && pProperties == nullptr && count == 0)
+    // Count query, modify and add 5 to final count
+    if (pProperties == nullptr && pPropertyCount != nullptr && count == 0)
     {
-        *pPropertyCount += 4;
+        *pPropertyCount += 5;
         vkEnumerateDeviceExtensionPropertiesCount = *pPropertyCount;
-        LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName,
-                  vkEnumerateDeviceExtensionPropertiesCount);
+        LOG_TRACE("vkEnumerateDeviceExtensionProperties count: {}", *pPropertyCount);
         return result;
     }
 
-    if (pLayerName == nullptr && pProperties != nullptr && *pPropertyCount > 0)
+    // If this is request of our modified count query (count == vkEnumerateDeviceExtensionPropertiesCount)
+    if (pProperties != nullptr && pPropertyCount != nullptr && *pPropertyCount > 0 &&
+        count == vkEnumerateDeviceExtensionPropertiesCount)
     {
-        if (count == vkEnumerateDeviceExtensionPropertiesCount)
-            *pPropertyCount = count;
+        // Set back modified extension count
+        *pPropertyCount = count;
 
+        // And fill extension info at the end
         VkExtensionProperties bi { VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 1], &bi, sizeof(VkExtensionProperties));
 
@@ -386,11 +415,28 @@ inline static VkResult hkvkEnumerateDeviceExtensionProperties(VkPhysicalDevice p
         VkExtensionProperties ll { VK_NV_LOW_LATENCY_EXTENSION_NAME, VK_NV_LOW_LATENCY_SPEC_VERSION };
         memcpy(&pProperties[*pPropertyCount - 4], &ll, sizeof(VkExtensionProperties));
 
-        LOG_DEBUG("Extensions returned:");
-        for (size_t i = 0; i < *pPropertyCount; i++)
+        VkExtensionProperties bda { VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                                    VK_EXT_BUFFER_DEVICE_ADDRESS_SPEC_VERSION };
+        memcpy(&pProperties[*pPropertyCount - 5], &bda, sizeof(VkExtensionProperties));
+
+        if (!vkEnumerateDeviceExtensionPropertiesListed)
         {
-            LOG_DEBUG("  {}", pProperties[i].extensionName);
+            vkEnumerateDeviceExtensionPropertiesListed = true;
+
+            LOG_DEBUG("Extensions returned:");
+            for (size_t i = 0; i < *pPropertyCount; i++)
+            {
+                LOG_DEBUG("  {}", pProperties[i].extensionName);
+            }
         }
+        else
+        {
+            LOG_DEBUG("Modified extension list returned");
+        }
+    }
+    else
+    {
+        LOG_DEBUG("Not adding any extensions!");
     }
 
     LOG_FUNC_RESULT(result);
@@ -412,41 +458,34 @@ inline static VkResult hkvkEnumerateInstanceExtensionProperties(const char* pLay
 
     if (result != VK_SUCCESS)
     {
-        LOG_ERROR("o_vkEnumerateInstanceExtensionProperties({0}, {1}) result: {2:X}", pLayerName, count, (UINT) result);
+        LOG_ERROR("o_vkEnumerateInstanceExtensionProperties({}) result: {:X}", count, (UINT) result);
         return result;
     }
 
     if (pLayerName == nullptr && pProperties == nullptr && count == 0)
     {
-        //*pPropertyCount += 2;
-        // vkEnumerateInstanceExtensionPropertiesCount = *pPropertyCount;
         LOG_TRACE("hkvkEnumerateDeviceExtensionProperties({0}) count: {1}", pLayerName,
                   vkEnumerateDeviceExtensionPropertiesCount);
+
         return result;
     }
 
-    // if (pLayerName == nullptr && pProperties != nullptr && *pPropertyCount > 0)
-    //{
-    //     if (vkEnumerateInstanceExtensionPropertiesCount == count)
-    //         *pPropertyCount = count;
-
-    //    VkExtensionProperties bi{ VK_NVX_BINARY_IMPORT_EXTENSION_NAME, VK_NVX_BINARY_IMPORT_SPEC_VERSION };
-    //    memcpy(&pProperties[*pPropertyCount - 1], &bi, sizeof(VkExtensionProperties));
-
-    //    VkExtensionProperties ivh{ VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION };
-    //    memcpy(&pProperties[*pPropertyCount - 2], &ivh, sizeof(VkExtensionProperties));
-
-    //    LOG_DEBUG("Extensions returned:");
-    //    for (size_t i = 0; i < *pPropertyCount; i++)
-    //    {
-    //        LOG_DEBUG("  {}", pProperties[i].extensionName);
-    //    }
-    //}
-
-    LOG_DEBUG("Extensions returned:");
-    for (size_t i = 0; i < *pPropertyCount; i++)
+    if (pPropertyCount != nullptr && pProperties != nullptr)
     {
-        LOG_DEBUG("  {}", pProperties[i].extensionName);
+        if (!vkEnumerateInstanceExtensionPropertiesListed)
+        {
+            vkEnumerateInstanceExtensionPropertiesListed = true;
+
+            LOG_DEBUG("Extensions returned:");
+            for (size_t i = 0; i < *pPropertyCount; i++)
+            {
+                LOG_DEBUG("  {}", pProperties[i].extensionName);
+            }
+        }
+        else
+        {
+            LOG_DEBUG("Modified extension list returned");
+        }
     }
 
     LOG_FUNC_RESULT(result);
@@ -459,12 +498,16 @@ inline void HookForVulkanSpoofing(HMODULE vulkanModule)
     if (!State::Instance().isWorkingAsNvngx && Config::Instance()->VulkanSpoofing.value_or_default() &&
         o_vkGetPhysicalDeviceProperties == nullptr)
     {
-        o_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceProperties"));
-        o_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceProperties2"));
-        o_vkGetPhysicalDeviceProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceProperties2KHR"));
+        FARPROC address = nullptr;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceProperties");
+        o_vkGetPhysicalDeviceProperties = (PFN_vkGetPhysicalDeviceProperties) address;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceProperties2");
+        o_vkGetPhysicalDeviceProperties2 = (PFN_vkGetPhysicalDeviceProperties2) address;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceProperties2KHR");
+        o_vkGetPhysicalDeviceProperties2KHR = (PFN_vkGetPhysicalDeviceProperties2KHR) address;
 
         if (o_vkGetPhysicalDeviceProperties != nullptr)
         {
@@ -492,14 +535,19 @@ inline void HookForVulkanExtensionSpoofing(HMODULE vulkanModule)
     if (!State::Instance().isWorkingAsNvngx && Config::Instance()->VulkanExtensionSpoofing.value_or_default() &&
         o_vkEnumerateInstanceExtensionProperties == nullptr)
     {
-        o_vkCreateDevice =
-            reinterpret_cast<PFN_vkCreateDevice>(KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkCreateDevice"));
-        o_vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkCreateInstance"));
-        o_vkEnumerateInstanceExtensionProperties = reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkEnumerateInstanceExtensionProperties"));
-        o_vkEnumerateDeviceExtensionProperties = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkEnumerateDeviceExtensionProperties"));
+        FARPROC address = nullptr;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkCreateDevice");
+        o_vkCreateDevice = (PFN_vkCreateDevice) address;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkCreateInstance");
+        o_vkCreateInstance = (PFN_vkCreateInstance) address;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkEnumerateInstanceExtensionProperties");
+        o_vkEnumerateInstanceExtensionProperties = (PFN_vkEnumerateInstanceExtensionProperties) address;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkEnumerateDeviceExtensionProperties");
+        o_vkEnumerateDeviceExtensionProperties = (PFN_vkEnumerateDeviceExtensionProperties) address;
 
         if (o_vkEnumerateInstanceExtensionProperties != nullptr || o_vkEnumerateDeviceExtensionProperties != nullptr)
         {
@@ -508,18 +556,18 @@ inline void HookForVulkanExtensionSpoofing(HMODULE vulkanModule)
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 
+            if (o_vkCreateDevice)
+                DetourAttach(&(PVOID&) o_vkCreateDevice, hkvkCreateDevice);
+
+            if (o_vkCreateInstance)
+                DetourAttach(&(PVOID&) o_vkCreateInstance, hkvkCreateInstance);
+
             if (o_vkEnumerateInstanceExtensionProperties)
                 DetourAttach(&(PVOID&) o_vkEnumerateInstanceExtensionProperties,
                              hkvkEnumerateInstanceExtensionProperties);
 
             if (o_vkEnumerateDeviceExtensionProperties)
                 DetourAttach(&(PVOID&) o_vkEnumerateDeviceExtensionProperties, hkvkEnumerateDeviceExtensionProperties);
-
-            if (o_vkCreateDevice)
-                DetourAttach(&(PVOID&) o_vkCreateDevice, hkvkCreateDevice);
-
-            if (o_vkCreateInstance)
-                DetourAttach(&(PVOID&) o_vkCreateInstance, hkvkCreateInstance);
 
             DetourTransactionCommit();
         }
@@ -531,12 +579,16 @@ inline void HookForVulkanVRAMSpoofing(HMODULE vulkanModule)
     if (!State::Instance().isWorkingAsNvngx && Config::Instance()->VulkanVRAM.has_value() &&
         o_vkGetPhysicalDeviceMemoryProperties == nullptr)
     {
-        o_vkGetPhysicalDeviceMemoryProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceMemoryProperties"));
-        o_vkGetPhysicalDeviceMemoryProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties2>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceMemoryProperties2"));
-        o_vkGetPhysicalDeviceMemoryProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties2KHR>(
-            KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceMemoryProperties2KHR"));
+        FARPROC address = nullptr;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceMemoryProperties");
+        o_vkGetPhysicalDeviceMemoryProperties = (PFN_vkGetPhysicalDeviceMemoryProperties) address;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceMemoryProperties2");
+        o_vkGetPhysicalDeviceMemoryProperties2 = (PFN_vkGetPhysicalDeviceMemoryProperties2) address;
+
+        address = KernelBaseProxy::GetProcAddress_()(vulkanModule, "vkGetPhysicalDeviceMemoryProperties2KHR");
+        o_vkGetPhysicalDeviceMemoryProperties2KHR = (PFN_vkGetPhysicalDeviceMemoryProperties2KHR) address;
 
         if (o_vkGetPhysicalDeviceMemoryProperties != nullptr || o_vkGetPhysicalDeviceMemoryProperties2 != nullptr ||
             o_vkGetPhysicalDeviceMemoryProperties2KHR != nullptr)
@@ -546,13 +598,13 @@ inline void HookForVulkanVRAMSpoofing(HMODULE vulkanModule)
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 
-            if (o_vkGetPhysicalDeviceMemoryProperties)
+            if (o_vkGetPhysicalDeviceMemoryProperties != nullptr)
                 DetourAttach(&(PVOID&) o_vkGetPhysicalDeviceMemoryProperties, hkvkGetPhysicalDeviceMemoryProperties);
 
-            if (o_vkGetPhysicalDeviceMemoryProperties2)
+            if (o_vkGetPhysicalDeviceMemoryProperties2 != nullptr)
                 DetourAttach(&(PVOID&) o_vkGetPhysicalDeviceMemoryProperties2, hkvkGetPhysicalDeviceMemoryProperties2);
 
-            if (o_vkGetPhysicalDeviceMemoryProperties2KHR)
+            if (o_vkGetPhysicalDeviceMemoryProperties2KHR != nullptr)
                 DetourAttach(&(PVOID&) o_vkGetPhysicalDeviceMemoryProperties2KHR,
                              hkvkGetPhysicalDeviceMemoryProperties2KHR);
 
