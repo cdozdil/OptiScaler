@@ -701,7 +701,23 @@ static void CheckWorkingMode()
             if (slModule != nullptr)
             {
                 LOG_DEBUG("sl.interposer.dll already in memory");
-                hookStreamline(slModule);
+                StreamlineHooks::hookInterposer(slModule);
+            }
+
+            HMODULE slDlss = nullptr;
+            slDlss = KernelBaseProxy::GetModuleHandleW_()(L"sl.dlss.dll");
+            if (slDlss != nullptr)
+            {
+                LOG_DEBUG("sl.dlss.dll already in memory");
+                StreamlineHooks::hookDlss(slDlss);
+            }
+
+            HMODULE slDlssg = nullptr;
+            slDlssg = KernelBaseProxy::GetModuleHandleW_()(L"sl.dlss_g.dll");
+            if (slDlssg != nullptr)
+            {
+                LOG_DEBUG("sl.dlss_g.dll already in memory");
+                StreamlineHooks::hookDlssg(slDlssg);
             }
 
             // XeSS
