@@ -99,6 +99,8 @@ typedef D3D12_RESOURCE_ALLOCATION_INFO (*PFN_GetResourceAllocationInfo)(ID3D12De
 typedef HRESULT (*PFN_CreateSamplerState)(ID3D11Device* This, const D3D11_SAMPLER_DESC* pSamplerDesc,
                                           ID3D11SamplerState** ppSamplerState);
 
+typedef ULONG (*PFN_Release)(IUnknown* This);
+
 static PFN_CreateSampler o_CreateSampler = nullptr;
 static PFN_CheckFeatureSupport o_CheckFeatureSupport = nullptr;
 static PFN_CreateCommittedResource o_CreateCommittedResource = nullptr;
@@ -107,11 +109,15 @@ static PFN_GetResourceAllocationInfo o_GetResourceAllocationInfo = nullptr;
 
 static D3d12Proxy::PFN_D3D12CreateDevice o_D3D12CreateDevice = nullptr;
 static D3d12Proxy::PFN_D3D12SerializeRootSignature o_D3D12SerializeRootSignature = nullptr;
+static PFN_Release o_D3D12DeviceRelease = nullptr;
 
 static PFN_D3D11_CREATE_DEVICE o_D3D11CreateDevice = nullptr;
 static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN o_D3D11CreateDeviceAndSwapChain = nullptr;
 static PFN_CreateSamplerState o_CreateSamplerState = nullptr;
 static PFN_D3D11ON12_CREATE_DEVICE o_D3D11On12CreateDevice = nullptr;
+
+static ID3D12Device* _intelD3D12Device = nullptr;
+static ULONG _intelD3D12DeviceRefTarget = 0;
 
 // menu
 static bool _dx11Device = false;
@@ -131,6 +137,8 @@ static void hkCreateSampler(ID3D12Device* device, const D3D12_SAMPLER_DESC* pDes
 
 static HRESULT hkCheckFeatureSupport(ID3D12Device* device, D3D12_FEATURE Feature, void* pFeatureSupportData,
                                      UINT FeatureSupportDataSize);
+
+static ULONG hkD3D12DeviceRelease(IUnknown* device);
 
 static HRESULT hkCreateCommittedResource(ID3D12Device* device, const D3D12_HEAP_PROPERTIES* pHeapProperties,
                                          D3D12_HEAP_FLAGS HeapFlags, D3D12_RESOURCE_DESC* pDesc,
@@ -1534,6 +1542,7 @@ static void HookToDevice(ID3D12Device* InDevice)
         pVTable = *(PVOID**) realDevice;
 
     // hudless
+    o_D3D12DeviceRelease = (PFN_Release) pVTable[2];
     o_CreateSampler = (PFN_CreateSampler) pVTable[22];
     o_CheckFeatureSupport = (PFN_CheckFeatureSupport) pVTable[13];
     o_GetResourceAllocationInfo = (PFN_GetResourceAllocationInfo) pVTable[25];
@@ -1559,6 +1568,9 @@ static void HookToDevice(ID3D12Device* InDevice)
 
             if (o_CreatePlacedResource != nullptr)
                 DetourAttach(&(PVOID&) o_CreatePlacedResource, hkCreatePlacedResource);
+
+            if (o_D3D12DeviceRelease != nullptr)
+                DetourAttach(&(PVOID&) o_D3D12DeviceRelease, hkD3D12DeviceRelease);
 
             // This does not work but luckily
             // UE works without Intel Extension for it
@@ -1927,7 +1939,16 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         State::Instance().currentD3D12Device = (ID3D12Device*) *ppDevice;
 
         if (desc.VendorId == 0x8086 && Config::Instance()->UESpoofIntelAtomics64.value_or_default())
+        {
             IGDExtProxy::EnableAtomicSupport(State::Instance().currentD3D12Device);
+            _intelD3D12Device = State::Instance().currentD3D12Device;
+            _intelD3D12DeviceRefTarget = _intelD3D12Device->AddRef();
+
+            if (o_D3D12DeviceRelease == nullptr)
+                _intelD3D12Device->Release();
+            else
+                o_D3D12DeviceRelease(_intelD3D12Device);
+        }
 
         HookToDevice(State::Instance().currentD3D12Device);
         _d3d12Captured = true;
@@ -2024,6 +2045,27 @@ static HRESULT hkD3D12SerializeRootSignature(D3d12Proxy::D3D12_ROOT_SIGNATURE_DE
     }
 
     return o_D3D12SerializeRootSignature(pRootSignature, Version, ppBlob, ppErrorBlob);
+}
+
+static ULONG hkD3D12DeviceRelease(IUnknown* device)
+{
+    if (Config::Instance()->UESpoofIntelAtomics64.value_or_default() && device == _intelD3D12Device)
+    {
+        auto refCount = device->AddRef();
+
+        if (refCount == _intelD3D12DeviceRefTarget)
+        {
+            LOG_INFO("Destroying IGDExt context!");
+            _intelD3D12Device = nullptr;
+            IGDExtProxy::DestroyContext();
+        }
+
+        o_D3D12DeviceRelease(device);
+    }
+
+    auto result = o_D3D12DeviceRelease(device);
+
+    return result;
 }
 
 static HRESULT hkCheckFeatureSupport(ID3D12Device* device, D3D12_FEATURE Feature, void* pFeatureSupportData,
