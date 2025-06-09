@@ -300,9 +300,10 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
     LOG_DEBUG("Checking extensions and removing Streamline ones");
     for (size_t i = 0; i < pCreateInfo->enabledExtensionCount; i++)
     {
+        auto extName = pCreateInfo->ppEnabledExtensionNames[i];
+
         if (Config::Instance()->VulkanExtensionSpoofing.value_or_default() && !State::Instance().isRunningOnNvidia)
         {
-            auto extName = pCreateInfo->ppEnabledExtensionNames[i];
             auto binaryImport = std::strcmp(extName, VK_NVX_BINARY_IMPORT_EXTENSION_NAME) == 0;
             auto imgViewHandle = std::strcmp(extName, VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME) == 0;
             auto bufferDeviceAddr = std::strcmp(extName, VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0;
@@ -311,13 +312,13 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
 
             if (binaryImport || imgViewHandle || bufferDeviceAddr || mvPerViewAttr || nvLowLatency)
             {
-                LOG_DEBUG("removing {0}", pCreateInfo->ppEnabledExtensionNames[i]);
+                LOG_DEBUG("Removing {}", extName);
                 continue;
             }
         }
 
-        LOG_DEBUG("adding {0}", pCreateInfo->ppEnabledExtensionNames[i]);
-        newExtensionList.push_back(pCreateInfo->ppEnabledExtensionNames[i]);
+        LOG_DEBUG("Adding {}", extName);
+        newExtensionList.push_back(extName);
     }
 
     if (State::Instance().isRunningOnNvidia)
@@ -342,7 +343,7 @@ inline static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, VkDevic
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
     pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
 
-    LOG_DEBUG("final extension count: {0}", pCreateInfo->enabledExtensionCount);
+    LOG_DEBUG("Final extension count: {0}", pCreateInfo->enabledExtensionCount);
 
     /*
     We already listing extensions above, no need for this
