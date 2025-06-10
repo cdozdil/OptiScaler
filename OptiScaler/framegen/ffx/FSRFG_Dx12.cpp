@@ -100,7 +100,7 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
 
     auto frameIndex = _frameCount % BUFFER_COUNT;
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGUseMutexForSwapchain.value_or_default())
     {
         LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
         Mutex.lock(1);
@@ -250,7 +250,7 @@ bool FSRFG_Dx12::Dispatch(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* ou
         }
     }
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGUseMutexForSwapchain.value_or_default())
     {
         LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
@@ -399,7 +399,7 @@ bool FSRFG_Dx12::DispatchHudless(bool useHudless, double frameTime)
             HudlessDispatchReady();
     }
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && Mutex.getOwner() == 1)
+    if (Config::Instance()->FGUseMutexForSwapchain.value_or_default() && Mutex.getOwner() == 1)
     {
         LOG_TRACE("Releasing FG->Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
@@ -522,7 +522,7 @@ void FSRFG_Dx12::FgDone()
 {
     return;
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGUseMutexForSwapchain.value_or_default())
     {
         LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
         Mutex.lock(1);
@@ -545,7 +545,7 @@ void FSRFG_Dx12::FgDone()
             LOG_INFO("D3D12_Configure result: {0:X}", result);
     }
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGUseMutexForSwapchain.value_or_default())
     {
         LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
@@ -571,7 +571,7 @@ void FSRFG_Dx12::StopAndDestroyContext(bool destroy, bool shutDown, bool useMute
     LOG_DEBUG("");
 
     bool mutexTaken = false;
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default() && useMutex)
+    if (Config::Instance()->FGUseMutexForSwapchain.value_or_default() && useMutex)
     {
         LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
         Mutex.lock(1);
@@ -703,7 +703,7 @@ bool FSRFG_Dx12::ReleaseSwapchain(HWND hwnd)
 
     LOG_DEBUG("");
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGUseMutexForSwapchain.value_or_default())
     {
         LOG_TRACE("Waiting Mutex 1, current: {}", Mutex.getOwner());
         Mutex.lock(1);
@@ -723,7 +723,7 @@ bool FSRFG_Dx12::ReleaseSwapchain(HWND hwnd)
         _swapChainContext = nullptr;
     }
 
-    if (Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (Config::Instance()->FGUseMutexForSwapchain.value_or_default())
     {
         LOG_TRACE("Releasing Mutex: {}", Mutex.getOwner());
         Mutex.unlockThis(1);
