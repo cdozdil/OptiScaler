@@ -2132,9 +2132,9 @@ bool MenuCommon::RenderMenu()
                             ImGui::Spacing();
                             if (ImGui::TreeNode("Syncing Settings"))
                             {
-                                bool useMutexForPresent = Config::Instance()->FGUseMutexForSwaphain.value_or_default();
+                                bool useMutexForPresent = Config::Instance()->FGUseMutexForSwapchain.value_or_default();
                                 if (ImGui::Checkbox("FG Use Mutex for Present", &useMutexForPresent))
-                                    Config::Instance()->FGUseMutexForSwaphain = useMutexForPresent;
+                                    Config::Instance()->FGUseMutexForSwapchain = useMutexForPresent;
                                 ShowHelpMarker("Use mutex to prevent desync of FG and crashes\n"
                                                "Disabling might improve the perf but decrase stability");
 

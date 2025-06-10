@@ -347,7 +347,7 @@ class Config
     CustomOptional<bool> FGEnabled { false };
     CustomOptional<bool> FGDebugView { false };
     CustomOptional<bool> FGAsync { false };
-    CustomOptional<bool> FGUseMutexForSwaphain { true };
+    CustomOptional<bool> FGUseMutexForSwapchain { true };
     CustomOptional<bool> FGMakeMVCopy { true };
     CustomOptional<bool> FGMakeDepthCopy { true };
     CustomOptional<bool> FGResourceFlip { false };

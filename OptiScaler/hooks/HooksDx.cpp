@@ -268,7 +268,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     auto lockAccuired = false;
     if (!(Flags & DXGI_PRESENT_TEST || Flags & DXGI_PRESENT_RESTART) && fg != nullptr && fg->IsActive() &&
-        Config::Instance()->FGUseMutexForSwaphain.value_or_default() && fg->Mutex.getOwner() != 2)
+        Config::Instance()->FGUseMutexForSwapchain.value_or_default() && fg->Mutex.getOwner() != 2)
     {
         LOG_TRACE("Waiting FG->Mutex 2, current: {}", fg->Mutex.getOwner());
         fg->Mutex.lock(2);
@@ -299,7 +299,7 @@ static HRESULT hkFGPresent(void* This, UINT SyncInterval, UINT Flags)
 
     Hudfix_Dx12::PresentEnd();
 
-    if (lockAccuired && Config::Instance()->FGUseMutexForSwaphain.value_or_default())
+    if (lockAccuired && Config::Instance()->FGUseMutexForSwapchain.value_or_default())
     {
         LOG_TRACE("Releasing FG->Mutex: {}", fg->Mutex.getOwner());
         fg->Mutex.unlockThis(2);
@@ -544,7 +544,7 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         ResTrack_Dx12::PresentDone();
 
     // If Half of Full sync is active or was active (_releaseMutexTargetFrame != 0)
-    if (_releaseMutexTargetFrame != 0 && Config::Instance()->FGUseMutexForSwaphain.value_or_default() &&
+    if (_releaseMutexTargetFrame != 0 && Config::Instance()->FGUseMutexForSwapchain.value_or_default() &&
         _frameCounter >= _releaseMutexTargetFrame && fg != nullptr)
     {
         if (_lockAccuiredForHalfOrFull)

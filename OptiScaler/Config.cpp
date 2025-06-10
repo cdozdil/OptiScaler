@@ -82,7 +82,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGAlwaysTrackHeaps.set_from_config(readBool("OptiFG", "AlwaysTrackHeaps"));
             FGMakeDepthCopy.set_from_config(readBool("OptiFG", "MakeDepthCopy"));
             FGMakeMVCopy.set_from_config(readBool("OptiFG", "MakeMVCopy"));
-            FGUseMutexForSwaphain.set_from_config(readBool("OptiFG", "UseMutexForSwaphain"));
+            FGUseMutexForSwapchain.set_from_config(readBool("OptiFG", "UseMutexForSwapchain"));
 
             FGEnableDepthScale.set_from_config(readBool("OptiFG", "EnableDepthScale"));
             FGDepthScaleMax.set_from_config(readFloat("OptiFG", "DepthScaleMax"));
@@ -382,10 +382,6 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Dx11 with Dx12
         {
-            // TextureSyncMethod.set_from_config(readInt("Dx11withDx12", "TextureSyncMethod"));
-            // CopyBackSyncMethod.set_from_config(readInt("Dx11withDx12", "CopyBackSyncMethod"));
-            // SyncAfterDx12.set_from_config(readInt("Dx11withDx12", "SyncAfterDx12"));
-
             Dx11DelayedInit.set_from_config(readInt("Dx11withDx12", "UseDelayedInit"));
             DontUseNTShared.set_from_config(readBool("Dx11withDx12", "DontUseNTShared"));
         }
@@ -623,7 +619,7 @@ bool Config::SaveIni()
         ini.SetValue("OptiFG", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
         ini.SetValue("OptiFG", "UseMutexForSwaphain",
-                     GetBoolValue(Instance()->FGUseMutexForSwaphain.value_for_config()).c_str());
+                     GetBoolValue(Instance()->FGUseMutexForSwapchain.value_for_config()).c_str());
 
         ini.SetValue("OptiFG", "EnableDepthScale",
                      GetBoolValue(Instance()->FGEnableDepthScale.value_for_config()).c_str());
