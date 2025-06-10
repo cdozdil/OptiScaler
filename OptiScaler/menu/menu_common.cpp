@@ -862,7 +862,9 @@ void MenuCommon::AddDx11Backends(std::string* code, std::string* name)
     else
         selectedUpscalerName = "XeSS w/Dx12";
 
-    if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
+    ImGui::PushItemWidth(150.0f * Config::Instance()->MenuScale.value_or_default());
+
+    if (ImGui::BeginCombo("##9", selectedUpscalerName.c_str()))
     {
         if (ImGui::Selectable("XeSS", *code == "xess"))
             State::Instance().newBackend = "xess";
@@ -890,6 +892,8 @@ void MenuCommon::AddDx11Backends(std::string* code, std::string* name)
 
         ImGui::EndCombo();
     }
+
+    ImGui::PopItemWidth();
 }
 
 void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
@@ -908,7 +912,9 @@ void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
     else
         selectedUpscalerName = "XeSS";
 
-    if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
+    ImGui::PushItemWidth(150.0f * Config::Instance()->MenuScale.value_or_default());
+
+    if (ImGui::BeginCombo("##9", selectedUpscalerName.c_str()))
     {
         if (ImGui::Selectable("XeSS", *code == "xess"))
             State::Instance().newBackend = "xess";
@@ -927,6 +933,8 @@ void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
 
         ImGui::EndCombo();
     }
+
+    ImGui::PopItemWidth();
 }
 
 void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
@@ -945,7 +953,9 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
     else
         selectedUpscalerName = "FSR 2.2.1";
 
-    if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
+    ImGui::PushItemWidth(150.0f * Config::Instance()->MenuScale.value_or_default());
+
+    if (ImGui::BeginCombo("##9", selectedUpscalerName.c_str()))
     {
         if (ImGui::Selectable("XeSS", *code == "xess"))
             State::Instance().newBackend = "xess";
@@ -964,6 +974,8 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
 
         ImGui::EndCombo();
     }
+
+    ImGui::PopItemWidth();
 }
 
 template <HasDefaultValue B> void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value)
@@ -1762,7 +1774,7 @@ bool MenuCommon::RenderMenu()
                     switch (State::Instance().api)
                     {
                     case DX11:
-                        ImGui::Text("DirectX 11 %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
+                        ImGui::Text("D3D11 %s| %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
                                     State::Instance().currentFeature->Name().c_str(),
                                     State::Instance().currentFeature->Version().major,
                                     State::Instance().currentFeature->Version().minor,
@@ -1770,7 +1782,7 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::SameLine(0.0f, 6.0f);
                         spoofingText = Config::Instance()->DxgiSpoofing.value_or_default() ? "On" : "Off";
-                        ImGui::Text("| Spoofing: %s", spoofingText.c_str());
+                        ImGui::Text("| Spoof: %s", spoofingText.c_str());
 
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddDx11Backends(&currentBackend, &currentBackendName);
@@ -1778,17 +1790,17 @@ bool MenuCommon::RenderMenu()
                         break;
 
                     case DX12:
-                        ImGui::Text("DirectX 12 %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
+                        ImGui::Text("D3D12 %s| %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
                                     State::Instance().currentFeature->Name().c_str(),
                                     State::Instance().currentFeature->Version().major,
                                     State::Instance().currentFeature->Version().minor,
                                     State::Instance().currentFeature->Version().patch);
                         ImGui::SameLine(0.0f, 6.0f);
-                        ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
+                        ImGui::Text("| Input: %s", State::Instance().currentInputApiName.c_str());
 
                         ImGui::SameLine(0.0f, 6.0f);
                         spoofingText = Config::Instance()->DxgiSpoofing.value_or_default() ? "On" : "Off";
-                        ImGui::Text("| Spoofing: %s", spoofingText.c_str());
+                        ImGui::Text("| Spoof: %s", spoofingText.c_str());
 
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddDx12Backends(&currentBackend, &currentBackendName);
@@ -1796,13 +1808,13 @@ bool MenuCommon::RenderMenu()
                         break;
 
                     default:
-                        ImGui::Text("Vulkan %s- %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
+                        ImGui::Text("Vulkan %s| %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
                                     State::Instance().currentFeature->Name().c_str(),
                                     State::Instance().currentFeature->Version().major,
                                     State::Instance().currentFeature->Version().minor,
                                     State::Instance().currentFeature->Version().patch);
                         ImGui::SameLine(0.0f, 6.0f);
-                        ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
+                        ImGui::Text("| Input: %s", State::Instance().currentInputApiName.c_str());
 
                         auto vlkSpoof = Config::Instance()->VulkanSpoofing.value_or_default();
                         auto vlkExtSpoof = Config::Instance()->VulkanExtensionSpoofing.value_or_default();
@@ -1817,7 +1829,7 @@ bool MenuCommon::RenderMenu()
                             spoofingText = "Off";
 
                         ImGui::SameLine(0.0f, 6.0f);
-                        ImGui::Text("| Spoofing: %s", spoofingText.c_str());
+                        ImGui::Text("| Spoof: %s", spoofingText.c_str());
 
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddVulkanBackends(&currentBackend, &currentBackendName);
@@ -1825,6 +1837,8 @@ bool MenuCommon::RenderMenu()
 
                     if (State::Instance().currentFeature->Name() != "DLSSD")
                     {
+                        ImGui::SameLine(0.0f, 6.0f);
+
                         if (ImGui::Button("Apply") && State::Instance().newBackend != "" &&
                             State::Instance().newBackend != currentBackend)
                         {
@@ -1901,8 +1915,13 @@ bool MenuCommon::RenderMenu()
                 if (disabledCount < fgOptionsCount - 1) // maybe always show it anyway?
                 {
                     ImGui::SeparatorText("Frame Generation");
+
+                    ImGui::PushItemWidth(150.0f * Config::Instance()->MenuScale.value_or_default());
+
                     PopulateCombo("FG Type", reinterpret_cast<CustomOptional<uint32_t>*>(&Config::Instance()->FGType),
                                   fgOptions, fgDesc.data(), fgOptionsCount, disabledMask.data(), false);
+
+                    ImGui::PopItemWidth();
 
                     if (State::Instance().showRestartWarning)
                     {
