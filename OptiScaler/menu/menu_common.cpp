@@ -1649,9 +1649,8 @@ bool MenuCommon::RenderMenu()
         // Main menu window
         if (windowTitle.empty())
             windowTitle =
-                std::format("{} - {} {} - {}", VER_PRODUCT_NAME, State::Instance().GameExe,
-                            State::Instance().GameName.empty() ? "" : std::format("- {}", State::Instance().GameName),
-                            State::Instance().GpuName);
+                std::format("{} - {} {}", VER_PRODUCT_NAME, State::Instance().GameExe,
+                            State::Instance().GameName.empty() ? "" : std::format("- {}", State::Instance().GameName));
 
         if (ImGui::Begin(windowTitle.c_str(), NULL, flags))
         {
@@ -1773,6 +1772,8 @@ bool MenuCommon::RenderMenu()
                         spoofingText = Config::Instance()->DxgiSpoofing.value_or_default() ? "On" : "Off";
                         ImGui::Text("| Spoof: %s", spoofingText.c_str());
 
+                        ImGui::Text(State::Instance().GpuName.c_str());
+
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddDx11Backends(&currentBackend, &currentBackendName);
 
@@ -1790,6 +1791,8 @@ bool MenuCommon::RenderMenu()
                         ImGui::SameLine(0.0f, 6.0f);
                         spoofingText = Config::Instance()->DxgiSpoofing.value_or_default() ? "On" : "Off";
                         ImGui::Text("| Spoof: %s", spoofingText.c_str());
+
+                        ImGui::Text(State::Instance().GpuName.c_str());
 
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddDx12Backends(&currentBackend, &currentBackendName);
@@ -1819,6 +1822,8 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::SameLine(0.0f, 6.0f);
                         ImGui::Text("| Spoof: %s", spoofingText.c_str());
+
+                        ImGui::Text(State::Instance().GpuName.c_str());
 
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddVulkanBackends(&currentBackend, &currentBackendName);
