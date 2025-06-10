@@ -862,9 +862,7 @@ void MenuCommon::AddDx11Backends(std::string* code, std::string* name)
     else
         selectedUpscalerName = "XeSS w/Dx12";
 
-    ImGui::PushItemWidth(150.0f * Config::Instance()->MenuScale.value_or_default());
-
-    if (ImGui::BeginCombo("##9", selectedUpscalerName.c_str()))
+    if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
     {
         if (ImGui::Selectable("XeSS", *code == "xess"))
             State::Instance().newBackend = "xess";
@@ -892,8 +890,6 @@ void MenuCommon::AddDx11Backends(std::string* code, std::string* name)
 
         ImGui::EndCombo();
     }
-
-    ImGui::PopItemWidth();
 }
 
 void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
@@ -912,9 +908,7 @@ void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
     else
         selectedUpscalerName = "XeSS";
 
-    ImGui::PushItemWidth(150.0f * Config::Instance()->MenuScale.value_or_default());
-
-    if (ImGui::BeginCombo("##9", selectedUpscalerName.c_str()))
+    if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
     {
         if (ImGui::Selectable("XeSS", *code == "xess"))
             State::Instance().newBackend = "xess";
@@ -933,8 +927,6 @@ void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
 
         ImGui::EndCombo();
     }
-
-    ImGui::PopItemWidth();
 }
 
 void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
@@ -953,9 +945,7 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
     else
         selectedUpscalerName = "FSR 2.2.1";
 
-    ImGui::PushItemWidth(150.0f * Config::Instance()->MenuScale.value_or_default());
-
-    if (ImGui::BeginCombo("##9", selectedUpscalerName.c_str()))
+    if (ImGui::BeginCombo("Select", selectedUpscalerName.c_str()))
     {
         if (ImGui::Selectable("XeSS", *code == "xess"))
             State::Instance().newBackend = "xess";
@@ -974,8 +964,6 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
 
         ImGui::EndCombo();
     }
-
-    ImGui::PopItemWidth();
 }
 
 template <HasDefaultValue B> void MenuCommon::AddResourceBarrier(std::string name, CustomOptional<int32_t, B>* value)
@@ -1838,8 +1826,6 @@ bool MenuCommon::RenderMenu()
 
                     if (State::Instance().currentFeature->Name() != "DLSSD")
                     {
-                        ImGui::SameLine(0.0f, 6.0f);
-
                         if (ImGui::Button("Apply") && State::Instance().newBackend != "" &&
                             State::Instance().newBackend != currentBackend)
                         {
@@ -1917,12 +1903,8 @@ bool MenuCommon::RenderMenu()
                 {
                     ImGui::SeparatorText("Frame Generation");
 
-                    ImGui::PushItemWidth(150.0f * Config::Instance()->MenuScale.value_or_default());
-
                     PopulateCombo("FG Type", reinterpret_cast<CustomOptional<uint32_t>*>(&Config::Instance()->FGType),
                                   fgOptions, fgDesc.data(), fgOptionsCount, disabledMask.data(), false);
-
-                    ImGui::PopItemWidth();
 
                     if (State::Instance().showRestartWarning)
                     {
