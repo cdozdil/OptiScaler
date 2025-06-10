@@ -1762,6 +1762,8 @@ bool MenuCommon::RenderMenu()
                     switch (State::Instance().api)
                     {
                     case DX11:
+                        ImGui::Text(State::Instance().GpuName.c_str());
+
                         ImGui::Text("D3D11 %s| %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
                                     State::Instance().currentFeature->Name().c_str(),
                                     State::Instance().currentFeature->Version().major,
@@ -1772,14 +1774,14 @@ bool MenuCommon::RenderMenu()
                         spoofingText = Config::Instance()->DxgiSpoofing.value_or_default() ? "On" : "Off";
                         ImGui::Text("| Spoof: %s", spoofingText.c_str());
 
-                        ImGui::Text(State::Instance().GpuName.c_str());
-
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddDx11Backends(&currentBackend, &currentBackendName);
 
                         break;
 
                     case DX12:
+                        ImGui::Text(State::Instance().GpuName.c_str());
+
                         ImGui::Text("D3D12 %s| %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
                                     State::Instance().currentFeature->Name().c_str(),
                                     State::Instance().currentFeature->Version().major,
@@ -1792,14 +1794,14 @@ bool MenuCommon::RenderMenu()
                         spoofingText = Config::Instance()->DxgiSpoofing.value_or_default() ? "On" : "Off";
                         ImGui::Text("| Spoof: %s", spoofingText.c_str());
 
-                        ImGui::Text(State::Instance().GpuName.c_str());
-
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddDx12Backends(&currentBackend, &currentBackendName);
 
                         break;
 
                     default:
+                        ImGui::Text(State::Instance().GpuName.c_str());
+
                         ImGui::Text("Vulkan %s| %s %d.%d.%d", State::Instance().isRunningOnDXVK ? "(DXVK) " : "",
                                     State::Instance().currentFeature->Name().c_str(),
                                     State::Instance().currentFeature->Version().major,
@@ -1822,8 +1824,6 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::SameLine(0.0f, 6.0f);
                         ImGui::Text("| Spoof: %s", spoofingText.c_str());
-
-                        ImGui::Text(State::Instance().GpuName.c_str());
 
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddVulkanBackends(&currentBackend, &currentBackendName);
