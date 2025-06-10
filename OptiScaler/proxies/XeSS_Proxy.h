@@ -482,7 +482,7 @@ class XeSSProxy
 
         State::Instance().skipDxgiLoadChecks = true;
 
-        if (_xessD3D12CreateContext != nullptr)
+        if (Config::Instance()->XeSSInputs.value_or_default() && _xessD3D12CreateContext != nullptr)
         {
             // read version from file because
             // xessGetVersion cause access violation errors
@@ -721,21 +721,22 @@ class XeSSProxy
 
         State::Instance().skipDxgiLoadChecks = true;
 
-        if (_xessD3D11CreateContext != nullptr)
+        if (Config::Instance()->XeSSInputs.value_or_default() && _xessD3D11CreateContext != nullptr)
         {
             // read version from file because
             // xessGetVersion cause access violation errors
-            HMODULE moduleHandle = nullptr;
-            moduleHandle = GetModuleHandle(L"libxess_dx11.dll");
-            if (moduleHandle != nullptr)
-            {
-                auto path = DllPath(moduleHandle);
-                _xessVersionDx11 = GetDLLVersion(path.wstring());
-            }
+            // HMODULE moduleHandle = nullptr;
+            // moduleHandle = GetModuleHandle(L"libxess_dx11.dll");
+            // if (moduleHandle != nullptr)
+            //{
+            //    auto path = DllPath(moduleHandle);
+            //    _xessVersionDx11 = GetDLLVersion(path.wstring());
+            //}
 
-            if (_xessVersionDx11.major == 0)
-                _xessGetVersionDx11(&_xessVersionDx11);
+            // if (_xessVersionDx11.major == 0)
+            //     _xessGetVersionDx11(&_xessVersionDx11);
 
+            /*
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 
@@ -833,6 +834,7 @@ class XeSSProxy
                 DetourAttach(&(PVOID&) _xessGetPipelineBuildStatus, hk_xessGetPipelineBuildStatus);
 
             DetourTransactionCommit();
+            */
         }
 
         bool loadResult = _xessD3D11CreateContext != nullptr;

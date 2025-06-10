@@ -349,7 +349,7 @@ class KernelHooks
             return module;
         }
 
-        if (CheckDllName(&lcaseLibName, &fsr2Names))
+        if (Config::Instance()->UseFsr2Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr2Names))
         {
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
@@ -361,7 +361,7 @@ class KernelHooks
             return module;
         }
 
-        if (CheckDllName(&lcaseLibName, &fsr2BENames))
+        if (Config::Instance()->UseFsr2Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr2BENames))
         {
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
@@ -373,7 +373,7 @@ class KernelHooks
             return module;
         }
 
-        if (CheckDllName(&lcaseLibName, &fsr3Names))
+        if (Config::Instance()->UseFsr3Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr3Names))
         {
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
@@ -383,7 +383,7 @@ class KernelHooks
             return module;
         }
 
-        if (CheckDllName(&lcaseLibName, &fsr3BENames))
+        if (Config::Instance()->UseFsr3Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr3BENames))
         {
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
@@ -397,8 +397,7 @@ class KernelHooks
 
         if (CheckDllName(&lcaseLibName, &xessNames))
         {
-            auto module = LoadLibxess(
-                string_to_wstring(lcaseLibName)); // KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
+            auto module = LoadLibxess(string_to_wstring(lcaseLibName));
 
             if (module != nullptr)
                 XeSSProxy::HookXeSS(module);

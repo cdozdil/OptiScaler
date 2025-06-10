@@ -410,6 +410,9 @@ class Config
     CustomOptional<bool> Fsr3Pattern { false };
     CustomOptional<bool> FfxInputs { true };
     CustomOptional<bool> EnableHotSwapping { true };
+    CustomOptional<bool> UseFsr2Inputs { true };
+    CustomOptional<bool> UseFsr3Inputs { true };
+    CustomOptional<bool> UseFfxInputs { true };
 
     // Framerate
     CustomOptional<float> FramerateLimit { 0.0f };

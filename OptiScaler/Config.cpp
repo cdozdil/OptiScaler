@@ -425,6 +425,10 @@ bool Config::Reload(std::filesystem::path iniPath)
             Fsr3Pattern.set_from_config(readBool("Inputs", "Fsr3Pattern"));
             FfxInputs.set_from_config(readBool("Inputs", "Ffx"));
             EnableHotSwapping.set_from_config(readBool("Inputs", "EnableHotSwapping"));
+
+            UseFsr2Inputs.set_from_config(readBool("Inputs", "UseFsr2"));
+            UseFsr3Inputs.set_from_config(readBool("Inputs", "UseFsr3"));
+            UseFfxInputs.set_from_config(readBool("Inputs", "UseFfx"));
         }
 
         // Plugins
@@ -971,6 +975,10 @@ bool Config::SaveIni()
         ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->FfxInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "EnableHotSwapping",
                      GetBoolValue(Instance()->EnableHotSwapping.value_for_config()).c_str());
+
+        ini.SetValue("Inputs", "UseFsr2", GetBoolValue(Instance()->UseFsr2Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "UseFsr3", GetBoolValue(Instance()->UseFsr3Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "UseFfx", GetBoolValue(Instance()->UseFfxInputs.value_for_config()).c_str());
     }
 
     auto pathWStr = absoluteFileName.wstring();

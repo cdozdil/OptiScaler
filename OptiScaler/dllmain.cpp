@@ -1119,28 +1119,34 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             }
         }
 
-        handle = KernelBaseProxy::GetModuleHandleW_()(fsr2NamesW[0].c_str());
-        if (handle != nullptr)
-            HookFSR2Inputs(handle);
+        if (Config::Instance()->UseFsr2Inputs.value_or_default())
+        {
 
-        handle = KernelBaseProxy::GetModuleHandleW_()(fsr2BENamesW[0].c_str());
-        if (handle != nullptr)
-            HookFSR2Dx12Inputs(handle);
+            handle = KernelBaseProxy::GetModuleHandleW_()(fsr2NamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR2Inputs(handle);
 
-        spdlog::info("");
+            handle = KernelBaseProxy::GetModuleHandleW_()(fsr2BENamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR2Dx12Inputs(handle);
 
-        HookFSR2ExeInputs();
+            spdlog::info("");
 
-        handle = KernelBaseProxy::GetModuleHandleW_()(fsr3NamesW[0].c_str());
-        if (handle != nullptr)
-            HookFSR3Inputs(handle);
+            HookFSR2ExeInputs();
+        }
 
-        handle = KernelBaseProxy::GetModuleHandleW_()(fsr3BENamesW[0].c_str());
-        if (handle != nullptr)
-            HookFSR3Dx12Inputs(handle);
+        if (Config::Instance()->UseFsr3Inputs.value_or_default())
+        {
+            handle = KernelBaseProxy::GetModuleHandleW_()(fsr3NamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR3Inputs(handle);
 
-        HookFSR3ExeInputs();
+            handle = KernelBaseProxy::GetModuleHandleW_()(fsr3BENamesW[0].c_str());
+            if (handle != nullptr)
+                HookFSR3Dx12Inputs(handle);
 
+            HookFSR3ExeInputs();
+        }
         // HookFfxExeInputs();
 
         // Initial state of FSR-FG
