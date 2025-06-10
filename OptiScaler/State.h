@@ -46,6 +46,7 @@ class State
 
     std::string GameName;
     std::string GameExe;
+    std::string GpuName;
 
     bool NvngxDx11Inited = false;
     bool NvngxDx12Inited = false;

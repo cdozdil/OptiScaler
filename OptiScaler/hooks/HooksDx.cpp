@@ -1674,6 +1674,19 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
         maxLevel = std::max(maxLevel, pFeatureLevels[i]);
     }
 
+    DXGI_ADAPTER_DESC desc {};
+    if (pAdapter != nullptr)
+    {
+        State::Instance().skipSpoofing = true;
+        if (pAdapter->GetDesc(&desc) == S_OK)
+        {
+            std::wstring szName(desc.Description);
+            LOG_INFO("Adapter Desc: {}", wstring_to_string(szName));
+            State::Instance().GpuName = wstring_to_string(szName);
+        }
+        State::Instance().skipSpoofing = false;
+    }
+
     if (maxLevel == D3D_FEATURE_LEVEL_11_0)
     {
         LOG_INFO(
@@ -1912,6 +1925,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
         {
             std::wstring szName(desc.Description);
             LOG_INFO("Adapter Desc: {}", wstring_to_string(szName));
+            State::Instance().GpuName = wstring_to_string(szName);
         }
         State::Instance().skipSpoofing = false;
     }

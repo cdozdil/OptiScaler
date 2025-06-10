@@ -1661,8 +1661,9 @@ bool MenuCommon::RenderMenu()
         // Main menu window
         if (windowTitle.empty())
             windowTitle =
-                std::format("{} - {} {}", VER_PRODUCT_NAME, State::Instance().GameExe,
-                            State::Instance().GameName.empty() ? "" : std::format("- {}", State::Instance().GameName));
+                std::format("{} - {} {} - {}", VER_PRODUCT_NAME, State::Instance().GameExe,
+                            State::Instance().GameName.empty() ? "" : std::format("- {}", State::Instance().GameName),
+                            State::Instance().GpuName);
 
         if (ImGui::Begin(windowTitle.c_str(), NULL, flags))
         {
@@ -2404,62 +2405,6 @@ bool MenuCommon::RenderMenu()
                         ImGui::Spacing();
                         if (ImGui::CollapsingHeader("Dx11 with Dx12 Settings"))
                         {
-                            // ScopedIndent indent{};
-                            // ImGui::Spacing();
-                            // const char* sync[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence +
-                            // Flush + Event", "Only Query" };
-
-                            // const char* syncDesc[] = {
-                            //     "Self explanatory",
-                            //     "Sync using shared Fences(Signal& Wait). These should happen on GPU which is pretty
-                            //     fast.", "Sync using shared Fences(Signal& Event). Events are waited on CPU which is
-                            //     slower.", "Like Fence but flushes Dx11 DeviceContext after Signal shared Fence.",
-                            //     "Like Fence + Event but flushes Dx11 DeviceContext after Signal shared Fence.",
-                            //     "Uses Dx11 Query to sync, in general faster than Events but slower than Fences."
-                            // };
-
-                            // const char* selectedSync =
-                            // sync[Config::Instance()->TextureSyncMethod.value_or_default()];
-
-                            // if (ImGui::BeginCombo("Input Sync", selectedSync))
-                            //{
-                            //     for (int n = 0; n < 6; n++)
-                            //     {
-                            //         if (ImGui::Selectable(sync[n],
-                            //         (Config::Instance()->TextureSyncMethod.value_or_default() == n)))
-                            //             Config::Instance()->TextureSyncMethod = n;
-                            //         ShowTooltip(syncDesc[n]);
-                            //     }
-
-                            //    ImGui::EndCombo();
-                            //}
-
-                            // const char* sync2[] = { "No Syncing", "Fence", "Fence + Event", "Fence + Flush", "Fence +
-                            // Flush + Event", "Only Query" };
-
-                            // selectedSync = sync2[Config::Instance()->CopyBackSyncMethod.value_or_default()];
-
-                            // if (ImGui::BeginCombo("Output Sync", selectedSync))
-                            //{
-                            //     for (int n = 0; n < 6; n++)
-                            //     {
-                            //         if (ImGui::Selectable(sync2[n],
-                            //         (Config::Instance()->CopyBackSyncMethod.value_or_default() == n)))
-                            //             Config::Instance()->CopyBackSyncMethod = n;
-                            //         ShowTooltip(syncDesc[n]);
-                            //     }
-
-                            //    ImGui::EndCombo();
-                            //}
-
-                            // if (bool afterDx12 = Config::Instance()->SyncAfterDx12.value_or_default();
-                            // ImGui::Checkbox("Sync After Dx12", &afterDx12))
-                            //     Config::Instance()->SyncAfterDx12 = afterDx12;
-                            // ShowHelpMarker("When using Events for syncing output SyncAfterDx12=false is usually more
-                            // performant.");
-
-                            // ImGui::SameLine(0.0f, 6.0f);
-
                             if (bool dontUseNTShared = Config::Instance()->DontUseNTShared.value_or_default();
                                 ImGui::Checkbox("Don't Use NTShared", &dontUseNTShared))
                                 Config::Instance()->DontUseNTShared = dontUseNTShared;
@@ -3677,15 +3622,15 @@ bool MenuCommon::RenderMenu()
 
                     if (Config::Instance()->UseFsr2Inputs.value_or_default())
                     {
-                    bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
-                    bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
+                        bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
+                        bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
 
-                    if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
-                        Config::Instance()->Fsr2Inputs = fsr2Inputs;
+                        if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
+                            Config::Instance()->Fsr2Inputs = fsr2Inputs;
 
-                    if (ImGui::Checkbox("Use Fsr2 Pattern Matching", &fsr2Pattern))
-                        Config::Instance()->Fsr2Pattern = fsr2Pattern;
-                    ShowTooltip("This setting will become active on next boot!");
+                        if (ImGui::Checkbox("Use Fsr2 Pattern Matching", &fsr2Pattern))
+                            Config::Instance()->Fsr2Pattern = fsr2Pattern;
+                        ShowTooltip("This setting will become active on next boot!");
                     }
 
                     if (Config::Instance()->UseFsr3Inputs.value_or_default())
@@ -3693,21 +3638,21 @@ bool MenuCommon::RenderMenu()
                         bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or_default();
                         bool fsr3Pattern = Config::Instance()->Fsr3Pattern.value_or_default();
 
-                    if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
-                        Config::Instance()->Fsr3Inputs = fsr3Inputs;
+                        if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
+                            Config::Instance()->Fsr3Inputs = fsr3Inputs;
 
-                    if (ImGui::Checkbox("Use Fsr3 Pattern Matching", &fsr3Pattern))
-                        Config::Instance()->Fsr3Pattern = fsr3Pattern;
-                    ShowTooltip("This setting will become active on next boot!");
+                        if (ImGui::Checkbox("Use Fsr3 Pattern Matching", &fsr3Pattern))
+                            Config::Instance()->Fsr3Pattern = fsr3Pattern;
+                        ShowTooltip("This setting will become active on next boot!");
                     }
 
                     if (Config::Instance()->UseFfxInputs.value_or_default())
                     {
                         bool ffxInputs = Config::Instance()->FfxInputs.value_or_default();
 
-                    if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
-                        Config::Instance()->FfxInputs = ffxInputs;
-                }
+                        if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
+                            Config::Instance()->FfxInputs = ffxInputs;
+                    }
                 }
 
                 // DX11 & DX12 -----------------------------

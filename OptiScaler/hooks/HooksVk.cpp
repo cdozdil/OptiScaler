@@ -138,6 +138,13 @@ static VkResult hkvkCreateDevice(VkPhysicalDevice physicalDevice, const VkDevice
         _device = *pDevice;
         LOG_DEBUG("_device captured: {0:X}", (UINT64) _device);
         HookDevice(_device);
+
+        State::Instance().skipSpoofing = true;
+
+        VkPhysicalDeviceProperties prop {};
+        vkGetPhysicalDeviceProperties(physicalDevice, &prop);
+        State::Instance().GpuName = std::string(prop.deviceName);
+        State::Instance().skipSpoofing = false;
     }
 
     LOG_FUNC_RESULT(result);
