@@ -1623,8 +1623,9 @@ bool MenuCommon::RenderMenu()
 
             ImGuiStyle& style = ImGui::GetStyle();
             ImGuiStyle styleold = style; // Backup colors
-            style = ImGuiStyle(); // IMPORTANT: ScaleAllSizes will change the original size, so we should reset all
-                                  // style config
+            style = ImGuiStyle();        // IMPORTANT: ScaleAllSizes will change the original size,
+                                         // so we should reset all style config
+
             style.WindowBorderSize = 1.0f;
             style.ChildBorderSize = 1.0f;
             style.PopupBorderSize = 1.0f;
@@ -1756,6 +1757,8 @@ bool MenuCommon::RenderMenu()
 
                     GetCurrentBackendInfo(State::Instance().api, &currentBackend, &currentBackendName);
 
+                    std::string spoofingText;
+
                     switch (State::Instance().api)
                     {
                     case DX11:
@@ -1764,8 +1767,10 @@ bool MenuCommon::RenderMenu()
                                     State::Instance().currentFeature->Version().major,
                                     State::Instance().currentFeature->Version().minor,
                                     State::Instance().currentFeature->Version().patch);
+
                         ImGui::SameLine(0.0f, 6.0f);
-                        ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
+                        spoofingText = Config::Instance()->DxgiSpoofing.value_or_default() ? "On" : "Off";
+                        ImGui::Text("| Spoofing: %s", spoofingText.c_str());
 
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddDx11Backends(&currentBackend, &currentBackendName);
@@ -1781,6 +1786,10 @@ bool MenuCommon::RenderMenu()
                         ImGui::SameLine(0.0f, 6.0f);
                         ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
 
+                        ImGui::SameLine(0.0f, 6.0f);
+                        spoofingText = Config::Instance()->DxgiSpoofing.value_or_default() ? "On" : "Off";
+                        ImGui::Text("| Spoofing: %s", spoofingText.c_str());
+
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddDx12Backends(&currentBackend, &currentBackendName);
 
@@ -1794,6 +1803,21 @@ bool MenuCommon::RenderMenu()
                                     State::Instance().currentFeature->Version().patch);
                         ImGui::SameLine(0.0f, 6.0f);
                         ImGui::Text("Source Api: %s", State::Instance().currentInputApiName.c_str());
+
+                        auto vlkSpoof = Config::Instance()->VulkanSpoofing.value_or_default();
+                        auto vlkExtSpoof = Config::Instance()->VulkanExtensionSpoofing.value_or_default();
+
+                        if (vlkSpoof && vlkExtSpoof)
+                            spoofingText = "On + Ext";
+                        else if (vlkSpoof)
+                            spoofingText = "On";
+                        else if (vlkExtSpoof)
+                            spoofingText = "Just Ext";
+                        else
+                            spoofingText = "Off";
+
+                        ImGui::SameLine(0.0f, 6.0f);
+                        ImGui::Text("| Spoofing: %s", spoofingText.c_str());
 
                         if (State::Instance().currentFeature->Name() != "DLSSD")
                             AddVulkanBackends(&currentBackend, &currentBackendName);
@@ -2590,8 +2614,7 @@ bool MenuCommon::RenderMenu()
                                 ImGui::PushItemWidth(280.0f * Config::Instance()->MenuScale.value_or_default());
 
                                 float velocity = Config::Instance()->FsrVelocity.value_or_default();
-                                if (ImGui::SliderFloat("Velocity Factor", &velocity, 0.00f, 1.0f, "%.2f",
-                                                       ImGuiSliderFlags_NoRoundToFormat))
+                                if (ImGui::SliderFloat("Velocity Factor", &velocity, 0.00f, 1.0f, "%.2f"))
                                     Config::Instance()->FsrVelocity = velocity;
 
                                 ShowHelpMarker("Value of 0.0f can improve temporal stability of bright pixels\n"
@@ -2601,8 +2624,7 @@ bool MenuCommon::RenderMenu()
                                 if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
                                 {
                                     float reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
-                                    if (ImGui::SliderFloat("Reactive Scale", &reactiveScale, 0.0f, 100.0f, "%.1f",
-                                                           ImGuiSliderFlags_NoRoundToFormat))
+                                    if (ImGui::SliderFloat("Reactive Scale", &reactiveScale, 0.0f, 100.0f, "%.1f"))
                                         Config::Instance()->FsrReactiveScale = reactiveScale;
 
                                     ShowHelpMarker("Meant for development purpose to test if\n"
@@ -2612,8 +2634,7 @@ bool MenuCommon::RenderMenu()
                                 if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
                                 {
                                     float shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
-                                    if (ImGui::SliderFloat("Shading Scale", &shadingScale, 0.0f, 100.0f, "%.1f",
-                                                           ImGuiSliderFlags_NoRoundToFormat))
+                                    if (ImGui::SliderFloat("Shading Scale", &shadingScale, 0.0f, 100.0f, "%.1f"))
                                         Config::Instance()->FsrShadingScale = shadingScale;
 
                                     ShowHelpMarker("Increasing this scales fsr3.1 computed shading\n"
@@ -2623,8 +2644,8 @@ bool MenuCommon::RenderMenu()
                                 if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
                                 {
                                     float accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
-                                    if (ImGui::SliderFloat("Acc. Added Per Frame", &accAddPerFrame, 0.00f, 1.0f, "%.2f",
-                                                           ImGuiSliderFlags_NoRoundToFormat))
+                                    if (ImGui::SliderFloat("Acc. Added Per Frame", &accAddPerFrame, 0.00f, 1.0f,
+                                                           "%.2f"))
                                         Config::Instance()->FsrAccAddPerFrame = accAddPerFrame;
 
                                     ShowHelpMarker(
@@ -2639,8 +2660,8 @@ bool MenuCommon::RenderMenu()
                                 if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
                                 {
                                     float minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
-                                    if (ImGui::SliderFloat("Min. Disocclusion Acc.", &minDisOccAcc, -1.0f, 1.0f, "%.2f",
-                                                           ImGuiSliderFlags_NoRoundToFormat))
+                                    if (ImGui::SliderFloat("Min. Disocclusion Acc.", &minDisOccAcc, -1.0f, 1.0f,
+                                                           "%.2f"))
                                         Config::Instance()->FsrMinDisOccAcc = minDisOccAcc;
 
                                     ShowHelpMarker("Increasing this value may reduce white pixel temporal\n"
@@ -2698,16 +2719,14 @@ bool MenuCommon::RenderMenu()
 
                             if (useVFov)
                             {
-                                if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f",
-                                                       ImGuiSliderFlags_NoRoundToFormat))
+                                if (ImGui::SliderFloat("Vert. FOV", &vfov, 0.0f, 180.0f, "%.1f"))
                                     Config::Instance()->FsrVerticalFov = vfov;
 
                                 ShowHelpMarker("Might help achieve better image quality");
                             }
                             else
                             {
-                                if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f",
-                                                       ImGuiSliderFlags_NoRoundToFormat))
+                                if (ImGui::SliderFloat("Horz. FOV", &hfov, 0.0f, 180.0f, "%.1f"))
                                     Config::Instance()->FsrHorizontalFov = hfov;
 
                                 ShowHelpMarker("Might help achieve better image quality");
@@ -2719,14 +2738,12 @@ bool MenuCommon::RenderMenu()
                             cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
                             cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
 
-                            if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 500000.0f, "%.1f",
-                                                   ImGuiSliderFlags_NoRoundToFormat))
+                            if (ImGui::SliderFloat("Camera Near", &cameraNear, 0.1f, 500000.0f, "%.1f"))
                                 Config::Instance()->FsrCameraNear = cameraNear;
                             ShowHelpMarker("Might help achieve better image quality\n"
                                            "And potentially less ghosting");
 
-                            if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 500000.0f, "%.1f",
-                                                   ImGuiSliderFlags_NoRoundToFormat))
+                            if (ImGui::SliderFloat("Camera Far", &cameraFar, 0.1f, 500000.0f, "%.1f"))
                                 Config::Instance()->FsrCameraFar = cameraFar;
                             ShowHelpMarker("Might help achieve better image quality\n"
                                            "And potentially less ghosting");
@@ -2890,8 +2907,8 @@ bool MenuCommon::RenderMenu()
 
                         ImGui::BeginDisabled(!Config::Instance()->ContrastEnabled.value_or_default());
 
-                        if (float contrast = Config::Instance()->Contrast.value_or_default(); ImGui::SliderFloat(
-                                "Contrast", &contrast, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat))
+                        float contrast = Config::Instance()->Contrast.value_or_default();
+                        if (ImGui::SliderFloat("Contrast", &contrast, 0.0f, 2.0f, "%.2f"))
                             Config::Instance()->Contrast = contrast;
 
                         ShowHelpMarker("Higher values increases sharpness at high contrast areas.\n"
@@ -2922,18 +2939,15 @@ bool MenuCommon::RenderMenu()
                                            "Green areas will get reduced sharpness");
 
                             float motionSharpness = Config::Instance()->MotionSharpness.value_or_default();
-                            ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.3f, 1.3f, "%.3f",
-                                               ImGuiSliderFlags_NoRoundToFormat);
+                            ImGui::SliderFloat("MotionSharpness", &motionSharpness, -1.3f, 1.3f, "%.3f");
                             Config::Instance()->MotionSharpness = motionSharpness;
 
                             float motionThreshod = Config::Instance()->MotionThreshold.value_or_default();
-                            ImGui::SliderFloat("MotionThreshod", &motionThreshod, 0.0f, 100.0f, "%.2f",
-                                               ImGuiSliderFlags_NoRoundToFormat);
+                            ImGui::SliderFloat("MotionThreshod", &motionThreshod, 0.0f, 100.0f, "%.2f");
                             Config::Instance()->MotionThreshold = motionThreshod;
 
                             float motionScale = Config::Instance()->MotionScaleLimit.value_or_default();
-                            ImGui::SliderFloat("MotionRange", &motionScale, 0.01f, 100.0f, "%.2f",
-                                               ImGuiSliderFlags_NoRoundToFormat);
+                            ImGui::SliderFloat("MotionRange", &motionScale, 0.01f, 100.0f, "%.2f");
                             Config::Instance()->MotionScaleLimit = motionScale;
 
                             ImGui::EndDisabled();
@@ -3222,13 +3236,12 @@ bool MenuCommon::RenderMenu()
                     ImGui::BeginDisabled(!Config::Instance()->OverrideSharpness.value_or_default());
 
                     float sharpness = Config::Instance()->Sharpness.value_or_default();
-                    ImGui::SliderFloat("Sharpness", &sharpness, 0.0f,
-                                       Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
-                                               !Config::Instance()->ContrastEnabled.value_or_default()
-                                           ? 1.3f
-                                           : 1.0f,
-                                       "%.3f", ImGuiSliderFlags_NoRoundToFormat);
-                    Config::Instance()->Sharpness = sharpness;
+                    auto justRcasEnabled = Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
+                                           !Config::Instance()->ContrastEnabled.value_or_default();
+                    float sharpnessLimit = justRcasEnabled ? 1.3f : 1.0f;
+
+                    if (ImGui::SliderFloat("Sharpness", &sharpness, 0.0f, sharpnessLimit))
+                        Config::Instance()->Sharpness = sharpness;
 
                     ImGui::EndDisabled();
 
@@ -3249,8 +3262,7 @@ bool MenuCommon::RenderMenu()
                     ImGui::BeginDisabled(!Config::Instance()->UpscaleRatioOverrideEnabled.value_or_default());
 
                     float urOverride = Config::Instance()->UpscaleRatioOverrideValue.value_or_default();
-                    ImGui::SliderFloat("Override Ratio", &urOverride, minSliderLimit, maxSliderLimit, "%.3f",
-                                       ImGuiSliderFlags_NoRoundToFormat);
+                    ImGui::SliderFloat("Override Ratio", &urOverride, minSliderLimit, maxSliderLimit, "%.3f");
                     Config::Instance()->UpscaleRatioOverrideValue = urOverride;
 
                     ImGui::EndDisabled();
@@ -3269,33 +3281,27 @@ bool MenuCommon::RenderMenu()
                     ImGui::BeginDisabled(!Config::Instance()->QualityRatioOverrideEnabled.value_or_default());
 
                     float qDlaa = Config::Instance()->QualityRatio_DLAA.value_or_default();
-                    if (ImGui::SliderFloat("DLAA", &qDlaa, minSliderLimit, maxSliderLimit, "%.3f",
-                                           ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("DLAA", &qDlaa, minSliderLimit, maxSliderLimit, "%.3f"))
                         Config::Instance()->QualityRatio_DLAA = qDlaa;
 
                     float qUq = Config::Instance()->QualityRatio_UltraQuality.value_or_default();
-                    if (ImGui::SliderFloat("Ultra Quality", &qUq, minSliderLimit, maxSliderLimit, "%.3f",
-                                           ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Ultra Quality", &qUq, minSliderLimit, maxSliderLimit, "%.3f"))
                         Config::Instance()->QualityRatio_UltraQuality = qUq;
 
                     float qQ = Config::Instance()->QualityRatio_Quality.value_or_default();
-                    if (ImGui::SliderFloat("Quality", &qQ, minSliderLimit, maxSliderLimit, "%.3f",
-                                           ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Quality", &qQ, minSliderLimit, maxSliderLimit, "%.3f"))
                         Config::Instance()->QualityRatio_Quality = qQ;
 
                     float qB = Config::Instance()->QualityRatio_Balanced.value_or_default();
-                    if (ImGui::SliderFloat("Balanced", &qB, minSliderLimit, maxSliderLimit, "%.3f",
-                                           ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Balanced", &qB, minSliderLimit, maxSliderLimit, "%.3f"))
                         Config::Instance()->QualityRatio_Balanced = qB;
 
                     float qP = Config::Instance()->QualityRatio_Performance.value_or_default();
-                    if (ImGui::SliderFloat("Performance", &qP, minSliderLimit, maxSliderLimit, "%.3f",
-                                           ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Performance", &qP, minSliderLimit, maxSliderLimit, "%.3f"))
                         Config::Instance()->QualityRatio_Performance = qP;
 
                     float qUp = Config::Instance()->QualityRatio_UltraPerformance.value_or_default();
-                    if (ImGui::SliderFloat("Ultra Performance", &qUp, minSliderLimit, maxSliderLimit, "%.3f",
-                                           ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Ultra Performance", &qUp, minSliderLimit, maxSliderLimit, "%.3f"))
                         Config::Instance()->QualityRatio_UltraPerformance = qUp;
 
                     ImGui::EndDisabled();
@@ -3335,13 +3341,32 @@ bool MenuCommon::RenderMenu()
                                        "Might fix colors, especially in dark areas");
 
                         ImGui::TableNextColumn();
-                        if (bool hdr = currentFeature->IsHdr(); ImGui::Checkbox("HDR", &hdr))
+                        auto accessToReactiveMask = State::Instance().currentFeature->AccessToReactiveMask();
+                        ImGui::BeginDisabled(!accessToReactiveMask);
+
+                        bool rm = Config::Instance()->DisableReactiveMask.value_or(
+                            !accessToReactiveMask || currentBackend == "dlss" ||
+                            (currentBackend == "xess" && !isVersionOrBetter(currentFeature->Version(), { 2, 0, 1 })));
+                        if (ImGui::Checkbox("Disable Reactive Mask", &rm))
                         {
-                            Config::Instance()->HDR = hdr;
-                            ReInitUpscaler();
+                            Config::Instance()->DisableReactiveMask = rm;
+
+                            if (currentBackend == "xess")
+                            {
+                                State::Instance().newBackend = currentBackend;
+                                for (auto& singleChangeBackend : State::Instance().changeBackend)
+                                    singleChangeBackend.second = true;
+                            }
                         }
-                        ShowResetButton(&Config::Instance()->HDR, "R##1");
-                        ShowHelpMarker("Might help with purple hue in some games");
+
+                        ImGui::EndDisabled();
+
+                        if (accessToReactiveMask)
+                            ShowHelpMarker("Allows the use of a reactive mask\n"
+                                           "Keep in mind that a reactive mask sent to DLSS\n"
+                                           "will not produce a good image in combination with FSR/XeSS");
+                        else
+                            ShowHelpMarker("Option disabled because tha game doesn't provide a reactive mask");
 
                         ImGui::EndTable();
 
@@ -3363,14 +3388,13 @@ bool MenuCommon::RenderMenu()
                                 ShowHelpMarker("You shouldn't need to change it");
 
                                 ImGui::TableNextColumn();
-                                if (bool jitter = currentFeature->JitteredMV();
-                                    ImGui::Checkbox("Jitter Cancellation", &jitter))
+                                if (bool hdr = currentFeature->IsHdr(); ImGui::Checkbox("HDR", &hdr))
                                 {
-                                    Config::Instance()->JitterCancellation = jitter;
+                                    Config::Instance()->HDR = hdr;
                                     ReInitUpscaler();
                                 }
-                                ShowResetButton(&Config::Instance()->JitterCancellation, "R##3");
-                                ShowHelpMarker("Fix for games that send motion data with preapplied jitter");
+                                ShowResetButton(&Config::Instance()->HDR, "R##1");
+                                ShowHelpMarker("Might help with purple hue in some games");
 
                                 ImGui::TableNextColumn();
                                 if (bool mv = !currentFeature->LowResMV(); ImGui::Checkbox("Display Res. MV", &mv))
@@ -3392,33 +3416,15 @@ bool MenuCommon::RenderMenu()
                                                "Top left part of the screen will be blurry");
 
                                 ImGui::TableNextColumn();
-                                auto accessToReactiveMask = State::Instance().currentFeature->AccessToReactiveMask();
-                                ImGui::BeginDisabled(!accessToReactiveMask);
 
-                                bool rm = Config::Instance()->DisableReactiveMask.value_or(
-                                    !accessToReactiveMask || currentBackend == "dlss" ||
-                                    (currentBackend == "xess" &&
-                                     !isVersionOrBetter(currentFeature->Version(), { 2, 0, 1 })));
-                                if (ImGui::Checkbox("Disable Reactive Mask", &rm))
+                                if (bool jitter = currentFeature->JitteredMV();
+                                    ImGui::Checkbox("Jitter Cancellation", &jitter))
                                 {
-                                    Config::Instance()->DisableReactiveMask = rm;
-
-                                    if (currentBackend == "xess")
-                                    {
-                                        State::Instance().newBackend = currentBackend;
-                                        for (auto& singleChangeBackend : State::Instance().changeBackend)
-                                            singleChangeBackend.second = true;
-                                    }
+                                    Config::Instance()->JitterCancellation = jitter;
+                                    ReInitUpscaler();
                                 }
-
-                                ImGui::EndDisabled();
-
-                                if (accessToReactiveMask)
-                                    ShowHelpMarker("Allows the use of a reactive mask\n"
-                                                   "Keep in mind that a reactive mask sent to DLSS\n"
-                                                   "will not produce a good image in combination with FSR/XeSS");
-                                else
-                                    ShowHelpMarker("Option disabled because tha game doesn't provide a reactive mask");
+                                ShowResetButton(&Config::Instance()->JitterCancellation, "R##3");
+                                ShowHelpMarker("Fix for games that send motion data with preapplied jitter");
 
                                 ImGui::TableNextColumn();
                                 ImGui::EndTable();
@@ -3430,20 +3436,19 @@ bool MenuCommon::RenderMenu()
                                     Config::Instance()->DisableReactiveMask.value_or(currentBackend == "xess"));
 
                                 bool binaryMask = State::Instance().api == Vulkan || currentBackend == "xess";
-                                auto bias =
-                                    Config::Instance()->DlssReactiveMaskBias.value_or(binaryMask ? 0.0f : 0.45f);
+                                auto defaultBias = binaryMask ? 0.0f : 0.45f;
+                                auto maskBias = Config::Instance()->DlssReactiveMaskBias.value_or(defaultBias);
 
                                 if (!binaryMask)
                                 {
-                                    if (ImGui::SliderFloat("React. Mask Bias", &bias, 0.0f, 0.9f, "%.2f",
-                                                           ImGuiSliderFlags_NoRoundToFormat))
-                                        Config::Instance()->DlssReactiveMaskBias = bias;
+                                    if (ImGui::SliderFloat("React. Mask Bias", &maskBias, 0.0f, 0.9f, "%.2f"))
+                                        Config::Instance()->DlssReactiveMaskBias = maskBias;
 
                                     ShowHelpMarker("Values above 0 activates usage of reactive mask");
                                 }
                                 else
                                 {
-                                    bool useRM = bias > 0.0f;
+                                    bool useRM = maskBias > 0.0f;
                                     if (ImGui::Checkbox("Use Binary Reactive Mask", &useRM))
                                     {
                                         if (useRM)
@@ -3621,8 +3626,7 @@ bool MenuCommon::RenderMenu()
                     }
 
                     float fpsAlpha = Config::Instance()->FpsOverlayAlpha.value_or_default();
-                    if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f",
-                                           ImGuiSliderFlags_NoRoundToFormat))
+                    if (ImGui::SliderFloat("Background Alpha", &fpsAlpha, 0.0f, 1.0f, "%.2f"))
                         Config::Instance()->FpsOverlayAlpha = fpsAlpha;
 
                     const char* options[] = { "Same as menu", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0", "1.1", "1.2",
@@ -3690,8 +3694,7 @@ bool MenuCommon::RenderMenu()
                         if (Config::Instance()->MipmapBiasOverride.has_value() && _mipBias == 0.0f)
                             _mipBias = Config::Instance()->MipmapBiasOverride.value();
 
-                        ImGui::SliderFloat("Mipmap Bias##2", &_mipBias, -15.0f, 15.0f, "%.6f",
-                                           ImGuiSliderFlags_NoRoundToFormat);
+                        ImGui::SliderFloat("Mipmap Bias##2", &_mipBias, -15.0f, 15.0f, "%.6f");
                         ShowHelpMarker("Can help with blurry textures in broken games\n"
                                        "Negative values will make textures sharper\n"
                                        "Positive values will make textures more blurry\n\n"
@@ -4157,10 +4160,9 @@ bool MenuCommon::RenderMenu()
 
                     ImGui::EndDisabled();
 
-                    if (ImGui::SliderFloat("Upscaler Ratio", &_mipmapUpscalerRatio,
-                                           Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f,
-                                           Config::Instance()->ExtendedLimits.value_or_default() ? 6.0f : 3.0f, "%.2f",
-                                           ImGuiSliderFlags_NoRoundToFormat))
+                    auto minLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 0.1f : 1.0f;
+                    auto maxLimit = Config::Instance()->ExtendedLimits.value_or_default() ? 6.0f : 3.0f;
+                    if (ImGui::SliderFloat("Upscaler Ratio", &_mipmapUpscalerRatio, minLimit, maxLimit, "%.2f"))
                     {
                         _renderWidth = _displayWidth / _mipmapUpscalerRatio;
                         _mipBiasCalculated = log2((float) _renderWidth / (float) _displayWidth);
@@ -4169,8 +4171,7 @@ bool MenuCommon::RenderMenu()
                     if (ImGui::InputScalar("Render Width", ImGuiDataType_U32, &_renderWidth, NULL, NULL, "%u"))
                         _mipBiasCalculated = log2((float) _renderWidth / (float) _displayWidth);
 
-                    ImGui::SliderFloat("Mipmap Bias", &_mipBiasCalculated, -15.0f, 0.0f, "%.6f",
-                                       ImGuiSliderFlags_NoRoundToFormat);
+                    ImGui::SliderFloat("Mipmap Bias", &_mipBiasCalculated, -15.0f, 0.0f, "%.6f");
 
                     // BOTTOM LINE
                     ImGui::Spacing();
