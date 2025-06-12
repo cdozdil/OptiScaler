@@ -97,6 +97,34 @@ NvAPI_Status ReflexHooks::hkNvAPI_D3D12_SetAsyncFrameMarker(ID3D12CommandQueue* 
     return o_NvAPI_D3D12_SetAsyncFrameMarker(pCommandQueue, pSetAsyncFrameMarkerParams);
 }
 
+NvAPI_Status ReflexHooks::hkNvAPI_Vulkan_SetLatencyMarker(HANDLE vkDevice,
+                                                          NV_VULKAN_LATENCY_MARKER_PARAMS* pSetLatencyMarkerParams)
+{
+#ifdef LOG_REFLEX_CALLS
+    LOG_FUNC();
+#endif
+
+    _updatesWithoutMarker = 0;
+
+    return o_NvAPI_Vulkan_SetLatencyMarker(vkDevice, pSetLatencyMarkerParams);
+}
+
+NvAPI_Status ReflexHooks::hkNvAPI_Vulkan_SetSleepMode(HANDLE vkDevice,
+                                                      NV_VULKAN_SET_SLEEP_MODE_PARAMS* pSetSleepModeParams)
+{
+#ifdef LOG_REFLEX_CALLS
+    LOG_FUNC();
+#endif
+    // Store for later so we can adjust the fps whenever we want
+    memcpy(&_lastVkSleepParams, pSetSleepModeParams, sizeof(NV_VULKAN_SET_SLEEP_MODE_PARAMS));
+    _lastVkSleepDev = vkDevice;
+
+    if (_minimumIntervalUs != 0)
+        pSetSleepModeParams->minimumIntervalUs = _minimumIntervalUs;
+
+    return o_NvAPI_Vulkan_SetSleepMode(vkDevice, pSetSleepModeParams);
+}
+
 void ReflexHooks::hookReflex(PFN_NvApi_QueryInterface& queryInterface)
 {
 #ifdef _DEBUG
@@ -110,6 +138,8 @@ void ReflexHooks::hookReflex(PFN_NvApi_QueryInterface& queryInterface)
         o_NvAPI_D3D_GetLatency = GET_INTERFACE(NvAPI_D3D_GetLatency, queryInterface);
         o_NvAPI_D3D_SetLatencyMarker = GET_INTERFACE(NvAPI_D3D_SetLatencyMarker, queryInterface);
         o_NvAPI_D3D12_SetAsyncFrameMarker = GET_INTERFACE(NvAPI_D3D12_SetAsyncFrameMarker, queryInterface);
+        o_NvAPI_Vulkan_SetLatencyMarker = GET_INTERFACE(NvAPI_Vulkan_SetLatencyMarker, queryInterface);
+        o_NvAPI_Vulkan_SetSleepMode = GET_INTERFACE(NvAPI_Vulkan_SetSleepMode, queryInterface);
 
         _inited = o_NvAPI_D3D_SetSleepMode && o_NvAPI_D3D_Sleep && o_NvAPI_D3D_GetLatency &&
                   o_NvAPI_D3D_SetLatencyMarker && o_NvAPI_D3D12_SetAsyncFrameMarker;
@@ -145,12 +175,20 @@ void* ReflexHooks::getHookedReflex(unsigned int InterfaceId)
     {
         return &hkNvAPI_D3D12_SetAsyncFrameMarker;
     }
+    if (InterfaceId == GET_ID(NvAPI_Vulkan_SetLatencyMarker) && o_NvAPI_Vulkan_SetLatencyMarker)
+    {
+        return &hkNvAPI_Vulkan_SetLatencyMarker;
+    }
+    if (InterfaceId == GET_ID(NvAPI_Vulkan_SetSleepMode) && o_NvAPI_Vulkan_SetSleepMode)
+    {
+        return &hkNvAPI_Vulkan_SetSleepMode;
+    }
 
     return nullptr;
 }
 
 // For updating information about Reflex hooks
-void ReflexHooks::update(bool optiFg_FgState)
+void ReflexHooks::update(bool optiFg_FgState, bool isVulkan)
 {
     // We can still use just the markers to limit the fps with Reflex disabled
     // But need to fallback in case a game stops sending them for some reason
@@ -160,15 +198,26 @@ void ReflexHooks::update(bool optiFg_FgState)
 
     if (_updatesWithoutMarker > 20 || !_inited)
     {
+        LOG_DEBUG("_updatesWithoutMarker: {}, _inited: {}", _updatesWithoutMarker, _inited);
         State::Instance().reflexLimitsFps = false;
         return;
     }
 
-    // Don't use when: Real Reflex markers + OptiFG + Reflex disabled, causes huge input latency
-    State::Instance().reflexLimitsFps =
-        fakenvapi::isUsingFakenvapi() || !optiFg_FgState || _lastSleepParams.bLowLatencyMode;
-    State::Instance().reflexShowWarning =
-        !fakenvapi::isUsingFakenvapi() && optiFg_FgState && _lastSleepParams.bLowLatencyMode;
+    if (isVulkan)
+    {
+        // optiFg_FgState doesn't matter for vulkan
+        // isUsingFakenvapi() because fakenvapi might override the reflex' setting and we don't know it
+        State::Instance().reflexLimitsFps = fakenvapi::isUsingFakenvapi() || _lastVkSleepParams.bLowLatencyMode;
+    }
+    else
+    {
+        // Don't use when: Real Reflex markers + OptiFG + Reflex disabled, causes huge input latency
+        State::Instance().reflexLimitsFps =
+            fakenvapi::isUsingFakenvapi() || !optiFg_FgState || _lastSleepParams.bLowLatencyMode;
+        State::Instance().reflexShowWarning =
+            !fakenvapi::isUsingFakenvapi() && optiFg_FgState && _lastSleepParams.bLowLatencyMode;
+    }
+
     static float lastFps = 0;
     static bool lastReflexLimitsFps = State::Instance().reflexLimitsFps;
 
@@ -222,5 +271,13 @@ void ReflexHooks::setFPSLimit(float fps)
         memcpy(&temp, &_lastSleepParams, sizeof(NV_SET_SLEEP_MODE_PARAMS));
         temp.minimumIntervalUs = _minimumIntervalUs;
         o_NvAPI_D3D_SetSleepMode(_lastSleepDev, &temp);
+    }
+
+    if (_lastVkSleepDev != nullptr)
+    {
+        NV_VULKAN_SET_SLEEP_MODE_PARAMS temp {};
+        memcpy(&temp, &_lastVkSleepParams, sizeof(NV_VULKAN_SET_SLEEP_MODE_PARAMS));
+        temp.minimumIntervalUs = _minimumIntervalUs;
+        o_NvAPI_Vulkan_SetSleepMode(_lastVkSleepDev, &temp);
     }
 }
