@@ -9,6 +9,7 @@
 
 #include <detours/detours.h>
 #include <misc/FrameLimit.h>
+#include <nvapi/ReflexHooks.h>
 
 typedef struct VkWin32SurfaceCreateInfoKHR
 {
@@ -191,13 +192,16 @@ static VkResult hkvkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInf
         return VK_ERROR_OUT_OF_DATE_KHR;
     }
 
+    ReflexHooks::update(false, true);
+
     // original call
     State::Instance().vulkanCreatingSC = true;
     auto result = o_QueuePresentKHR(queue, pPresentInfo);
     State::Instance().vulkanCreatingSC = false;
 
     // Unsure about Vulkan Reflex fps limit and if that could be causing an issue here
-    FrameLimit::sleep();
+    if (!State::Instance().reflexLimitsFps)
+        FrameLimit::sleep();
 
     LOG_FUNC_RESULT(result);
     return result;
