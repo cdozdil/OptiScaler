@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dxgi.h>
+#include <fakenvapi_inc.h>
 #include "NvApiTypes.h"
 
 class fakenvapi
@@ -11,9 +12,9 @@ class fakenvapi
         bool enabled;
     } antilag2_data;
 
-    inline static PFN_Fake_InformFGState Fake_InformFGState = nullptr;
-    inline static PFN_Fake_InformPresentFG Fake_InformPresentFG = nullptr;
-    inline static PFN_Fake_GetAntiLagCtx Fake_GetAntiLagCtx = nullptr;
+    inline static decltype(&Fake_InformFGState) Fake_InformFGState = nullptr;
+    inline static decltype(&Fake_InformPresentFG) Fake_InformPresentFG = nullptr;
+    inline static decltype(&Fake_GetAntiLagCtx) Fake_GetAntiLagCtx = nullptr;
 
     inline static bool _inited = false;
 
