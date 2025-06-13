@@ -8,9 +8,9 @@ void fakenvapi::Init(PFN_NvApi_QueryInterface& queryInterface)
 
     LOG_INFO("Trying to get fakenvapi-specific functions");
 
-    Fake_InformFGState = static_cast<PFN_Fake_InformFGState>(queryInterface(GET_ID(Fake_InformFGState)));
-    Fake_InformPresentFG = static_cast<PFN_Fake_InformPresentFG>(queryInterface(GET_ID(Fake_InformPresentFG)));
-    Fake_GetAntiLagCtx = static_cast<PFN_Fake_GetAntiLagCtx>(queryInterface(GET_ID(Fake_GetAntiLagCtx)));
+    Fake_InformFGState = static_cast<decltype(Fake_InformFGState)>(queryInterface(GET_ID(Fake_InformFGState)));
+    Fake_InformPresentFG = static_cast<decltype(Fake_InformPresentFG)>(queryInterface(GET_ID(Fake_InformPresentFG)));
+    Fake_GetAntiLagCtx = static_cast<decltype(Fake_GetAntiLagCtx)>(queryInterface(GET_ID(Fake_GetAntiLagCtx)));
 
     if (Fake_InformFGState == nullptr)
         LOG_INFO("Couldn't get InformFGState");
