@@ -10,14 +10,14 @@ void fakenvapi::Init(PFN_NvApi_QueryInterface& queryInterface)
 
     Fake_InformFGState = static_cast<decltype(Fake_InformFGState)>(queryInterface(GET_ID(Fake_InformFGState)));
     Fake_InformPresentFG = static_cast<decltype(Fake_InformPresentFG)>(queryInterface(GET_ID(Fake_InformPresentFG)));
-    Fake_GetAntiLagCtx = static_cast<decltype(Fake_GetAntiLagCtx)>(queryInterface(GET_ID(Fake_GetAntiLagCtx)));
+    Fake_GetLowLatencyCtx = static_cast<decltype(Fake_GetLowLatencyCtx)>(queryInterface(GET_ID(Fake_GetLowLatencyCtx)));
 
     if (Fake_InformFGState == nullptr)
         LOG_INFO("Couldn't get InformFGState");
     if (Fake_InformPresentFG == nullptr)
         LOG_INFO("Couldn't get InformPresentFG");
-    if (Fake_GetAntiLagCtx == nullptr)
-        LOG_INFO("Couldn't get GetAntiLagCtx");
+    if (Fake_GetLowLatencyCtx == nullptr)
+        LOG_INFO("Couldn't get GetLowLatencyCtx");
 
     _inited = true;
 }
@@ -37,15 +37,20 @@ void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool 
         // and it will call SetFrameGenFrameType for us
         auto static ffxApiVersion = FfxApiProxy::VersionDx12();
         constexpr feature_version requiredVersion = { 3, 1, 1 };
-        if (isVersionOrBetter(ffxApiVersion, requiredVersion) && Fake_GetAntiLagCtx != nullptr)
+        if (isVersionOrBetter(ffxApiVersion, requiredVersion) && Fake_GetLowLatencyCtx != nullptr)
         {
-            void* antilag2Context = nullptr;
-            Fake_GetAntiLagCtx(&antilag2Context);
-            LOG_TRACE("Fake_GetAntiLagCtx: {}", antilag2Context != nullptr);
+            void* lowLatencyContext = nullptr;
+            Mode lowLatencyMode {};
+            auto result = Fake_GetLowLatencyCtx(&lowLatencyContext, &lowLatencyMode);
+            LOG_TRACE("Fake_GetLowLatencyCtx: {}", lowLatencyContext != nullptr);
 
-            if (antilag2Context != nullptr)
+            if (result != NVAPI_OK)
             {
-                antilag2_data.context = antilag2Context;
+                LOG_ERROR("Can't get AntiLag 2 context from fakenvapi");
+            }
+            else if (lowLatencyContext != nullptr && lowLatencyMode == Mode::AntiLag2)
+            {
+                antilag2_data.context = lowLatencyContext;
                 antilag2_data.enabled = true;
 
                 pSwapChain->SetPrivateData(IID_IFfxAntiLag2Data, sizeof(antilag2_data), &antilag2_data);
@@ -67,4 +72,4 @@ void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool 
 }
 
 // won't work with older fakenvapi builds
-bool fakenvapi::isUsingFakenvapi() { return Fake_InformFGState || Fake_InformPresentFG || Fake_GetAntiLagCtx; }
+bool fakenvapi::isUsingFakenvapi() { return Fake_InformFGState || Fake_InformPresentFG || Fake_GetLowLatencyCtx; }
