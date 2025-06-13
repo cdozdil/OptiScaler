@@ -3045,9 +3045,33 @@ bool MenuCommon::RenderMenu()
                         "Framerate",
                         "Uses Reflex when possible\non AMD/Intel cards you can use fakenvapi to substitute Reflex");
 
-                    ImGui::Text(
-                        std::format("Current method: {}", State::Instance().reflexLimitsFps ? "Reflex" : "Fallback")
-                            .c_str());
+                    static std::string currentMethod {};
+                    if (State::Instance().reflexLimitsFps)
+                    {
+                        if (fakenvapi::updateModeAndContext())
+                        {
+                            auto mode = fakenvapi::getCurrentMode();
+
+                            if (mode == Mode::AntiLag2)
+                                currentMethod = "AntiLag 2";
+                            else if (mode == Mode::LatencyFlex)
+                                currentMethod = "LatencyFlex";
+                            else if (mode == Mode::XeLL)
+                                currentMethod = "XeLL";
+                            else if (mode == Mode::AntiLagVk)
+                                currentMethod = "Vulkan AntiLag";
+                        }
+                        else 
+                        {
+                            currentMethod = "Reflex";
+                        }
+                    }
+                    else
+                    {
+                        currentMethod = "Fallback";
+                    }
+
+                    ImGui::Text(std::format("Current method: {}", currentMethod).c_str());
 
                     if (State::Instance().reflexShowWarning)
                     {

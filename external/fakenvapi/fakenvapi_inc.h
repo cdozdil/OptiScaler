@@ -15,8 +15,8 @@ inline struct FAKENVAPI_INTERFACE_TABLE fakenvapi_interface_table[] = {
 };
 
 enum class Mode {
-    AntiLag2,
     LatencyFlex,
+    AntiLag2,
     XeLL,
     AntiLagVk
 };
