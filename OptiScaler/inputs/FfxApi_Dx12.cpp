@@ -421,7 +421,8 @@ ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* desc)
 ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* desc)
 {
     // Skip OptiScaler stuff
-    if (Config::Instance()->EnableHotSwapping.value_or_default() && !Config::Instance()->UseFfxInputs.value_or_default())
+    if (Config::Instance()->EnableHotSwapping.value_or_default() &&
+        !Config::Instance()->UseFfxInputs.value_or_default())
         return FfxApiProxy::D3D12_Dispatch()(context, desc);
 
     if (desc == nullptr || context == nullptr)
