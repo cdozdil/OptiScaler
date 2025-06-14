@@ -415,19 +415,18 @@ bool Config::Reload(std::filesystem::path iniPath)
         {
             EnableDlssInputs.set_from_config(readBool("Inputs", "EnableDlssEnable"));
             EnableXeSSInputs.set_from_config(readBool("Inputs", "EnableXeSSInputs"));
-            
+
             EnableFsr2Inputs.set_from_config(readBool("Inputs", "EnableFsr2Inputs"));
             UseFsr2Inputs.set_from_config(readBool("Inputs", "UseFsr2Inputs"));
             Fsr2Pattern.set_from_config(readBool("Inputs", "Fsr2Pattern"));
-            
+
             EnableFsr3Inputs.set_from_config(readBool("Inputs", "EnableFsr3Inputs"));
             UseFsr3Inputs.set_from_config(readBool("Inputs", "UseFsr3Inputs"));
             Fsr3Pattern.set_from_config(readBool("Inputs", "Fsr3Pattern"));
-            
+
             EnableFfxInputs.set_from_config(readBool("Inputs", "EnableFfxInputs"));
             UseFfxInputs.set_from_config(readBool("Inputs", "UseFfxInputs"));
             EnableHotSwapping.set_from_config(readBool("Inputs", "EnableHotSwapping"));
-
         }
 
         // Plugins
