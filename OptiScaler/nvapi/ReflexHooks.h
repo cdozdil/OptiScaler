@@ -37,7 +37,7 @@ class ReflexHooks
     static NvAPI_Status hkNvAPI_Vulkan_SetLatencyMarker(HANDLE vkDevice,
                                                         NV_VULKAN_LATENCY_MARKER_PARAMS* pSetLatencyMarkerParams);
     static NvAPI_Status hkNvAPI_Vulkan_SetSleepMode(HANDLE vkDevice,
-                                                   NV_VULKAN_SET_SLEEP_MODE_PARAMS* pSetSleepModeParams);
+                                                    NV_VULKAN_SET_SLEEP_MODE_PARAMS* pSetSleepModeParams);
 
   public:
     static void hookReflex(PFN_NvApi_QueryInterface& queryInterface);
