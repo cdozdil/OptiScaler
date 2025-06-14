@@ -413,18 +413,21 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Inputs
         {
-            DlssInputs.set_from_config(readBool("Inputs", "Dlss"));
-            XeSSInputs.set_from_config(readBool("Inputs", "XeSS"));
-            Fsr2Inputs.set_from_config(readBool("Inputs", "Fsr2"));
+            EnableDlssInputs.set_from_config(readBool("Inputs", "EnableDlssEnable"));
+            EnableXeSSInputs.set_from_config(readBool("Inputs", "EnableXeSSInputs"));
+            
+            EnableFsr2Inputs.set_from_config(readBool("Inputs", "EnableFsr2Inputs"));
+            UseFsr2Inputs.set_from_config(readBool("Inputs", "UseFsr2Inputs"));
             Fsr2Pattern.set_from_config(readBool("Inputs", "Fsr2Pattern"));
-            Fsr3Inputs.set_from_config(readBool("Inputs", "Fsr3"));
+            
+            EnableFsr3Inputs.set_from_config(readBool("Inputs", "EnableFsr3Inputs"));
+            UseFsr3Inputs.set_from_config(readBool("Inputs", "UseFsr3Inputs"));
             Fsr3Pattern.set_from_config(readBool("Inputs", "Fsr3Pattern"));
-            FfxInputs.set_from_config(readBool("Inputs", "Ffx"));
+            
+            EnableFfxInputs.set_from_config(readBool("Inputs", "EnableFfxInputs"));
+            UseFfxInputs.set_from_config(readBool("Inputs", "UseFfxInputs"));
             EnableHotSwapping.set_from_config(readBool("Inputs", "EnableHotSwapping"));
 
-            UseFsr2Inputs.set_from_config(readBool("Inputs", "UseFsr2"));
-            UseFsr3Inputs.set_from_config(readBool("Inputs", "UseFsr3"));
-            UseFfxInputs.set_from_config(readBool("Inputs", "UseFfx"));
         }
 
         // Plugins
@@ -962,19 +965,19 @@ bool Config::SaveIni()
 
     // inputs
     {
-        ini.SetValue("Inputs", "Dlss", GetBoolValue(Instance()->DlssInputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "XeSS", GetBoolValue(Instance()->XeSSInputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "Fsr2", GetBoolValue(Instance()->Fsr2Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "Dlss", GetBoolValue(Instance()->EnableDlssInputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "XeSS", GetBoolValue(Instance()->EnableXeSSInputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "Fsr2", GetBoolValue(Instance()->UseFsr2Inputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr2Pattern", GetBoolValue(Instance()->Fsr2Pattern.value_for_config()).c_str());
-        ini.SetValue("Inputs", "Fsr3", GetBoolValue(Instance()->Fsr3Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "Fsr3", GetBoolValue(Instance()->UseFsr3Inputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr3Pattern", GetBoolValue(Instance()->Fsr3Pattern.value_for_config()).c_str());
-        ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->FfxInputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->UseFfxInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "EnableHotSwapping",
                      GetBoolValue(Instance()->EnableHotSwapping.value_for_config()).c_str());
 
-        ini.SetValue("Inputs", "UseFsr2", GetBoolValue(Instance()->UseFsr2Inputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "UseFsr3", GetBoolValue(Instance()->UseFsr3Inputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "UseFfx", GetBoolValue(Instance()->UseFfxInputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "UseFsr2", GetBoolValue(Instance()->EnableFsr2Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "UseFsr3", GetBoolValue(Instance()->EnableFsr3Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "UseFfx", GetBoolValue(Instance()->EnableFfxInputs.value_for_config()).c_str());
     }
 
     auto pathWStr = absoluteFileName.wstring();

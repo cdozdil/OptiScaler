@@ -460,7 +460,7 @@ ffxReturnCode_t ffxQuery_Vk(ffxContext* context, ffxQueryDescHeader* desc)
 ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->FfxInputs.value_or(true))
+    if (!Config::Instance()->UseFfxInputs.value_or(true))
         return FfxApiProxy::VULKAN_Dispatch()(context, desc);
 
     if (desc == nullptr || context == nullptr)

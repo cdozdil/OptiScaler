@@ -338,7 +338,7 @@ static ffxReturnCode_t ffxQuery_Dx12(ffxContext* context, ffxQueryDescHeader* de
 static ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* desc)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->FfxInputs.value_or_default())
+    if (!Config::Instance()->UseFfxInputs.value_or_default())
         return _D3D12_Dispatch(context, desc);
 
     if (desc == nullptr || context == nullptr)

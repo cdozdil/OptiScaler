@@ -3607,38 +3607,38 @@ bool MenuCommon::RenderMenu()
                     ScopedIndent indent {};
                     ImGui::Spacing();
 
-                    if (Config::Instance()->UseFsr2Inputs.value_or_default())
+                    if (Config::Instance()->EnableFsr2Inputs.value_or_default())
                     {
-                        bool fsr2Inputs = Config::Instance()->Fsr2Inputs.value_or_default();
+                        bool fsr2Inputs = Config::Instance()->UseFsr2Inputs.value_or_default();
                         bool fsr2Pattern = Config::Instance()->Fsr2Pattern.value_or_default();
 
                         if (ImGui::Checkbox("Use Fsr2 Inputs", &fsr2Inputs))
-                            Config::Instance()->Fsr2Inputs = fsr2Inputs;
+                            Config::Instance()->UseFsr2Inputs = fsr2Inputs;
 
                         if (ImGui::Checkbox("Use Fsr2 Pattern Matching", &fsr2Pattern))
                             Config::Instance()->Fsr2Pattern = fsr2Pattern;
                         ShowTooltip("This setting will become active on next boot!");
                     }
 
-                    if (Config::Instance()->UseFsr3Inputs.value_or_default())
+                    if (Config::Instance()->EnableFsr3Inputs.value_or_default())
                     {
-                        bool fsr3Inputs = Config::Instance()->Fsr3Inputs.value_or_default();
+                        bool fsr3Inputs = Config::Instance()->UseFsr3Inputs.value_or_default();
                         bool fsr3Pattern = Config::Instance()->Fsr3Pattern.value_or_default();
 
                         if (ImGui::Checkbox("Use Fsr3 Inputs", &fsr3Inputs))
-                            Config::Instance()->Fsr3Inputs = fsr3Inputs;
+                            Config::Instance()->UseFsr3Inputs = fsr3Inputs;
 
                         if (ImGui::Checkbox("Use Fsr3 Pattern Matching", &fsr3Pattern))
                             Config::Instance()->Fsr3Pattern = fsr3Pattern;
                         ShowTooltip("This setting will become active on next boot!");
                     }
 
-                    if (Config::Instance()->UseFfxInputs.value_or_default())
+                    if (Config::Instance()->EnableFfxInputs.value_or_default())
                     {
-                        bool ffxInputs = Config::Instance()->FfxInputs.value_or_default();
+                        bool ffxInputs = Config::Instance()->UseFfxInputs.value_or_default();
 
                         if (ImGui::Checkbox("Use Ffx Inputs", &ffxInputs))
-                            Config::Instance()->FfxInputs = ffxInputs;
+                            Config::Instance()->UseFfxInputs = ffxInputs;
                     }
                 }
 

@@ -80,7 +80,7 @@ class KernelHooks
 
             auto pos = lcaseLibName.rfind(wstring_to_string(exePath));
 
-            if (Config::Instance()->DlssInputs.value_or_default() && CheckDllName(&lcaseLibName, &nvngxNames) &&
+            if (Config::Instance()->EnableDlssInputs.value_or_default() && CheckDllName(&lcaseLibName, &nvngxNames) &&
                 (!Config::Instance()->HookOriginalNvngxOnly.value_or_default() || pos == std::string::npos))
             {
                 LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibName);
@@ -349,7 +349,7 @@ class KernelHooks
             return module;
         }
 
-        if (Config::Instance()->UseFsr2Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr2Names))
+        if (Config::Instance()->EnableFsr2Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr2Names))
         {
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
@@ -361,7 +361,7 @@ class KernelHooks
             return module;
         }
 
-        if (Config::Instance()->UseFsr2Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr2BENames))
+        if (Config::Instance()->EnableFsr2Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr2BENames))
         {
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
@@ -373,7 +373,7 @@ class KernelHooks
             return module;
         }
 
-        if (Config::Instance()->UseFsr3Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr3Names))
+        if (Config::Instance()->EnableFsr3Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr3Names))
         {
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
@@ -383,7 +383,7 @@ class KernelHooks
             return module;
         }
 
-        if (Config::Instance()->UseFsr3Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr3BENames))
+        if (Config::Instance()->EnableFsr3Inputs.value_or_default() && CheckDllName(&lcaseLibName, &fsr3BENames))
         {
             auto module = KernelBaseProxy::LoadLibraryExA_()(lcaseLibName.c_str(), NULL, 0);
 
@@ -465,7 +465,7 @@ class KernelHooks
 
             auto pos = lcaseLibName.rfind(exePath);
 
-            if (Config::Instance()->DlssInputs.value_or_default() && CheckDllNameW(&lcaseLibName, &nvngxNamesW) &&
+            if (Config::Instance()->EnableDlssInputs.value_or_default() && CheckDllNameW(&lcaseLibName, &nvngxNamesW) &&
                 (!Config::Instance()->HookOriginalNvngxOnly.value_or_default() || pos == std::string::npos))
             {
                 LOG_INFO("nvngx call: {0}, returning this dll!", lcaseLibNameA);

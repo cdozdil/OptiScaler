@@ -88,7 +88,7 @@ class FfxApiProxy
             _D3D12_Dispatch = (PfnFfxDispatch) KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxDispatch");
             _D3D12_Query = (PfnFfxQuery) KernelBaseProxy::GetProcAddress_()(_dllDx12, "ffxQuery");
 
-            if (Config::Instance()->UseFfxInputs.value_or_default() && _D3D12_CreateContext != nullptr)
+            if (Config::Instance()->EnableFfxInputs.value_or_default() && _D3D12_CreateContext != nullptr)
             {
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());
@@ -227,7 +227,7 @@ class FfxApiProxy
             _VULKAN_Dispatch = (PfnFfxDispatch) KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxDispatch");
             _VULKAN_Query = (PfnFfxQuery) KernelBaseProxy::GetProcAddress_()(_dllVk, "ffxQuery");
 
-            if (Config::Instance()->UseFfxInputs.value_or_default() && _VULKAN_CreateContext != nullptr)
+            if (Config::Instance()->EnableFfxInputs.value_or_default() && _VULKAN_CreateContext != nullptr)
             {
                 DetourTransactionBegin();
                 DetourUpdateThread(GetCurrentThread());

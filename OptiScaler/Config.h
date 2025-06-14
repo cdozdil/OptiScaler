@@ -402,17 +402,17 @@ class Config
     CustomOptional<uint32_t> FN_ForceReflex { 0 };     // in-game - force disable - force enable
 
     // Inputs
-    CustomOptional<bool> DlssInputs { true };
-    CustomOptional<bool> XeSSInputs { true };
-    CustomOptional<bool> Fsr2Inputs { true };
-    CustomOptional<bool> Fsr2Pattern { false };
-    CustomOptional<bool> Fsr3Inputs { true };
-    CustomOptional<bool> Fsr3Pattern { false };
-    CustomOptional<bool> FfxInputs { true };
-    CustomOptional<bool> EnableHotSwapping { true };
+    CustomOptional<bool> EnableDlssInputs { true };
+    CustomOptional<bool> EnableXeSSInputs { true };
     CustomOptional<bool> UseFsr2Inputs { true };
+    CustomOptional<bool> Fsr2Pattern { false };
     CustomOptional<bool> UseFsr3Inputs { true };
+    CustomOptional<bool> Fsr3Pattern { false };
     CustomOptional<bool> UseFfxInputs { true };
+    CustomOptional<bool> EnableHotSwapping { true };
+    CustomOptional<bool> EnableFsr2Inputs { true };
+    CustomOptional<bool> EnableFsr3Inputs { true };
+    CustomOptional<bool> EnableFfxInputs { true };
 
     // Framerate
     CustomOptional<float> FramerateLimit { 0.0f };

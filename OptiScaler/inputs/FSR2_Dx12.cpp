@@ -588,7 +588,7 @@ static Fsr212::FfxErrorCode ffxFsr2ContextDispatch_Dx12(Fsr212::FfxFsr2Context* 
     }
 
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or_default())
+    if (!Config::Instance()->UseFsr2Inputs.value_or_default())
     {
         _skipDispatch = true;
         auto result = o_ffxFsr2ContextDispatch_Dx12(context, dispatchDescription);
@@ -654,7 +654,7 @@ ffxFsr2ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2Context* context,
     LOG_DEBUG("");
 
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or_default() || _skipDispatch)
+    if (!Config::Instance()->UseFsr2Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr2ContextDispatch_Pattern_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
@@ -715,7 +715,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Dx12(Fsr212::FfxFsr2Context*
     LOG_DEBUG("");
 
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or_default())
+    if (!Config::Instance()->UseFsr2Inputs.value_or_default())
     {
         _skipDispatch = true;
         auto result = o_ffxFsr20ContextDispatch_Dx12(context, dispatchDescription);
@@ -785,7 +785,7 @@ static Fsr212::FfxErrorCode ffxFsr20ContextDispatch_Pattern_Dx12(Fsr212::FfxFsr2
     LOG_DEBUG("");
 
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or_default() || _skipDispatch)
+    if (!Config::Instance()->UseFsr2Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr20ContextDispatch_Pattern_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)
@@ -846,7 +846,7 @@ static Fsr212::FfxErrorCode ffxFsr2TinyContextDispatch_Dx12(Fsr212::FfxFsr2Conte
     LOG_DEBUG("");
 
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr2Inputs.value_or_default())
+    if (!Config::Instance()->UseFsr2Inputs.value_or_default())
         return o_ffxFsr2TinyContextDispatch_Dx12(context, dispatchDescription);
 
     if (dispatchDescription == nullptr || context == nullptr || dispatchDescription->commandList == nullptr)

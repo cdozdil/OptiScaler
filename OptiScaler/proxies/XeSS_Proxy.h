@@ -482,7 +482,7 @@ class XeSSProxy
 
         State::Instance().skipDxgiLoadChecks = true;
 
-        if (Config::Instance()->XeSSInputs.value_or_default() && _xessD3D12CreateContext != nullptr)
+        if (Config::Instance()->EnableXeSSInputs.value_or_default() && _xessD3D12CreateContext != nullptr)
         {
             // read version from file because
             // xessGetVersion cause access violation errors
@@ -721,7 +721,7 @@ class XeSSProxy
 
         State::Instance().skipDxgiLoadChecks = true;
 
-        if (Config::Instance()->XeSSInputs.value_or_default() && _xessD3D11CreateContext != nullptr)
+        if (Config::Instance()->EnableXeSSInputs.value_or_default() && _xessD3D11CreateContext != nullptr)
         {
             // read version from file because
             // xessGetVersion cause access violation errors

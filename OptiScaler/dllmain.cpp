@@ -878,9 +878,9 @@ static void CheckQuirks()
     {
         State::Instance().gameQuirk = FMF2;
 
-        if (!Config::Instance()->Fsr3Inputs.has_value())
+        if (!Config::Instance()->UseFsr3Inputs.has_value())
         {
-            Config::Instance()->Fsr3Inputs.set_volatile_value(false);
+            Config::Instance()->UseFsr3Inputs.set_volatile_value(false);
             LOG_INFO("Enabling a quirk for FMF2 (Disable FSR3 Hooks)");
         }
 
@@ -1119,7 +1119,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             }
         }
 
-        if (Config::Instance()->UseFsr2Inputs.value_or_default())
+        if (Config::Instance()->EnableFsr2Inputs.value_or_default())
         {
 
             handle = KernelBaseProxy::GetModuleHandleW_()(fsr2NamesW[0].c_str());
@@ -1135,7 +1135,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             HookFSR2ExeInputs();
         }
 
-        if (Config::Instance()->UseFsr3Inputs.value_or_default())
+        if (Config::Instance()->EnableFsr3Inputs.value_or_default())
         {
             handle = KernelBaseProxy::GetModuleHandleW_()(fsr3NamesW[0].c_str());
             if (handle != nullptr)

@@ -289,7 +289,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextDispatch_Dx12(Fsr3::FfxFsr3UpscalerConte
                                                       Fsr3::FfxFsr3UpscalerDispatchDescription* pDispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr3Inputs.value_or_default())
+    if (!Config::Instance()->UseFsr3Inputs.value_or_default())
     {
         _skipDispatch = true;
         auto result = o_ffxFsr3UpscalerContextDispatch_Dx12(pContext, pDispatchDescription);
@@ -494,7 +494,7 @@ ffxFsr3ContextDispatch_Pattern_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext,
                                     Fsr3::FfxFsr3UpscalerDispatchDescription* pDispatchDescription)
 {
     // Skip OptiScaler stuff
-    if (!Config::Instance()->Fsr3Inputs.value_or_default() || _skipDispatch)
+    if (!Config::Instance()->UseFsr3Inputs.value_or_default() || _skipDispatch)
         return o_ffxFsr3UpscalerContextDispatch_Dx12(pContext, pDispatchDescription);
 
     if (_d3d12Device == nullptr)
