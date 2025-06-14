@@ -6,6 +6,7 @@
 #include <Util.h>
 #include <Config.h>
 #include <proxies/KernelBase_Proxy.h>
+#include <menu/menu_overlay_base.h>
 
 // interposer
 decltype(&slInit) StreamlineHooks::o_slInit = nullptr;
@@ -19,6 +20,7 @@ StreamlineHooks::PFN_slGetPluginFunction StreamlineHooks::o_dlss_slGetPluginFunc
 StreamlineHooks::PFN_slOnPluginLoad StreamlineHooks::o_dlss_slOnPluginLoad = nullptr;
 StreamlineHooks::PFN_slGetPluginFunction StreamlineHooks::o_dlssg_slGetPluginFunction = nullptr;
 StreamlineHooks::PFN_slOnPluginLoad StreamlineHooks::o_dlssg_slOnPluginLoad = nullptr;
+decltype(&slDLSSGSetOptions) StreamlineHooks::o_slDLSSGSetOptions = nullptr;
 
 char* StreamlineHooks::trimStreamlineLog(const char* msg)
 {
@@ -165,6 +167,26 @@ bool StreamlineHooks::hkdlssg_slOnPluginLoad(void* params, const char* loaderJSO
     return hkslOnPluginLoad(o_dlssg_slOnPluginLoad, config, params, loaderJSON, pluginJSON);
 }
 
+sl::Result StreamlineHooks::hkslDLSSGSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOptions& options)
+{
+
+    if (options.mode != sl::DLSSGMode::eOff && !MenuOverlayBase::IsVisible())
+        State::Instance().delayMenuRenderBy = 10;
+
+    if (MenuOverlayBase::IsVisible())
+    {
+        sl::DLSSGOptions newOptions = options;
+        newOptions.mode = sl::DLSSGMode::eOff;
+        newOptions.flags |= sl::DLSSGFlags::eRetainResourcesWhenOff;
+
+        LOG_TRACE("DLSSG Modified Mode: {}", (uint32_t) newOptions.mode);
+        return o_slDLSSGSetOptions(viewport, newOptions);
+    }
+
+    LOG_TRACE("DLSSG Mode: {}", (uint32_t) options.mode);
+    return o_slDLSSGSetOptions(viewport, options);
+}
+
 void* StreamlineHooks::hkdlss_slGetPluginFunction(const char* functionName)
 {
     LOG_DEBUG("{}", functionName);
@@ -186,6 +208,12 @@ void* StreamlineHooks::hkdlssg_slGetPluginFunction(const char* functionName)
     {
         o_dlssg_slOnPluginLoad = (PFN_slOnPluginLoad) o_dlssg_slGetPluginFunction(functionName);
         return &hkdlssg_slOnPluginLoad;
+    }
+
+    if (strcmp(functionName, "slDLSSGSetOptions") == 0)
+    {
+        o_slDLSSGSetOptions = (decltype(&slDLSSGSetOptions)) o_dlssg_slGetPluginFunction(functionName);
+        return &hkslDLSSGSetOptions;
     }
 
     return o_dlssg_slGetPluginFunction(functionName);

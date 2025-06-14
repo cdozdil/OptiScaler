@@ -1013,8 +1013,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     if (Config::Instance()->SkipFirstFrames.has_value() && evalCounter < Config::Instance()->SkipFirstFrames.value())
         return NVSDK_NGX_Result_Success;
 
-    State::Instance().renderMenu = false;
-
     // DLSS Enabler check
     int deAvail;
     if (InParameters->Get("DLSSEnabler.Available", &deAvail) == NVSDK_NGX_Result_Success)
@@ -1212,8 +1210,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
         State::Instance().changeBackend[handleId] = true;
         return NVSDK_NGX_Result_Success;
     }
-
-    State::Instance().renderMenu = true;
 
     // Record the first timestamp (before FSR2)
     vkCmdWriteTimestamp(InCmdList, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, HooksVk::queryPool, 0);
