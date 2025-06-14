@@ -7,6 +7,7 @@
 #include <Config.h>
 #include <proxies/KernelBase_Proxy.h>
 #include <menu/menu_overlay_base.h>
+#include <nvapi/ReflexHooks.h>
 
 // interposer
 decltype(&slInit) StreamlineHooks::o_slInit = nullptr;
@@ -169,7 +170,10 @@ bool StreamlineHooks::hkdlssg_slOnPluginLoad(void* params, const char* loaderJSO
 
 sl::Result StreamlineHooks::hkslDLSSGSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOptions& options)
 {
+    if (State::Instance().api != API::Vulkan)
+        return o_slDLSSGSetOptions(viewport, options);
 
+    // Only matters for Vulkan, DX doesn't use this delay
     if (options.mode != sl::DLSSGMode::eOff && !MenuOverlayBase::IsVisible())
         State::Instance().delayMenuRenderBy = 10;
 
@@ -180,10 +184,12 @@ sl::Result StreamlineHooks::hkslDLSSGSetOptions(const sl::ViewportHandle& viewpo
         newOptions.flags |= sl::DLSSGFlags::eRetainResourcesWhenOff;
 
         LOG_TRACE("DLSSG Modified Mode: {}", (uint32_t) newOptions.mode);
+        ReflexHooks::setDlssgDetectedState(false);
         return o_slDLSSGSetOptions(viewport, newOptions);
     }
 
-    LOG_TRACE("DLSSG Mode: {}", (uint32_t) options.mode);
+    // Can't tell if eAuto means enabled or disabled
+    ReflexHooks::setDlssgDetectedState(options.mode == sl::DLSSGMode::eOn);
     return o_slDLSSGSetOptions(viewport, options);
 }
 

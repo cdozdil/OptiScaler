@@ -2355,27 +2355,31 @@ bool MenuCommon::RenderMenu()
                             Config::Instance()->MakeDepthCopy = makeDepthCopy;
                         ShowHelpMarker("Makes a copy of the depth buffer\nCan fix broken visuals in some games on AMD "
                                        "GPUs under Windows\nCan cause stutters so best to use only when necessary");
+                    }
+                    else if (State::Instance().api == Vulkan)
+                    {
+                        ImGui::TextColored(ImVec4(1.f, 0.8f, 0.f, 1.f), "DLSSG is purposefully disabled when this menu is visible");
+                        ImGui::Spacing();
+                    }
 
-                        if (DLSSGMod::isLoaded())
+                    if (DLSSGMod::isLoaded())
+                    {
+                        if (DLSSGMod::is120orNewer())
                         {
-                            if (DLSSGMod::is120orNewer())
+                            if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
                             {
-                                if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
-                                {
-                                    DLSSGMod::setDebugView(State::Instance().DLSSGDebugView);
-                                }
-                                if (ImGui::Checkbox("Interpolated frames only",
-                                                    &State::Instance().DLSSGInterpolatedOnly))
-                                {
-                                    DLSSGMod::setInterpolatedOnly(State::Instance().DLSSGInterpolatedOnly);
-                                }
+                                DLSSGMod::setDebugView(State::Instance().DLSSGDebugView);
                             }
-                            else if (DLSSGMod::FSRDebugView() != nullptr)
+                            if (ImGui::Checkbox("Interpolated frames only", &State::Instance().DLSSGInterpolatedOnly))
                             {
-                                if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
-                                {
-                                    DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
-                                }
+                                DLSSGMod::setInterpolatedOnly(State::Instance().DLSSGInterpolatedOnly);
+                            }
+                        }
+                        else if (DLSSGMod::FSRDebugView() != nullptr)
+                        {
+                            if (ImGui::Checkbox("Enable Debug View", &State::Instance().DLSSGDebugView))
+                            {
+                                DLSSGMod::FSRDebugView()(State::Instance().DLSSGDebugView);
                             }
                         }
                     }
