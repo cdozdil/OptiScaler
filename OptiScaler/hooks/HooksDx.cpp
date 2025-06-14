@@ -398,9 +398,9 @@ static HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags
         fg = reinterpret_cast<IFGFeature_Dx12*>(State::Instance().currentFG);
 
     if (fg != nullptr)
-        ReflexHooks::update(fg->IsActive());
+        ReflexHooks::update(fg->IsActive(), false);
     else
-        ReflexHooks::update(false);
+        ReflexHooks::update(false, false);
 
     // Upscaler GPU time computation
     if (State::Instance().activeFgType != OptiFG && HooksDx::dx12UpscaleTrig && HooksDx::readbackBuffer != nullptr &&

@@ -5,6 +5,7 @@
 #include <d3d12.h>
 #include <sl.h>
 #include <sl1.h>
+#include <sl_dlss_g.h>
 
 class StreamlineHooks
 {
@@ -35,6 +36,7 @@ class StreamlineHooks
     static PFN_slOnPluginLoad o_dlss_slOnPluginLoad;
     static PFN_slGetPluginFunction o_dlssg_slGetPluginFunction;
     static PFN_slOnPluginLoad o_dlssg_slOnPluginLoad;
+    static decltype(&slDLSSGSetOptions) o_slDLSSGSetOptions;
 
     static char* trimStreamlineLog(const char* msg);
     static void streamlineLogCallback(sl::LogType type, const char* msg);
@@ -47,6 +49,7 @@ class StreamlineHooks
                                  const char* loaderJSON, const char** pluginJSON);
     static bool hkdlss_slOnPluginLoad(void* params, const char* loaderJSON, const char** pluginJSON);
     static bool hkdlssg_slOnPluginLoad(void* params, const char* loaderJSON, const char** pluginJSON);
+    static sl::Result hkslDLSSGSetOptions(const sl::ViewportHandle& viewport, const sl::DLSSGOptions& options);
     static void* hkdlss_slGetPluginFunction(const char* functionName);
     static void* hkdlssg_slGetPluginFunction(const char* functionName);
 };

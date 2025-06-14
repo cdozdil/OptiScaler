@@ -46,15 +46,13 @@ struct StructType
 //! 
 //! New members must be added at the end and version needs to be increased:
 //! 
-//! SL_STRUCT(S1, GUID1, kStructVersion1)
-//! {
+//! SL_STRUCT_BEGIN(S1, GUID1, kStructVersion1)
 //!     A
 //!     B
 //!     C
-//! }
+//! SL_STRUCT_END()
 //! 
-//! SL_STRUCT(S1, GUID1, kStructVersion2) // Note that version is bumped
-//! {
+//! SL_STRUCT_BEGIN(S1, GUID1, kStructVersion2) // Note that version is bumped
 //!     // V1
 //!     A
 //!     B
@@ -63,7 +61,7 @@ struct StructType
 //!     //! V2 - new members always go at the end!
 //!     D
 //!     E
-//! }
+//! SL_STRUCT_END()
 //! 
 //! Here is one example on how to check for version and handle backwards compatibility:
 //! 
@@ -82,18 +80,16 @@ struct StructType
 //! 
 //! New members are optional and added to a new struct which is then chained as needed:
 //! 
-//! SL_STRUCT(S1, GUID1, kStructVersion1)
-//! {
+//! SL_STRUCT_BEGIN(S1, GUID1, kStructVersion1)
 //!     A
 //!     B
 //!     C
-//! }
+//! SL_STRUCT_END()
 //! 
-//! SL_STRUCT(S2, GUID2, kStructVersion1) // Note that this is a different struct with new GUID
-//! {
+//! SL_STRUCT_BEGIN(S2, GUID2, kStructVersion1) // Note that this is a different struct with new GUID
 //!     D
 //!     E
-//! }
+//! SL_STRUCT_END()
 //! 
 //! S1 s1;
 //! S2 s2
@@ -114,18 +110,29 @@ struct BaseStructure
     size_t structVersion;
 };
 
-#define SL_STRUCT(name, guid, version)                                      \
-struct name : public BaseStructure                                          \
+#define SL_STRUCT_BEGIN(name, guid, version)                                \
+struct name : public sl::BaseStructure                                      \
 {                                                                           \
-    name() : BaseStructure(guid, version){}                                 \
-    constexpr static StructType s_structType = guid;                        \
+    name() : sl::BaseStructure(guid, version){}                             \
+    constexpr static sl::StructType s_structType = guid;
 
-#define SL_STRUCT_PROTECTED(name, guid, version)                            \
-struct name : public BaseStructure                                          \
+#define SL_STRUCT_END() };
+
+#define SL_STRUCT_PROTECTED_BEGIN(name, guid, version)                      \
+struct name : public sl::BaseStructure                                      \
 {                                                                           \
 protected:                                                                  \
-    name() : BaseStructure(guid, version){}                                 \
+    name() : sl::BaseStructure(guid, version){}                             \
 public:                                                                     \
-    constexpr static StructType s_structType = guid;                        \
+    constexpr static sl::StructType s_structType = guid;                    \
+
+
+// Deprecated: please use SL_STRUCT_BEGIN/SL_STRUCT_END instead
+#define SL_STRUCT(name, guid, version)                                      \
+SL_STRUCT_BEGIN(name, guid, version)
+
+// Deprecated: please use SL_STRUCT_PROTECTED_BEGIN/SL_STRUCT_END instead
+#define SL_STRUCT_PROTECTED(name, guid, version)                            \
+SL_STRUCT_PROTECTED_BEGIN(name, guid, version)
 
 } // namespace sl

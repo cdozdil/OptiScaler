@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2022-2023 NVIDIA CORPORATION. All rights reserved
+* Copyright (c) 2022-2024 NVIDIA CORPORATION. All rights reserved
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,10 @@
 
 #pragma once
 
+#define SL_CHECK(f) {auto _r = f; if(_r != sl::Result::eOk) return _r;}
+#define SL_FAILED(r, f) sl::Result r = f; r != sl::Result::eOk
+#define SL_SUCCEEDED(r, f) sl::Result r = f; r == sl::Result::eOk
+
 namespace sl
 {
 
@@ -39,6 +43,7 @@ enum class Result
     eErrorVulkanAPI,
     eErrorDXGIAPI,
     eErrorD3DAPI,
+    // NRD was removed
     eErrorNRDAPI,
     eErrorNVAPI,
     eErrorReflexAPI,
@@ -66,7 +71,7 @@ enum class Result
     eErrorFeatureMissingDependency,
     eErrorFeatureManagerInvalidState,
     eErrorInvalidState,
-    eWarnOutOfVRAM
+    eWarnOutOfVRAM,
 };
 
 }

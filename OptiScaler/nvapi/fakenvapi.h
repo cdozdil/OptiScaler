@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dxgi.h>
+#include <fakenvapi_inc.h>
 #include "NvApiTypes.h"
 
 class fakenvapi
@@ -11,11 +12,14 @@ class fakenvapi
         bool enabled;
     } antilag2_data;
 
-    inline static PFN_Fake_InformFGState Fake_InformFGState = nullptr;
-    inline static PFN_Fake_InformPresentFG Fake_InformPresentFG = nullptr;
-    inline static PFN_Fake_GetAntiLagCtx Fake_GetAntiLagCtx = nullptr;
+    inline static decltype(&Fake_InformFGState) Fake_InformFGState = nullptr;
+    inline static decltype(&Fake_InformPresentFG) Fake_InformPresentFG = nullptr;
+    inline static decltype(&Fake_GetAntiLagCtx) Fake_GetAntiLagCtx = nullptr;
+    inline static decltype(&Fake_GetLowLatencyCtx) Fake_GetLowLatencyCtx = nullptr;
 
     inline static bool _inited = false;
+    static void* _lowLatencyContext;
+    static Mode _lowLatencyMode;
 
   public:
     inline static const GUID IID_IFfxAntiLag2Data = {
@@ -24,5 +28,7 @@ class fakenvapi
 
     static void Init(PFN_NvApi_QueryInterface& queryInterface);
     static void reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool frame_interpolated);
+    static bool updateModeAndContext();
+    static Mode getCurrentMode();
     static bool isUsingFakenvapi();
 };
