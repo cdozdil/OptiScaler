@@ -42,6 +42,7 @@ class ReflexHooks
   public:
     static void hookReflex(PFN_NvApi_QueryInterface& queryInterface);
     static bool isDlssgDetected();
+    static void setDlssgDetectedState(bool state);
     static bool isReflexHooked();
     static void* getHookedReflex(unsigned int InterfaceId);
 
