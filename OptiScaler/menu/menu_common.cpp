@@ -2364,7 +2364,8 @@ bool MenuCommon::RenderMenu()
                     }
                     else if (State::Instance().api == Vulkan)
                     {
-                        ImGui::TextColored(ImVec4(1.f, 0.8f, 0.f, 1.f), "DLSSG is purposefully disabled when this menu is visible");
+                        ImGui::TextColored(ImVec4(1.f, 0.8f, 0.f, 1.f),
+                                           "DLSSG is purposefully disabled when this menu is visible");
                         ImGui::Spacing();
                     }
 
@@ -3065,7 +3066,7 @@ bool MenuCommon::RenderMenu()
                             else if (mode == Mode::AntiLagVk)
                                 currentMethod = "Vulkan AntiLag";
                         }
-                        else 
+                        else
                         {
                             currentMethod = "Reflex";
                         }

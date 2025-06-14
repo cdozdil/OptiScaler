@@ -84,8 +84,8 @@ void* __stdcall NvApiHooks::hkNvAPI_QueryInterface(unsigned int InterfaceId)
 
     if (InterfaceId == GET_ID(NvAPI_D3D_SetSleepMode) || InterfaceId == GET_ID(NvAPI_D3D_Sleep) ||
         InterfaceId == GET_ID(NvAPI_D3D_GetLatency) || InterfaceId == GET_ID(NvAPI_D3D_SetLatencyMarker) ||
-        InterfaceId == GET_ID(NvAPI_D3D12_SetAsyncFrameMarker) || InterfaceId == GET_ID(NvAPI_Vulkan_SetLatencyMarker) ||
-        InterfaceId == GET_ID(NvAPI_Vulkan_SetSleepMode))
+        InterfaceId == GET_ID(NvAPI_D3D12_SetAsyncFrameMarker) ||
+        InterfaceId == GET_ID(NvAPI_Vulkan_SetLatencyMarker) || InterfaceId == GET_ID(NvAPI_Vulkan_SetSleepMode))
     {
         // LOG_DEBUG("counter: {}, hookReflex()", qiCounter);
         ReflexHooks::hookReflex(o_NvAPI_QueryInterface);
