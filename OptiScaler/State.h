@@ -60,6 +60,7 @@ class State
     bool NukemsFilesAvailable = false;
     bool DLSSGDebugView = false;
     bool DLSSGInterpolatedOnly = false;
+    uint32_t delayMenuRenderBy = 0;
 
     // FSR Common
     float lastFsrCameraNear = 0.0f;
@@ -140,7 +141,6 @@ class State
     // Vulkan stuff
     bool vulkanCreatingSC = false;
     bool vulkanSkipHooks = false;
-    bool renderMenu = true;
     VkInstance VulkanInstance = nullptr;
 
     // Framegraph

@@ -475,67 +475,78 @@ bool MenuOverlayVk::QueuePresent(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 
         ImGui_ImplVulkan_NewFrame();
 
+        if (State::Instance().delayMenuRenderBy > 0)
+            State::Instance().delayMenuRenderBy--;
+
         if (MenuOverlayBase::RenderMenu())
         {
-            uint32_t idx = pPresentInfo->pImageIndices[0];
-            ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[idx];
-
-            vkWaitForFences(_ImVulkan_Info.Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX);
-            vkResetFences(_ImVulkan_Info.Device, 1, &fd->Fence);
-
+            if (State::Instance().delayMenuRenderBy == 0)
             {
-                vkResetCommandPool(_ImVulkan_Info.Device, fd->CommandPool, 0);
-                VkCommandBufferBeginInfo info = {};
-                info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-                info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-                vkBeginCommandBuffer(fd->CommandBuffer, &info);
-            }
+                uint32_t idx = pPresentInfo->pImageIndices[0];
+                ImGui_ImplVulkanH_Frame* fd = &_ImVulkan_Frames[idx];
 
+                vkWaitForFences(_ImVulkan_Info.Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX);
+                vkResetFences(_ImVulkan_Info.Device, 1, &fd->Fence);
+
+                {
+                    vkResetCommandPool(_ImVulkan_Info.Device, fd->CommandPool, 0);
+                    VkCommandBufferBeginInfo info = {};
+                    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+                    info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+                    vkBeginCommandBuffer(fd->CommandBuffer, &info);
+                }
+
+                {
+                    VkRenderPassBeginInfo info = {};
+                    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+                    info.renderPass = _vkRenderPass;
+                    info.framebuffer = fd->Framebuffer;
+                    info.renderArea.extent.width = ImGui::GetIO().DisplaySize.x;
+                    info.renderArea.extent.height = ImGui::GetIO().DisplaySize.y;
+                    vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+                }
+
+                ImGui::Render();
+                ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), fd->CommandBuffer);
+
+                // Submit command buffer
+                vkCmdEndRenderPass(fd->CommandBuffer);
+                auto ecbResult = vkEndCommandBuffer(fd->CommandBuffer);
+                if (ecbResult != VK_SUCCESS)
+                {
+                    LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT) ecbResult);
+                    return false;
+                }
+
+                // Submit queue and semaphores
+                LOG_DEBUG("waitSemaphoreCount: {0}", pPresentInfo->waitSemaphoreCount);
+                VkPipelineStageFlags waitStages[8] = { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
+
+                VkSubmitInfo submit_info = {};
+                submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+                submit_info.commandBufferCount = 1;
+                submit_info.pCommandBuffers = &fd->CommandBuffer;
+                submit_info.pWaitDstStageMask = waitStages;
+                submit_info.waitSemaphoreCount = pPresentInfo->waitSemaphoreCount;
+                submit_info.pWaitSemaphores = pPresentInfo->pWaitSemaphores;
+                submit_info.signalSemaphoreCount = 1;
+                submit_info.pSignalSemaphores = &_ImVulkan_Semaphores[semaphoreIndex];
+
+                auto qResult = vkQueueSubmit(_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence);
+                if (qResult != VK_SUCCESS)
+                {
+                    LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT) qResult);
+                    return false;
+                }
+
+                pPresentInfo->waitSemaphoreCount = pPresentInfo->swapchainCount;
+                pPresentInfo->pWaitSemaphores = &_ImVulkan_Semaphores[semaphoreIndex];
+            }
+            else
             {
-                VkRenderPassBeginInfo info = {};
-                info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-                info.renderPass = _vkRenderPass;
-                info.framebuffer = fd->Framebuffer;
-                info.renderArea.extent.width = ImGui::GetIO().DisplaySize.x;
-                info.renderArea.extent.height = ImGui::GetIO().DisplaySize.y;
-                vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+                // To make RenderMenu happy as it expects this
+                ImGui::Render();
             }
-
-            ImGui::Render();
-            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), fd->CommandBuffer);
-
-            // Submit command buffer
-            vkCmdEndRenderPass(fd->CommandBuffer);
-            auto ecbResult = vkEndCommandBuffer(fd->CommandBuffer);
-            if (ecbResult != VK_SUCCESS)
-            {
-                LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT) ecbResult);
-                return false;
-            }
-
-            // Submit queue and semaphores
-            LOG_DEBUG("waitSemaphoreCount: {0}", pPresentInfo->waitSemaphoreCount);
-            VkPipelineStageFlags waitStages[8] = { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
-
-            VkSubmitInfo submit_info = {};
-            submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submit_info.commandBufferCount = 1;
-            submit_info.pCommandBuffers = &fd->CommandBuffer;
-            submit_info.pWaitDstStageMask = waitStages;
-            submit_info.waitSemaphoreCount = pPresentInfo->waitSemaphoreCount;
-            submit_info.pWaitSemaphores = pPresentInfo->pWaitSemaphores;
-            submit_info.signalSemaphoreCount = 1;
-            submit_info.pSignalSemaphores = &_ImVulkan_Semaphores[semaphoreIndex];
-
-            auto qResult = vkQueueSubmit(_ImVulkan_Info.Queue, 1, &submit_info, fd->Fence);
-            if (qResult != VK_SUCCESS)
-            {
-                LOG_ERROR("vkQueueSubmit error: {0:X}", (UINT) qResult);
-                return false;
-            }
-
-            pPresentInfo->waitSemaphoreCount = pPresentInfo->swapchainCount;
-            pPresentInfo->pWaitSemaphores = &_ImVulkan_Semaphores[semaphoreIndex];
         }
     }
 

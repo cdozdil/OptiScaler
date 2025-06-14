@@ -90,6 +90,10 @@ namespace sl
 constexpr float INVALID_FLOAT = 3.40282346638528859811704183484516925440e38f;
 constexpr uint32_t INVALID_UINT = 0xffffffff;
 
+//! Normally host would work with no more than 2 frames at the same time but sl.reflex sometimes 
+//! needs to send markers for previous and next frame so the total number of in-flight frames can be higher
+constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 6;
+
 struct uint3
 {
     uint32_t x;
@@ -169,7 +173,7 @@ enum Boolean : char
 //! Common constants, all parameters must be provided unless they are marked as optional
 //! 
 //! {DCD35AD7-4E4A-4BAD-A90C-E0C49EB23AFE}
-SL_STRUCT(Constants, StructType({ 0xdcd35ad7, 0x4e4a, 0x4bad, { 0xa9, 0xc, 0xe0, 0xc4, 0x9e, 0xb2, 0x3a, 0xfe } }), kStructVersion2)
+SL_STRUCT_BEGIN(Constants, StructType({ 0xdcd35ad7, 0x4e4a, 0x4bad, { 0xa9, 0xc, 0xe0, 0xc4, 0x9e, 0xb2, 0x3a, 0xfe } }), kStructVersion2)
     //! IMPORTANT: All matrices are row major (see float4x4 definition) and
     //! must NOT contain temporal AA jitter offset (if any). Any jitter offset
     //! should be provided as the additional parameter Constants::jitterOffset (see below)
@@ -245,6 +249,6 @@ SL_STRUCT(Constants, StructType({ 0xdcd35ad7, 0x4e4a, 0x4bad, { 0xa9, 0xc, 0xe0,
     float minRelativeLinearDepthObjectSeparation = 40.0f;
 
     //! IMPORTANT: New members go here or if optional can be chained in a new struct, see sl_struct.h for details
-};
+SL_STRUCT_END()
 
 }
