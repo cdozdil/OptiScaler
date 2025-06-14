@@ -754,17 +754,20 @@ bool Config::SaveIni()
         ini.SetValue("Menu", "OverlayMenu", GetBoolValue(Instance()->OverlayMenu.value_for_config()).c_str());
 
         auto setting = Instance()->ShortcutKey.value_for_config();
-        ini.SetValue("Menu", "ShortcutKey", GetIntValue(Instance()->ShortcutKey.value_for_config(), setting > 0).c_str());
+        ini.SetValue("Menu", "ShortcutKey",
+                     GetIntValue(Instance()->ShortcutKey.value_for_config(), setting > 0).c_str());
 
         ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits.value_for_config()).c_str());
         ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps.value_for_config()).c_str());
         ini.SetValue("Menu", "UseHQFont", GetBoolValue(Instance()->UseHQFont.value_for_config()).c_str());
 
         setting = Instance()->FpsShortcutKey.value_for_config();
-        ini.SetValue("Menu", "FpsShortcutKey", GetIntValue(Instance()->FpsShortcutKey.value_for_config(), setting > 0).c_str());
+        ini.SetValue("Menu", "FpsShortcutKey",
+                     GetIntValue(Instance()->FpsShortcutKey.value_for_config(), setting > 0).c_str());
 
         setting = Instance()->FpsCycleShortcutKey.value_for_config();
-        ini.SetValue("Menu", "FpsCycleShortcutKey", GetIntValue(Instance()->FpsCycleShortcutKey.value_for_config(), setting > 0).c_str());
+        ini.SetValue("Menu", "FpsCycleShortcutKey",
+                     GetIntValue(Instance()->FpsCycleShortcutKey.value_for_config(), setting > 0).c_str());
 
         ini.SetValue("Menu", "FpsOverlayPos", GetIntValue(Instance()->FpsOverlayPos.value_for_config()).c_str());
         ini.SetValue("Menu", "FpsOverlayType", GetIntValue(Instance()->FpsOverlayType.value_for_config()).c_str());
