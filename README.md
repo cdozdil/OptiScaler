@@ -68,17 +68,18 @@ Currently **OptiScaler** can be used with DirectX 11, DirectX 12 and Vulkan, but
 
 #### For DirectX 12
 - XeSS (Default)
-- FSR2 2.1.2, 2.2.1
-- FSR3 3.1 (and FSR2 2.3.2)
+- FSR 2.1.2, 2.2.1
+- FSR 3.X (and FSR 2.3.X)
+- FSR 4.0.X (via FSR3.X update, _RDNA4 only_)
 - DLSS
-- FSR4 (via FSR3.X update, _RDNA4 only_)
 
 #### For DirectX 11
-- FSR2 2.2.1 (Default, native DX11)
-- FSR3 3.1.2 (unofficial port to native DX11)
-- XeSS, FSR2 2.1.2, 2.2.1, FSR3 3.1 w/Dx12 (_via D3D11on12_)$`^1`$
+- FSR 2.2.1 (Default, native DX11)
+- FSR 3.1.2 (unofficial port to native DX11)
 - DLSS (native DX11)
-- XeSS 2.x (native DX11, _Intel ARC only_)
+- XeSS 2.X (native DX11, _Intel ARC only_)
+- XeSS, FSR 2.1.2, 2.2.1, FSR 3.X w/Dx12 (_via D3D11on12_)$`^1`$
+- FSR 4.0.X (via FSR 3.X w/Dx12 update, _RDNA4 only_)
 
 > [!NOTE]
 > <details>
