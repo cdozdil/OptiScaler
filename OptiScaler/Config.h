@@ -144,6 +144,8 @@ template <class T, HasDefaultValue defaultState = WithDefault> class CustomOptio
     }
 };
 
+constexpr int UnboundKey = -1;
+
 class Config
 {
   public:
