@@ -10,6 +10,8 @@
 
 #include <vulkan/vulkan_core.h>
 
+// #define VULKAN_DEBUG_LAYER
+
 typedef struct VkDummyProps
 {
     VkStructureType sType;
@@ -237,6 +239,15 @@ inline static void hkvkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev
     }
 }
 
+VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                   VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+                                                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                   void* pUserData)
+{
+    LOG_TRACE("{}", pCallbackData->pMessage);
+    return VK_FALSE; // return VK_TRUE to abort calls that triggered validation errors
+}
+
 inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator,
                                           VkInstance* pInstance)
 {
@@ -267,6 +278,37 @@ inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, con
     for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
         LOG_DEBUG("  {}", pCreateInfo->ppEnabledLayerNames[i]);
 
+#ifdef VULKAN_DEBUG_LAYER
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
+    debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+
+    debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                  VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                  VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+
+    debugCreateInfo.pfnUserCallback = &VulkanDebugCallback;
+
+    std::vector<const char*> newLayerList = { "VK_LAYER_KHRONOS_validation" };
+
+    for (size_t i = 0; i < pCreateInfo->enabledLayerCount; i++)
+        newLayerList.push_back(pCreateInfo->ppEnabledLayerNames[i]);
+
+    pCreateInfo->enabledLayerCount = static_cast<uint32_t>(newLayerList.size());
+    pCreateInfo->ppEnabledLayerNames = newLayerList.data();
+
+    auto next = (VkDummyProps*) pCreateInfo;
+
+    while (next->pNext != nullptr)
+    {
+        next = (VkDummyProps*) next->pNext;
+    }
+
+    next->pNext = &debugCreateInfo;
+#endif
+
     pCreateInfo->enabledExtensionCount = static_cast<uint32_t>(newExtensionList.size());
     pCreateInfo->ppEnabledExtensionNames = newExtensionList.data();
 
@@ -278,7 +320,16 @@ inline static VkResult hkvkCreateInstance(VkInstanceCreateInfo* pCreateInfo, con
     LOG_DEBUG("o_vkCreateInstance result: {:X}", (INT) result);
 
     if (result == VK_SUCCESS)
+    {
         State::Instance().VulkanInstance = *pInstance;
+
+#ifdef VULKAN_DEBUG_LAYER
+        auto address = vkGetInstanceProcAddr(State::Instance().VulkanInstance, "vkCreateDebugUtilsMessengerEXT");
+        auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT) address;
+        VkDebugUtilsMessengerEXT debugMessenger;
+        vkCreateDebugUtilsMessengerEXT(State::Instance().VulkanInstance, &debugCreateInfo, nullptr, &debugMessenger);
+#endif
+    }
 
     auto head = (VkBaseInStructure*) pCreateInfo;
     while (head->pNext != nullptr)
