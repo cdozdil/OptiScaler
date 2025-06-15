@@ -1931,7 +1931,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
     }
 
     auto minLevel = MinimumFeatureLevel;
-    if (Config::Instance()->SpoofFeatureLevel.value_or_default())
+    if (Config::Instance()->SpoofFeatureLevel.value_or_default() && MinimumFeatureLevel != D3D_FEATURE_LEVEL_1_0_CORE)
     {
         LOG_INFO("Forcing feature level 0xb000 for new device");
         minLevel = D3D_FEATURE_LEVEL_11_0;
