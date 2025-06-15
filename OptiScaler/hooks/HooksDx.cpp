@@ -24,6 +24,8 @@
 
 #include <d3d11on12.h>
 
+#pragma intrinsic(_ReturnAddress)
+
 #pragma region FG definitions
 
 // Is FG mutex accuired for Half/Full sync?
@@ -600,7 +602,7 @@ static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown*
                                               DXGI_SWAP_CHAIN_DESC1* pDesc, IDXGIOutput* pRestrictToOutput,
                                               IDXGISwapChain1** ppSwapChain)
 {
-    LOG_FUNC();
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
 
     if (State::Instance().vulkanCreatingSC)
     {
@@ -754,7 +756,7 @@ static HRESULT hkCreateSwapChainForCoreWindow(IDXGIFactory2* pFactory, IUnknown*
 static HRESULT hkCreateSwapChain(IDXGIFactory* pFactory, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc,
                                  IDXGISwapChain** ppSwapChain)
 {
-    LOG_FUNC();
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
 
     *ppSwapChain = nullptr;
 
@@ -1038,7 +1040,7 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
                                         DXGI_SWAP_CHAIN_FULLSCREEN_DESC* pFullscreenDesc,
                                         IDXGIOutput* pRestrictToOutput, IDXGISwapChain1** ppSwapChain)
 {
-    LOG_FUNC();
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
 
     *ppSwapChain = nullptr;
 
@@ -1303,6 +1305,8 @@ static HRESULT hkCreateSwapChainForHwnd(IDXGIFactory* This, IUnknown* pDevice, H
 
 static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 {
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
+
     State::DisableChecks(97, "dxgi");
 #ifndef ENABLE_DEBUG_LAYER_DX12
     auto result = o_CreateDXGIFactory(riid, ppFactory);
@@ -1358,6 +1362,8 @@ static HRESULT hkCreateDXGIFactory(REFIID riid, IDXGIFactory** ppFactory)
 
 static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 {
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
+
     State::DisableChecks(98, "dxgi");
 #ifndef ENABLE_DEBUG_LAYER_DX12
     auto result = o_CreateDXGIFactory1(riid, ppFactory);
@@ -1413,6 +1419,8 @@ static HRESULT hkCreateDXGIFactory1(REFIID riid, IDXGIFactory1** ppFactory)
 
 static HRESULT hkCreateDXGIFactory2(UINT Flags, REFIID riid, IDXGIFactory2** ppFactory)
 {
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
+
     State::DisableChecks(99, "dxgi");
 #ifndef ENABLE_DEBUG_LAYER_DX12
     auto result = o_CreateDXGIFactory2(Flags, riid, ppFactory);
@@ -1614,7 +1622,7 @@ static HRESULT hkD3D11On12CreateDevice(IUnknown* pDevice, UINT Flags, D3D_FEATUR
                                        ID3D11Device** ppDevice, ID3D11DeviceContext** ppImmediateContext,
                                        D3D_FEATURE_LEVEL* pChosenFeatureLevel)
 {
-    LOG_FUNC();
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
 
 #ifdef ENABLE_DEBUG_LAYER_DX11
     Flags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -1657,7 +1665,7 @@ static HRESULT hkD3D11CreateDevice(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Drive
                                    ID3D11Device** ppDevice, D3D_FEATURE_LEVEL* pFeatureLevel,
                                    ID3D11DeviceContext** ppImmediateContext)
 {
-    LOG_FUNC();
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
 
 #ifdef ENABLE_DEBUG_LAYER_DX11
     Flags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -1721,7 +1729,7 @@ static HRESULT hkD3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVE
                                                D3D_FEATURE_LEVEL* pFeatureLevel,
                                                ID3D11DeviceContext** ppImmediateContext)
 {
-    LOG_FUNC();
+    LOG_DEBUG("Caller: {}", Util::WhoIsTheCaller(_ReturnAddress()));
 
 #ifdef ENABLE_DEBUG_LAYER_DX11
     Flags |= D3D11_CREATE_DEVICE_DEBUG;
@@ -1902,7 +1910,8 @@ static void CALLBACK D3D12DebugCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_M
 static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid,
                                    void** ppDevice)
 {
-    LOG_TRACE("Adapter: {:X}, Level: {:X}", (size_t) pAdapter, (UINT) MinimumFeatureLevel);
+    LOG_DEBUG("Adapter: {:X}, Level: {:X}, Caller: {}", (size_t) pAdapter, (UINT) MinimumFeatureLevel,
+              Util::WhoIsTheCaller(_ReturnAddress()));
 
 #ifdef ENABLE_DEBUG_LAYER_DX12
     LOG_WARN("Debug layers active!");
