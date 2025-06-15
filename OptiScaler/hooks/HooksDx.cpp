@@ -1918,7 +1918,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 #endif
 
     DXGI_ADAPTER_DESC desc {};
-    if (pAdapter != nullptr)
+    if (pAdapter != nullptr && MinimumFeatureLevel != D3D_FEATURE_LEVEL_1_0_CORE)
     {
         State::Instance().skipSpoofing = true;
         if (pAdapter->GetDesc(&desc) == S_OK)
@@ -1947,7 +1947,7 @@ static HRESULT hkD3D12CreateDevice(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL Min
 
     LOG_DEBUG("o_D3D12CreateDevice result: {:X}", (UINT) result);
 
-    if (result == S_OK && ppDevice != nullptr && *ppDevice != nullptr)
+    if (result == S_OK && ppDevice != nullptr && MinimumFeatureLevel != D3D_FEATURE_LEVEL_1_0_CORE)
     {
         LOG_DEBUG("Device captured: {0:X}", (size_t) *ppDevice);
         State::Instance().currentD3D12Device = (ID3D12Device*) *ppDevice;
