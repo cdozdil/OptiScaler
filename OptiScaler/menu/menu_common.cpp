@@ -461,7 +461,7 @@ ImGuiKey MenuCommon::ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
     }
 }
 
-static USHORT lastKey = 0;
+static int lastKey = 0;
 
 class Keybind
 {
@@ -469,8 +469,11 @@ class Keybind
     int id;
     bool waitingForKey = false;
 
-    std::string KeyNameFromVirtualKeyCode(UINT virtualKey)
+    std::string KeyNameFromVirtualKeyCode(USHORT virtualKey)
     {
+        if (virtualKey == (USHORT) UnboundKey)
+            return "Unbound";
+
         UINT scanCode = MapVirtualKeyW(virtualKey, MAPVK_VK_TO_VSC);
 
         // Keys like Home would display as Num 0 without this fix
@@ -526,11 +529,14 @@ class Keybind
             if (lastKey == 0 || lastKey == VK_LBUTTON || lastKey == VK_RBUTTON || lastKey == VK_MBUTTON)
                 return;
 
-            if (lastKey == VK_ESCAPE || lastKey == VK_BACK)
+            if (lastKey == VK_ESCAPE)
             {
                 waitingForKey = false;
                 return;
             }
+
+            if (lastKey == VK_BACK)
+                lastKey = UnboundKey;
 
             configKey = lastKey;
             waitingForKey = false;
@@ -3858,6 +3864,7 @@ bool MenuCommon::RenderMenu()
 
                     ImGui::Spacing();
                     ImGui::Text("Key combinations are currently NOT supported!");
+                    ImGui::Text("Escape to cancel, Backspace to unbind");
                     ImGui::Spacing();
 
                     static auto menu = Keybind("Menu", 10);
