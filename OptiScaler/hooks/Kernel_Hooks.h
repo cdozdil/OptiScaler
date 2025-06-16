@@ -316,8 +316,7 @@ class KernelHooks
                     HookForVulkanVRAMSpoofing(module);
                 }
 
-                if (Config::Instance()->OverlayMenu.value_or_default())
-                    HooksVk::HookVk(module);
+                HooksVk::HookVk(module);
             }
             else
             {
@@ -705,8 +704,7 @@ class KernelHooks
                     HookForVulkanVRAMSpoofing(module);
                 }
 
-                if (Config::Instance()->OverlayMenu.value_or_default())
-                    HooksVk::HookVk(module);
+                HooksVk::HookVk(module);
             }
 
             return module;
