@@ -83,7 +83,7 @@ sl::Result StreamlineHooks::hkslSetTag(sl::ViewportHandle& viewport, sl::Resourc
 {
     for (uint32_t i = 0; i < numTags; i++)
     {
-        if (State::Instance().gameQuirk == Cyberpunk && tags[i].type == 2 &&
+        if (State::Instance().gameQuirks & GameQuirk::CyberpunkHudlessStateOverride && tags[i].type == 2 &&
             tags[i].resource->state ==
                 (D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE))
         {

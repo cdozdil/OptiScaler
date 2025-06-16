@@ -7,6 +7,7 @@
 #include <deque>
 #include <vulkan/vulkan.h>
 #include <ankerl/unordered_dense.h>
+#include <flag-set-cpp/flag_set.hpp>
 
 typedef enum API
 {
@@ -16,17 +17,15 @@ typedef enum API
     Vulkan,
 } API;
 
-typedef enum GameQuirk
+enum class GameQuirk
 {
-    Other,
-    Cyberpunk,
-    FMF2,
-    RDR1,
-    Banishers,
-    SplitFiction,
-    PoE2,
-    KernelBaseHooks
-} GameQuirk;
+    CyberpunkHudlessStateOverride,
+    SkipFsr3Method,
+    FastFeatureReset,
+    LoadD3D12Manually,
+    KernelBaseHooks,
+    _
+};
 
 typedef enum FGType : uint32_t
 {
@@ -52,11 +51,12 @@ class State
     bool NvngxDx12Inited = false;
     bool NvngxVkInited = false;
 
+    flag_set<GameQuirk> gameQuirks;
+
     // Reseting on creation of new feature
     std::optional<bool> AutoExposure;
 
     // DLSSG
-    GameQuirk gameQuirk = GameQuirk::Other;
     bool NukemsFilesAvailable = false;
     bool DLSSGDebugView = false;
     bool DLSSGInterpolatedOnly = false;

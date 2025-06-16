@@ -1755,7 +1755,7 @@ class KernelHooks
         // These hooks cause stability regressions
         // o_KB_FreeLibrary = KernelBaseProxy::Hook_FreeLibrary(hk_KB_FreeLibrary);
 
-        if (State::Instance().gameQuirk == KernelBaseHooks)
+        if (State::Instance().gameQuirks & GameQuirk::KernelBaseHooks)
         {
             // o_KB_LoadLibraryA = KernelBaseProxy::Hook_LoadLibraryA(hk_KB_LoadLibraryA);
             // o_KB_LoadLibraryW = KernelBaseProxy::Hook_LoadLibraryW(hk_KB_LoadLibraryW);
