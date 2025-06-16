@@ -1299,9 +1299,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
 
                 dc = nullptr;
 
-                if (State::Instance().gameQuirk == SplitFiction)
+                if (State::Instance().gameQuirks & GameQuirk::FastFeatureReset)
                 {
-                    LOG_DEBUG("sleeping before reset of current feature for 100ms (Split Fiction)");
+                    LOG_DEBUG("sleeping before reset of current feature for 100ms (Fast Feature Reset)");
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
                 else

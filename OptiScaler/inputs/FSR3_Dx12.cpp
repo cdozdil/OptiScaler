@@ -702,7 +702,8 @@ void HookFSR3ExeInputs()
             (PFN_ffxFsr3UpscalerContextCreate) scanner::GetAddress(exeNameV, createPattern, 0);
 
         // RDR1 have duplicate methods and first found one is not used
-        if (o_ffxFsr3UpscalerContextCreate_Pattern_Dx12 != nullptr && State::Instance().gameQuirk == RDR1)
+        if (o_ffxFsr3UpscalerContextCreate_Pattern_Dx12 != nullptr &&
+            State::Instance().gameQuirks & GameQuirk::SkipFsr3Method)
             o_ffxFsr3UpscalerContextCreate_Pattern_Dx12 = (PFN_ffxFsr3UpscalerContextCreate) scanner::GetAddress(
                 exeNameV, createPattern, 0, (size_t) o_ffxFsr3UpscalerContextCreate_Pattern_Dx12 + 2);
 
@@ -716,7 +717,8 @@ void HookFSR3ExeInputs()
             "? ? ? 48 83 C1 18 48 ? ? ? ? 48 ? ? ? ? E8 ? ? ? ? 44 8B 83");
 
         // RDR1 have duplicate methods and first found one is not used
-        if (State::Instance().gameQuirk == RDR1 && o_ffxFsr3UpscalerContextCreate_Pattern_Dx12 != nullptr)
+        if (State::Instance().gameQuirks & GameQuirk::SkipFsr3Method &&
+            o_ffxFsr3UpscalerContextCreate_Pattern_Dx12 != nullptr)
             o_ffxFsr3UpscalerContextDestroy_Pattern_Dx12 = (PFN_ffxFsr3UpscalerContextDestroy) scanner::GetAddress(
                 exeNameV, destroyPattern, 0, (size_t) o_ffxFsr3UpscalerContextCreate_Pattern_Dx12);
         else
@@ -735,7 +737,8 @@ void HookFSR3ExeInputs()
                                          "? ? ? 77 15 48 83 B9 ? ? ? ? ? 75 06 B8 ? ? ? ? C3");
 
         // RDR1 have duplicate methods and first found one is not used
-        if (State::Instance().gameQuirk == RDR1 && o_ffxFsr3UpscalerContextCreate_Pattern_Dx12 != nullptr)
+        if (State::Instance().gameQuirks & GameQuirk::SkipFsr3Method &&
+            o_ffxFsr3UpscalerContextCreate_Pattern_Dx12 != nullptr)
             o_ffxFsr3UpscalerContextDispatch_Pattern_Dx12 = (PFN_ffxFsr3UpscalerContextDispatch) scanner::GetAddress(
                 exeNameV, dispatchPattern, 0, (size_t) o_ffxFsr3UpscalerContextCreate_Pattern_Dx12);
         else
