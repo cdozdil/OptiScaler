@@ -691,13 +691,9 @@ static void CheckWorkingMode()
             // Crypt32
             hookCrypt32();
 
-            // Disable these hooks if nvngx.dll is present in game folder
-            if (!State::Instance().nvngxExists)
-            {
-                // Advapi32
-                if (Config::Instance()->DxgiSpoofing.value_or_default())
-                    hookAdvapi32();
-            }
+            // Advapi32
+            if (Config::Instance()->DxgiSpoofing.value_or_default())
+                hookAdvapi32();
 
             // hook streamline right away if it's already loaded
             HMODULE slModule = nullptr;
