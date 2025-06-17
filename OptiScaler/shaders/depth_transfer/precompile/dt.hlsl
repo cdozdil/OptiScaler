@@ -6,5 +6,5 @@ RWTexture2D<float> DestinationTexture : register(u0);
 void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
     float srcColor = SourceTexture.Load(int3(dispatchThreadID.xy, 0));
-    DestinationTexture[dispatchThreadID.xy] = 1.0f - srcColor;
+    DestinationTexture[dispatchThreadID.xy] = srcColor;
 }

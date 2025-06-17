@@ -48,7 +48,14 @@ bool DepthTransfer_Dx11::InitializeViews(ID3D11Texture2D* InResource, ID3D11Text
 
         // Create SRV for input texture
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+
+        if (desc.Format == DXGI_FORMAT_R24G8_TYPELESS)
+            srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+        else if (desc.Format == DXGI_FORMAT_R32G8X24_TYPELESS)
+            srvDesc.Format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+        else
+            srvDesc.Format = desc.Format;
+
         srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = 1;
 
