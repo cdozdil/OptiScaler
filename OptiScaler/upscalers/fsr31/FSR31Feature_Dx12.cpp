@@ -386,6 +386,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
         params.exposure.description.format = ffxResolveTypelessFormat(params.exposure.description.format);
         params.transparencyAndComposition.description.format =
             ffxResolveTypelessFormat(params.transparencyAndComposition.description.format);
+        params.output.description.format = ffxResolveTypelessFormat(params.output.description.format);
     }
 
     float MVScaleX = 1.0f;
