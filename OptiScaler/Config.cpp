@@ -74,7 +74,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             FGHUDFix.set_from_config(readBool("OptiFG", "HUDFix"));
             FGHUDLimit.set_from_config(readInt("OptiFG", "HUDLimit"));
             FGHUDFixExtended.set_from_config(readBool("OptiFG", "HUDFixExtended"));
-            FGImmediateCapture.set_from_config(readBool("OptiFG", "HUDFixImmadiate"));
+            FGImmediateCapture.set_from_config(readBool("OptiFG", "HUDFixImmediate"));
             FGRectLeft.set_from_config(readInt("OptiFG", "RectLeft"));
             FGRectTop.set_from_config(readInt("OptiFG", "RectTop"));
             FGRectWidth.set_from_config(readInt("OptiFG", "RectWidth"));
@@ -413,7 +413,7 @@ bool Config::Reload(std::filesystem::path iniPath)
 
         // Inputs
         {
-            EnableDlssInputs.set_from_config(readBool("Inputs", "EnableDlssEnable"));
+            EnableDlssInputs.set_from_config(readBool("Inputs", "EnableDlssInputs"));
             EnableXeSSInputs.set_from_config(readBool("Inputs", "EnableXeSSInputs"));
 
             EnableFsr2Inputs.set_from_config(readBool("Inputs", "EnableFsr2Inputs"));
@@ -614,7 +614,7 @@ bool Config::SaveIni()
         ini.SetValue("OptiFG", "HUDFix", GetBoolValue(Instance()->FGHUDFix.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HUDLimit", GetIntValue(Instance()->FGHUDLimit.value_for_config()).c_str());
         ini.SetValue("OptiFG", "HUDFixExtended", GetBoolValue(Instance()->FGHUDFixExtended.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "HUDFixImmadiate",
+        ini.SetValue("OptiFG", "HUDFixImmediate",
                      GetBoolValue(Instance()->FGImmediateCapture.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectLeft", GetIntValue(Instance()->FGRectLeft.value_for_config()).c_str());
         ini.SetValue("OptiFG", "RectTop", GetIntValue(Instance()->FGRectTop.value_for_config()).c_str());
@@ -624,7 +624,7 @@ bool Config::SaveIni()
                      GetBoolValue(Instance()->FGAlwaysTrackHeaps.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeDepthCopy", GetBoolValue(Instance()->FGMakeDepthCopy.value_for_config()).c_str());
         ini.SetValue("OptiFG", "MakeMVCopy", GetBoolValue(Instance()->FGMakeMVCopy.value_for_config()).c_str());
-        ini.SetValue("OptiFG", "UseMutexForSwaphain",
+        ini.SetValue("OptiFG", "UseMutexForSwapchain",
                      GetBoolValue(Instance()->FGUseMutexForSwapchain.value_for_config()).c_str());
 
         ini.SetValue("OptiFG", "EnableDepthScale",
@@ -717,7 +717,7 @@ bool Config::SaveIni()
                      wstring_to_string(Instance()->NvngxPath.value_for_config_or(L"auto")).c_str());
         ini.SetValue("DLSS", "FeaturePath",
                      wstring_to_string(Instance()->DLSSFeaturePath.value_for_config_or(L"auto")).c_str());
-        ini.SetValue("DLSS", "NVNGX_DLSS_Library",
+        ini.SetValue("DLSS", "NVNGX_DLSS_Path",
                      wstring_to_string(Instance()->NVNGX_DLSS_Library.value_for_config_or(L"auto")).c_str());
         ini.SetValue("DLSS", "RenderPresetOverride",
                      GetBoolValue(Instance()->RenderPresetOverride.value_for_config()).c_str());
@@ -973,19 +973,23 @@ bool Config::SaveIni()
 
     // inputs
     {
-        ini.SetValue("Inputs", "Dlss", GetBoolValue(Instance()->EnableDlssInputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "XeSS", GetBoolValue(Instance()->EnableXeSSInputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "Fsr2", GetBoolValue(Instance()->UseFsr2Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "EnableDlssInputs",
+                     GetBoolValue(Instance()->EnableDlssInputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "EnableXeSSInputs",
+                     GetBoolValue(Instance()->EnableXeSSInputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "UseFsr2Inputs", GetBoolValue(Instance()->UseFsr2Inputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr2Pattern", GetBoolValue(Instance()->Fsr2Pattern.value_for_config()).c_str());
-        ini.SetValue("Inputs", "Fsr3", GetBoolValue(Instance()->UseFsr3Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "UseFsr3Inputs", GetBoolValue(Instance()->UseFsr3Inputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "Fsr3Pattern", GetBoolValue(Instance()->Fsr3Pattern.value_for_config()).c_str());
-        ini.SetValue("Inputs", "Ffx", GetBoolValue(Instance()->UseFfxInputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "UseFfxInputs", GetBoolValue(Instance()->UseFfxInputs.value_for_config()).c_str());
         ini.SetValue("Inputs", "EnableHotSwapping",
                      GetBoolValue(Instance()->EnableHotSwapping.value_for_config()).c_str());
 
-        ini.SetValue("Inputs", "UseFsr2", GetBoolValue(Instance()->EnableFsr2Inputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "UseFsr3", GetBoolValue(Instance()->EnableFsr3Inputs.value_for_config()).c_str());
-        ini.SetValue("Inputs", "UseFfx", GetBoolValue(Instance()->EnableFfxInputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "EnableFsr2Inputs",
+                     GetBoolValue(Instance()->EnableFsr2Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "EnableFsr3Inputs",
+                     GetBoolValue(Instance()->EnableFsr3Inputs.value_for_config()).c_str());
+        ini.SetValue("Inputs", "EnableFfxInputs", GetBoolValue(Instance()->EnableFfxInputs.value_for_config()).c_str());
     }
 
     auto pathWStr = absoluteFileName.wstring();

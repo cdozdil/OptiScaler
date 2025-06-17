@@ -23,6 +23,8 @@
 #define SPDLOG_WCHAR_FILENAMES
 #include "spdlog/spdlog.h"
 
+#define VK_USE_PLATFORM_WIN32_KHR
+
 #define BUFFER_COUNT 4
 
 // Enables logging of DLSS NV Parameters
