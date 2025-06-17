@@ -109,7 +109,7 @@ static void RunAgilityUpgrade(HMODULE dx12Module)
             {
                 LOG_INFO("Agility SDK upgraded successfully");
             }
-            sdkConfig->Release();
+            // sdkConfig->Release();
         }
         else
         {
