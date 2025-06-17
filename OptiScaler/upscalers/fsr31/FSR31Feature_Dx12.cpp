@@ -49,6 +49,45 @@ bool FSR31FeatureDx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* I
     return false;
 }
 
+static inline uint32_t ffxResolveTypelessFormat(uint32_t format)
+{
+    switch (format)
+    {
+    case FFX_API_SURFACE_FORMAT_R32G32B32A32_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R32G32B32A32_FLOAT;
+
+    case FFX_API_SURFACE_FORMAT_R16G16B16A16_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R16G16B16A16_FLOAT;
+
+    case FFX_API_SURFACE_FORMAT_R32G32_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R32G32_FLOAT;
+
+    case FFX_API_SURFACE_FORMAT_R8G8B8A8_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R8G8B8A8_UNORM;
+
+    case FFX_API_SURFACE_FORMAT_B8G8R8A8_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_B8G8R8A8_UNORM;
+
+    case FFX_API_SURFACE_FORMAT_R16G16_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R16G16_FLOAT;
+
+    case FFX_API_SURFACE_FORMAT_R32_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R32_FLOAT;
+
+    case FFX_API_SURFACE_FORMAT_R8G8_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R8G8_UNORM;
+
+    case FFX_API_SURFACE_FORMAT_R16_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R16_FLOAT;
+
+    case FFX_API_SURFACE_FORMAT_R8_TYPELESS:
+        return FFX_API_SURFACE_FORMAT_R8_UNORM;
+
+    default:
+        return format; // Already typed or unknown
+    }
+}
+
 bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
@@ -336,6 +375,18 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     _hasTM = params.transparencyAndComposition.resource != nullptr;
     _accessToReactiveMask = paramReactiveMask != nullptr;
     _hasOutput = params.output.resource != nullptr;
+
+    // For FSR 4 as it seems to be missing some conversions from typeless
+    // transparencyAndComposition and exposure might be unnecessary here
+    if (Version().major >= 4)
+    {
+        params.color.description.format = ffxResolveTypelessFormat(params.color.description.format);
+        params.depth.description.format = ffxResolveTypelessFormat(params.depth.description.format);
+        params.motionVectors.description.format = ffxResolveTypelessFormat(params.motionVectors.description.format);
+        params.exposure.description.format = ffxResolveTypelessFormat(params.exposure.description.format);
+        params.transparencyAndComposition.description.format =
+            ffxResolveTypelessFormat(params.transparencyAndComposition.description.format);
+    }
 
     float MVScaleX = 1.0f;
     float MVScaleY = 1.0f;

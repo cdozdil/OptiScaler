@@ -34,8 +34,20 @@ class FfxApiProxy
 
     static inline void parse_version(const char* version_str, feature_version* _version)
     {
-        if (sscanf_s(version_str, "%u.%u.%u", &_version->major, &_version->minor, &_version->patch) != 3)
-            LOG_WARN("can't parse {0}", version_str);
+        const char* p = version_str;
+
+        // Skip non-digits at front
+        while (*p)
+        {
+            if (isdigit((unsigned char) p[0]))
+            {
+                if (sscanf(p, "%u.%u.%u", &_version->major, &_version->minor, &_version->patch) == 3)
+                    return;
+            }
+            ++p;
+        }
+
+        LOG_WARN("can't parse {0}", version_str);
     }
 
   public:
