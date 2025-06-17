@@ -47,7 +47,6 @@ class FSR31Feature : public virtual IFeature
         LOG_WARN("can't parse {0}", version_str);
     }
 
-    
     static inline uint32_t ffxResolveTypelessFormat(uint32_t format)
     {
         switch (format)
