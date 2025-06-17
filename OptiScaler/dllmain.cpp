@@ -666,10 +666,9 @@ static void CheckWorkingMode()
                     HookForVulkanExtensionSpoofing(vulkanModule);
                     HookForVulkanVRAMSpoofing(vulkanModule);
                 }
-            }
 
-            if (Config::Instance()->OverlayMenu.value() && vulkanModule != nullptr)
                 HooksVk::HookVk(vulkanModule);
+            }
 
             // NVAPI
             HMODULE nvapi64 = nullptr;
@@ -918,6 +917,7 @@ static void CheckQuirks()
     else if (exePathFilename == "nms.exe")
     {
         State::Instance().gameQuirks.set(GameQuirk::KernelBaseHooks);
+        State::Instance().gameQuirks |= GameQuirk::VulkanDLSSBarrierFixup;
         LOG_INFO("Enabling a quirk for No Man's Sky (Enable KernelBase hooks)");
     }
     else if (exePathFilename == "pathofexile.exe" || exePathFilename == "pathofexile_x64.exe" ||

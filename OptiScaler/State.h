@@ -24,6 +24,7 @@ enum class GameQuirk
     FastFeatureReset,
     LoadD3D12Manually,
     KernelBaseHooks,
+    VulkanDLSSBarrierFixup,
     _
 };
 
