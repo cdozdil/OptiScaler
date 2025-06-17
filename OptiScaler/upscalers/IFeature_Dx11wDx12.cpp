@@ -109,7 +109,7 @@ bool IFeature_Dx11wDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11
     }
     else if ((desc.MiscFlags & D3D11_RESOURCE_MISC_SHARED) == 0 && InDontUseNTShared)
     {
-        if (desc.Format == DXGI_FORMAT_R24G8_TYPELESS)
+        if (desc.Format == DXGI_FORMAT_R24G8_TYPELESS || desc.Format == DXGI_FORMAT_R32G8X24_TYPELESS)
         {
             if (DT == nullptr || DT.get() == nullptr)
                 DT = std::make_unique<DepthTransfer_Dx11>("DT", Dx11Device);
