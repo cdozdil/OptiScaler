@@ -93,7 +93,7 @@ bool DLSSFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_P
 
     NVSDK_NGX_Result nvResult;
 
-    bool rcasEnabled = isVersionOrBetter(Version(), { 2, 5, 1 });
+    bool rcasEnabled = Version() >= feature_version { 2, 5, 1 };
 
     if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
         (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))

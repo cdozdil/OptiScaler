@@ -71,35 +71,34 @@ inline DWORD processId;
 
 #define LOG_FUNC_RESULT(result) spdlog::trace(__FUNCTION__ " result: {0:X}", (UINT64) result)
 
-typedef struct _feature_version
+struct feature_version
 {
     unsigned int major;
     unsigned int minor;
     unsigned int patch;
-} feature_version;
 
-inline static bool isVersionOrBetter(const feature_version& current, const feature_version& required)
-{
-    if (current.major > required.major)
+    bool operator==(const feature_version& other) const
     {
-        return true;
+        return major == other.major && minor == other.minor && patch == other.patch;
     }
-    if (current.major == required.major)
+
+    bool operator!=(const feature_version& other) const { return !(*this == other); }
+
+    bool operator<(const feature_version& other) const
     {
-        if (current.minor > required.minor)
-        {
-            return true;
-        }
-        if (current.minor == required.minor)
-        {
-            if (current.patch >= required.patch)
-            {
-                return true;
-            }
-        }
+        if (major != other.major)
+            return major < other.major;
+        if (minor != other.minor)
+            return minor < other.minor;
+        return patch < other.patch;
     }
-    return false;
-}
+
+    bool operator>(const feature_version& other) const { return other < *this; }
+
+    bool operator<=(const feature_version& other) const { return !(other < *this); }
+
+    bool operator>=(const feature_version& other) const { return !(*this < other); }
+};
 
 inline static std::string wstring_to_string(const std::wstring& wide_str)
 {

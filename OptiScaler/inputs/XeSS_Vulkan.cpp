@@ -288,8 +288,8 @@ xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer c
     {
         CreateNVRes(&pExecParams->responsivePixelMaskTexture, &biasNVRes[index]);
 
-        if (!isVersionOrBetter({ XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch },
-                               { 2, 0, 1 }))
+        if (feature_version { XeSSProxy::Version().major, XeSSProxy::Version().minor, XeSSProxy::Version().patch } <
+            feature_version { 2, 0, 1 })
             params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &biasNVRes[index]);
         else
             params->Set("FSR.reactive", &biasNVRes[index]);

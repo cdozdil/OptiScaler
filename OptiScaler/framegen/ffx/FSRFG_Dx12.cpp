@@ -23,7 +23,7 @@ void FSRFG_Dx12::ConfigureFramePaceTuning()
 {
     State::Instance().FSRFGFTPchanged = false;
 
-    if (_swapChainContext == nullptr || !isVersionOrBetter(Version(), { 3, 1, 3 }))
+    if (_swapChainContext == nullptr || Version() < feature_version { 3, 1, 3 })
         return;
 
     FfxSwapchainFramePacingTuning fpt {};
