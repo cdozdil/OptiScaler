@@ -16,8 +16,8 @@
 
 #include <imgui/imgui_internal.h>
 
-#define MARK_ALL_BACKENDS_CHANGED()                                   \
-    for (auto& singleChangeBackend : State::Instance().changeBackend) \
+#define MARK_ALL_BACKENDS_CHANGED()                                                                                    \
+    for (auto& singleChangeBackend : State::Instance().changeBackend)                                                  \
         singleChangeBackend.second = true;
 
 constexpr float fontSize = 14.0f; // just changing this doesn't make other elements scale ideally
@@ -3065,7 +3065,8 @@ bool MenuCommon::RenderMenu()
                     if (bool forceLFX = Config::Instance()->FN_ForceLatencyFlex.value_or_default();
                         ImGui::Checkbox("Force LatencyFlex", &forceLFX))
                         Config::Instance()->FN_ForceLatencyFlex = forceLFX;
-                    ShowHelpMarker("AntiLag 2 / XeLL is used when available, this setting let's you force LatencyFlex instead");
+                    ShowHelpMarker(
+                        "AntiLag 2 / XeLL is used when available, this setting let's you force LatencyFlex instead");
 
                     const char* lfx_modes[] = { "Conservative", "Aggressive", "Reflex ID" };
                     const std::string lfx_modesDesc[] = {
@@ -3235,7 +3236,7 @@ bool MenuCommon::RenderMenu()
                         if (qOverride)
                             Config::Instance()->UpscaleRatioOverrideEnabled = false;
                     }
-                        
+
                     ShowHelpMarker("Let's you override each preset's ratio individually\n"
                                    "Note that not every game supports every quality preset\n\n"
                                    "1.5x on a 1080p screen means internal resolution of 720p\n"
