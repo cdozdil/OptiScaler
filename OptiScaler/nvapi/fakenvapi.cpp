@@ -91,12 +91,10 @@ bool fakenvapi::updateModeAndContext()
     // fallback for older fakenvapi builds
     if (Fake_GetAntiLagCtx)
     {
-        _lowLatencyMode = Mode::LatencyFlex;
-
         auto result = Fake_GetAntiLagCtx(&_lowLatencyContext);
 
         if (result != NVAPI_OK)
-            LOG_ERROR("Can't get AntiLag 2 context from fakenvapi");
+            _lowLatencyMode = Mode::LatencyFlex;
         else
             _lowLatencyMode = Mode::AntiLag2;
 
