@@ -337,6 +337,19 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     _accessToReactiveMask = paramReactiveMask != nullptr;
     _hasOutput = params.output.resource != nullptr;
 
+    // For FSR 4 as it seems to be missing some conversions from typeless
+    // transparencyAndComposition and exposure might be unnecessary here
+    if (Version().major >= 4)
+    {
+        params.color.description.format = ffxResolveTypelessFormat(params.color.description.format);
+        params.depth.description.format = ffxResolveTypelessFormat(params.depth.description.format);
+        params.motionVectors.description.format = ffxResolveTypelessFormat(params.motionVectors.description.format);
+        params.exposure.description.format = ffxResolveTypelessFormat(params.exposure.description.format);
+        params.transparencyAndComposition.description.format =
+            ffxResolveTypelessFormat(params.transparencyAndComposition.description.format);
+        params.output.description.format = ffxResolveTypelessFormat(params.output.description.format);
+    }
+
     float MVScaleX = 1.0f;
     float MVScaleY = 1.0f;
 

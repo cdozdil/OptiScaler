@@ -36,4 +36,10 @@ IFeature_Dx11::~IFeature_Dx11()
         Bias.reset();
         Bias = nullptr;
     }
+
+    if (DT != nullptr && DT.get() != nullptr)
+    {
+        DT.reset();
+        DT = nullptr;
+    }
 }
