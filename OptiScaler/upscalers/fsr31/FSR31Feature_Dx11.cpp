@@ -52,48 +52,6 @@ bool FSR31FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InConte
     return false;
 }
 
-static inline DXGI_FORMAT resolveTypelessFormat(DXGI_FORMAT format)
-{
-    switch (format)
-    {
-    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-        return DXGI_FORMAT_R16G16B16A16_FLOAT;
-
-    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-        return DXGI_FORMAT_R32G32B32A32_FLOAT;
-
-    case DXGI_FORMAT_R16G16_TYPELESS:
-        return DXGI_FORMAT_R16G16_FLOAT;
-
-    case DXGI_FORMAT_R32G32_TYPELESS:
-        return DXGI_FORMAT_R32G32_FLOAT;
-
-    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-        return DXGI_FORMAT_R8G8B8A8_UNORM;
-
-    case DXGI_FORMAT_R32G8X24_TYPELESS:
-        return DXGI_FORMAT_R32G32_FLOAT;
-
-    case DXGI_FORMAT_R32_TYPELESS:
-        return DXGI_FORMAT_R32_FLOAT;
-
-    case DXGI_FORMAT_R8G8_TYPELESS:
-        return DXGI_FORMAT_R8G8_UNORM;
-
-    case DXGI_FORMAT_R16_TYPELESS:
-        return DXGI_FORMAT_R16_FLOAT;
-
-    case DXGI_FORMAT_R8_TYPELESS:
-        return DXGI_FORMAT_R8_UNORM;
-
-    case DXGI_FORMAT_R24G8_TYPELESS:
-        return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-
-    default:
-        return format; // Already typed or unknown
-    }
-}
-
 // register a DX11 resource to the backend
 Fsr31::FfxResource ffxGetResource(ID3D11Resource* dx11Resource, wchar_t const* ffxResName,
                                   Fsr31::FfxResourceStates state = Fsr31::FFX_RESOURCE_STATE_COMPUTE_READ)
@@ -125,9 +83,8 @@ bool FSR31FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_R
         return false;
 
     originalTexture->GetDesc(&desc);
-    auto format = resolveTypelessFormat(desc.Format);
 
-    if ((bindFlags == 9999 || desc.BindFlags == bindFlags) && desc.Format == format)
+    if (desc.BindFlags == bindFlags)
     {
         ASSIGN_DESC(OutTextureRes->Desc, desc);
         OutTextureRes->Texture = originalTexture;
@@ -136,7 +93,7 @@ bool FSR31FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_R
     }
 
     if (OutTextureRes->usingOriginal || OutTextureRes->Texture == nullptr || desc.Width != OutTextureRes->Desc.Width ||
-        desc.Height != OutTextureRes->Desc.Height || format != OutTextureRes->Desc.Format ||
+        desc.Height != OutTextureRes->Desc.Height || desc.Format != OutTextureRes->Desc.Format ||
         desc.BindFlags != OutTextureRes->Desc.BindFlags)
     {
         if (OutTextureRes->Texture != nullptr)
@@ -147,7 +104,6 @@ bool FSR31FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_R
                 OutTextureRes->Texture = nullptr;
         }
 
-        desc.Format = format;
         OutTextureRes->usingOriginal = false;
         ASSIGN_DESC(OutTextureRes->Desc, desc);
 
@@ -171,34 +127,11 @@ bool FSR31FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_R
 
 void FSR31FeatureDx11::ReleaseResources()
 {
+    LOG_FUNC();
+
     if (!bufferColor.usingOriginal)
     {
         SAFE_RELEASE(bufferColor.Texture);
-    }
-
-    if (!bufferDepth.usingOriginal)
-    {
-        SAFE_RELEASE(bufferDepth.Texture);
-    }
-
-    if (!bufferExposure.usingOriginal)
-    {
-        SAFE_RELEASE(bufferExposure.Texture);
-    }
-
-    if (!bufferReactive.usingOriginal)
-    {
-        SAFE_RELEASE(bufferReactive.Texture);
-    }
-
-    if (!bufferVelocity.usingOriginal)
-    {
-        SAFE_RELEASE(bufferVelocity.Texture);
-    }
-
-    if (!bufferTransparency.usingOriginal)
-    {
-        SAFE_RELEASE(bufferTransparency.Texture);
     }
 }
 
@@ -219,6 +152,8 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     ID3D11SamplerState* restoreSamplerStates[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] = {};
     ID3D11Buffer* restoreCBVs[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] = {};
     ID3D11UnorderedAccessView* restoreUAVs[D3D11_1_UAV_SLOT_COUNT] = {};
+    ID3D11RenderTargetView* restoreRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
+    ID3D11DepthStencilView* restoreDSV = nullptr;
 
     // backup compute shader resources
     for (UINT i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
@@ -244,6 +179,12 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
         restoreUAVs[i] = nullptr;
         DeviceContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
     }
+
+    DeviceContext->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, restoreRTVs, &restoreDSV);
+
+    // Unbind RenderTargets
+    ID3D11RenderTargetView* nullRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
+    DeviceContext->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, nullRTVs, nullptr);
 
     Fsr31::FfxFsr3DispatchUpscaleDescription params {};
 
@@ -325,19 +266,8 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     if (paramVelocity)
     {
         LOG_DEBUG("MotionVectors exist..");
-
-        if (!CopyTexture(paramVelocity, &bufferVelocity, 9999, true))
-        {
-            LOG_DEBUG("Can't copy Velocity!");
-            return false;
-        }
-
-        if (bufferVelocity.Texture != nullptr)
-            params.motionVectors = ffxGetResource(bufferVelocity.Texture, L"FSR3_InputMotionVectors",
-                                                  Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-        else
-            params.motionVectors =
-                ffxGetResource(paramVelocity, L"FSR3_InputMotionVectors", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+        params.motionVectors =
+            ffxGetResource(paramVelocity, L"FSR3_InputMotionVectors", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
     }
     else
     {
@@ -390,39 +320,7 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
     if (paramDepth)
     {
         LOG_DEBUG("Depth exist..");
-
-        auto depthTexture = (ID3D11Texture2D*) paramDepth;
-
-        D3D11_TEXTURE2D_DESC desc {};
-        depthTexture->GetDesc(&desc);
-
-        if (desc.Format == DXGI_FORMAT_R24G8_TYPELESS || desc.Format == DXGI_FORMAT_R32G8X24_TYPELESS)
-        {
-            if (DT == nullptr || DT.get() == nullptr)
-                DT = std::make_unique<DepthTransfer_Dx11>("DT", Device);
-
-            if (DT->Buffer() == nullptr)
-                DT->CreateBufferResource(Device, paramDepth);
-
-            if (DT->CanRender() && DT->Dispatch(Device, DeviceContext, depthTexture, DT->Buffer()))
-                params.depth =
-                    ffxGetResource(DT->Buffer(), L"FSR3_InputDepth", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-            else
-                ffxGetResource(paramDepth, L"FSR3_InputDepth", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-        }
-        else
-        {
-            if (!CopyTexture(paramDepth, &bufferDepth, 9999, true))
-            {
-                LOG_DEBUG("Can't copy Depth!");
-                return false;
-            }
-
-            if (bufferDepth.Texture != nullptr)
-                ffxGetResource(bufferDepth.Texture, L"FSR3_InputDepth", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-            else
-                ffxGetResource(paramDepth, L"FSR3_InputDepth", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-        }
+        params.depth = ffxGetResource(paramDepth, L"FSR3_InputDepth", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
     }
     else
     {
@@ -444,20 +342,9 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 
         if (paramExp)
         {
+            params.exposure =
+                ffxGetResource(paramExp, L"FSR3_InputExposure", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
             LOG_DEBUG("ExposureTexture exist..");
-
-            if (!CopyTexture(paramExp, &bufferExposure, 9999, true))
-            {
-                LOG_DEBUG("Can't copy Exposure!");
-                return false;
-            }
-
-            if (bufferVelocity.Texture != nullptr)
-                params.exposure = ffxGetResource(bufferVelocity.Texture, L"FSR3_InputExposure",
-                                                 Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-            else
-                params.exposure =
-                    ffxGetResource(paramExp, L"FSR3_InputExposure", Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
         }
         else
         {
@@ -481,22 +368,9 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             Config::Instance()->DisableReactiveMask.set_volatile_value(false);
 
             if (Config::Instance()->FsrUseMaskForTransparency.value_or_default())
-            {
-                if (!CopyTexture(paramReactiveMask, &bufferTransparency, 9999, true))
-                {
-                    LOG_DEBUG("Can't copy Transparency!");
-                    return false;
-                }
-
-                if (bufferVelocity.Texture != nullptr)
-                    params.transparencyAndComposition =
-                        ffxGetResource(bufferVelocity.Texture, L"FSR3_TransparencyAndCompositionMap",
-                                       Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-                else
-                    params.transparencyAndComposition =
-                        ffxGetResource(paramReactiveMask, L"FSR3_TransparencyAndCompositionMap",
-                                       Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-            }
+                params.transparencyAndComposition =
+                    ffxGetResource(paramReactiveMask, L"FSR3_TransparencyAndCompositionMap",
+                                   Fsr31::FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
 
             if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f && Bias->IsInit() &&
                 Bias->CreateBufferResource(Device, paramReactiveMask) && Bias->CanRender())
@@ -701,6 +575,8 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             DeviceContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
     }
 
+    DeviceContext->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, restoreRTVs, restoreDSV);
+
     _frameCount++;
 
     return true;
@@ -710,8 +586,6 @@ FSR31FeatureDx11::~FSR31FeatureDx11()
 {
     if (!IsInited())
         return;
-
-    ReleaseResources();
 
     if (!State::Instance().isShuttingDown)
     {

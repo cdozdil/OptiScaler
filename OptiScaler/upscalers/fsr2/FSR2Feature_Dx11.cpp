@@ -4,8 +4,6 @@
 
 #include "FSR2Feature_Dx11.h"
 
-#include <magic_enum.hpp>
-
 #define ASSIGN_DESC(dest, src)                                                                                         \
     dest.Width = src.Width;                                                                                            \
     dest.Height = src.Height;                                                                                          \
@@ -21,48 +19,6 @@
             (p) = nullptr;                                                                                             \
         }                                                                                                              \
     } while ((void) 0, 0);
-
-static inline DXGI_FORMAT resolveTypelessFormat(DXGI_FORMAT format)
-{
-    switch (format)
-    {
-    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-        return DXGI_FORMAT_R16G16B16A16_FLOAT;
-
-    case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-        return DXGI_FORMAT_R32G32B32A32_FLOAT;
-
-    case DXGI_FORMAT_R16G16_TYPELESS:
-        return DXGI_FORMAT_R16G16_FLOAT;
-
-    case DXGI_FORMAT_R32G32_TYPELESS:
-        return DXGI_FORMAT_R32G32_FLOAT;
-
-    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-        return DXGI_FORMAT_R8G8B8A8_UNORM;
-
-    case DXGI_FORMAT_R32G8X24_TYPELESS:
-        return DXGI_FORMAT_R32G32_FLOAT;
-
-    case DXGI_FORMAT_R32_TYPELESS:
-        return DXGI_FORMAT_R32_FLOAT;
-
-    case DXGI_FORMAT_R8G8_TYPELESS:
-        return DXGI_FORMAT_R8G8_UNORM;
-
-    case DXGI_FORMAT_R16_TYPELESS:
-        return DXGI_FORMAT_R16_FLOAT;
-
-    case DXGI_FORMAT_R8_TYPELESS:
-        return DXGI_FORMAT_R8_UNORM;
-
-    case DXGI_FORMAT_R24G8_TYPELESS:
-        return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-
-    default:
-        return format; // Already typed or unknown
-    }
-}
 
 bool FSR2FeatureDx11::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {
@@ -101,9 +57,8 @@ bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RE
         return false;
 
     originalTexture->GetDesc(&desc);
-    auto format = resolveTypelessFormat(desc.Format);
 
-    if ((bindFlags == 9999 || desc.BindFlags == bindFlags) && desc.Format == format)
+    if (desc.BindFlags == bindFlags)
     {
         ASSIGN_DESC(OutTextureRes->Desc, desc);
         OutTextureRes->Texture = originalTexture;
@@ -112,7 +67,7 @@ bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RE
     }
 
     if (OutTextureRes->usingOriginal || OutTextureRes->Texture == nullptr || desc.Width != OutTextureRes->Desc.Width ||
-        desc.Height != OutTextureRes->Desc.Height || format != OutTextureRes->Desc.Format ||
+        desc.Height != OutTextureRes->Desc.Height || desc.Format != OutTextureRes->Desc.Format ||
         desc.BindFlags != OutTextureRes->Desc.BindFlags)
     {
         if (OutTextureRes->Texture != nullptr)
@@ -123,7 +78,6 @@ bool FSR2FeatureDx11::CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RE
                 OutTextureRes->Texture = nullptr;
         }
 
-        desc.Format = format;
         OutTextureRes->usingOriginal = false;
         ASSIGN_DESC(OutTextureRes->Desc, desc);
 
@@ -150,31 +104,6 @@ void FSR2FeatureDx11::ReleaseResources()
     if (!bufferColor.usingOriginal)
     {
         SAFE_RELEASE(bufferColor.Texture);
-    }
-
-    if (!bufferDepth.usingOriginal)
-    {
-        SAFE_RELEASE(bufferDepth.Texture);
-    }
-
-    if (!bufferExposure.usingOriginal)
-    {
-        SAFE_RELEASE(bufferExposure.Texture);
-    }
-
-    if (!bufferReactive.usingOriginal)
-    {
-        SAFE_RELEASE(bufferReactive.Texture);
-    }
-
-    if (!bufferVelocity.usingOriginal)
-    {
-        SAFE_RELEASE(bufferVelocity.Texture);
-    }
-
-    if (!bufferTransparency.usingOriginal)
-    {
-        SAFE_RELEASE(bufferTransparency.Texture);
     }
 }
 
@@ -308,37 +237,6 @@ FSR2FeatureDx11::FSR2FeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* I
 {
 }
 
-void FSR2FeatureDx11::LogResource(std::string name, ID3D11Texture2D* resource)
-{
-    if (_frameCount > 1)
-        return;
-
-    D3D11_TEXTURE2D_DESC desc {};
-    resource->GetDesc(&desc);
-
-    LOG_DEBUG("{}: {}x{}, Format: {}, Usage: {}, Bind: {:X}, Misc: {:X}, CPU: {:X}, ArraySize: {}, MipLevels: {}, "
-              "SD.Count: {}, SD.Quality: {}",
-              name, desc.Width, desc.Height, magic_enum::enum_name(desc.Format), magic_enum::enum_name(desc.Usage),
-              desc.BindFlags, desc.MiscFlags, desc.CPUAccessFlags, desc.ArraySize, desc.MipLevels,
-              desc.SampleDesc.Count, desc.SampleDesc.Quality);
-}
-
-void FSR2FeatureDx11::LogParams(FfxFsr2DispatchDescription* params)
-{
-    if (_frameCount > 1)
-        return;
-
-    LOG_DEBUG("Color: {}x{}, Format: {}", params->color.description.width, params->color.description.height,
-              magic_enum::enum_name(params->color.description.format));
-    LOG_DEBUG("Depth: {}x{}, Format: {}", params->depth.description.width, params->depth.description.height,
-              magic_enum::enum_name(params->depth.description.format));
-    LOG_DEBUG("Velocity: {}x{}, Format: {}", params->motionVectors.description.width,
-              params->motionVectors.description.height,
-              magic_enum::enum_name(params->motionVectors.description.format));
-    LOG_DEBUG("Output: {}x{}, Format: {}", params->output.description.width, params->output.description.height,
-              magic_enum::enum_name(params->output.description.format));
-}
-
 bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters)
 {
     LOG_FUNC();
@@ -353,6 +251,8 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     ID3D11SamplerState* restoreSamplerStates[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] = {};
     ID3D11Buffer* restoreCBVs[D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT] = {};
     ID3D11UnorderedAccessView* restoreUAVs[D3D11_1_UAV_SLOT_COUNT] = {};
+    ID3D11RenderTargetView* restoreRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
+    ID3D11DepthStencilView* restoreDSV = nullptr;
 
     // backup compute shader resources
     for (UINT i = 0; i < D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT; i++)
@@ -378,6 +278,12 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         restoreUAVs[i] = nullptr;
         InContext->CSGetUnorderedAccessViews(i, 1, &restoreUAVs[i]);
     }
+
+    DeviceContext->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, restoreRTVs, &restoreDSV);
+
+    // Unbind RenderTargets
+    ID3D11RenderTargetView* nullRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
+    DeviceContext->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, nullRTVs, nullptr);
 
     FfxFsr2DispatchDescription params {};
     params.commandList = InContext;
@@ -422,8 +328,6 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     {
         LOG_DEBUG("Color exist..");
 
-        LogResource("Color", (ID3D11Texture2D*) paramColor);
-
         if (!CopyTexture(paramColor, &bufferColor, 40, true))
         {
             LOG_DEBUG("Can't copy Color!");
@@ -447,20 +351,8 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     if (paramVelocity)
     {
-        LogResource("Velocity", (ID3D11Texture2D*) paramVelocity);
-
-        if (!CopyTexture(paramVelocity, &bufferVelocity, 9999, true))
-        {
-            LOG_DEBUG("Can't copy Velocity!");
-            return false;
-        }
-
         LOG_DEBUG("MotionVectors exist..");
-        if (bufferVelocity.Texture != nullptr)
-            params.motionVectors =
-                ffxGetResourceDX11(&_context, bufferVelocity.Texture, (wchar_t*) L"FSR2_MotionVectors");
-        else
-            params.motionVectors = ffxGetResourceDX11(&_context, paramVelocity, (wchar_t*) L"FSR2_MotionVectors");
+        params.motionVectors = ffxGetResourceDX11(&_context, paramVelocity, (wchar_t*) L"FSR2_MotionVectors");
     }
     else
     {
@@ -476,8 +368,6 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     if (paramOutput)
     {
-        LogResource("Output", (ID3D11Texture2D*) paramOutput);
-
         LOG_DEBUG("Output exist..");
 
         if (useSS)
@@ -518,38 +408,7 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     if (paramDepth)
     {
         LOG_DEBUG("Depth exist..");
-        auto depthTexture = (ID3D11Texture2D*) paramDepth;
-        LogResource("Depth", depthTexture);
-
-        D3D11_TEXTURE2D_DESC desc {};
-        depthTexture->GetDesc(&desc);
-
-        if (desc.Format == DXGI_FORMAT_R24G8_TYPELESS || desc.Format == DXGI_FORMAT_R32G8X24_TYPELESS)
-        {
-            if (DT == nullptr || DT.get() == nullptr)
-                DT = std::make_unique<DepthTransfer_Dx11>("DT", Device);
-
-            if (DT->Buffer() == nullptr)
-                DT->CreateBufferResource(Device, paramDepth);
-
-            if (DT->CanRender() && DT->Dispatch(Device, DeviceContext, depthTexture, DT->Buffer()))
-                params.depth = ffxGetResourceDX11(&_context, DT->Buffer(), (wchar_t*) L"FSR2_Depth");
-            else
-                params.depth = ffxGetResourceDX11(&_context, paramDepth, (wchar_t*) L"FSR2_Depth");
-        }
-        else
-        {
-            if (!CopyTexture(paramDepth, &bufferDepth, 9999, true))
-            {
-                LOG_DEBUG("Can't copy Depth!");
-                return false;
-            }
-
-            if (bufferDepth.Texture != nullptr)
-                params.depth = ffxGetResourceDX11(&_context, bufferDepth.Texture, (wchar_t*) L"FSR2_Depth");
-            else
-                params.depth = ffxGetResourceDX11(&_context, paramDepth, (wchar_t*) L"FSR2_Depth");
-        }
+        params.depth = ffxGetResourceDX11(&_context, paramDepth, (wchar_t*) L"FSR2_Depth");
     }
     else
     {
@@ -569,19 +428,8 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
         if (paramExp)
         {
-            LogResource("Exposure", (ID3D11Texture2D*) paramExp);
-
-            if (!CopyTexture(paramExp, &bufferExposure, 9999, true))
-            {
-                LOG_DEBUG("Can't copy Exposure!");
-                return false;
-            }
-
+            params.exposure = ffxGetResourceDX11(&_context, paramExp, (wchar_t*) L"FSR2_Exposure");
             LOG_DEBUG("ExposureTexture exist..");
-            if (bufferExposure.Texture != nullptr)
-                params.exposure = ffxGetResourceDX11(&_context, bufferExposure.Texture, (wchar_t*) L"FSR2_Exposure");
-            else
-                params.exposure = ffxGetResourceDX11(&_context, paramExp, (wchar_t*) L"FSR2_Exposure");
         }
         else
         {
@@ -601,27 +449,12 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
     {
         if (paramReactiveMask)
         {
-            LogResource("Input Bias", (ID3D11Texture2D*) paramReactiveMask);
-
             LOG_DEBUG("Input Bias mask exist..");
             Config::Instance()->DisableReactiveMask.set_volatile_value(false);
 
             if (Config::Instance()->FsrUseMaskForTransparency.value_or_default())
-            {
-                if (!CopyTexture(paramReactiveMask, &bufferTransparency, 9999, true))
-                {
-                    LOG_DEBUG("Can't copy Exposure!");
-                    return false;
-                }
-
-                if (bufferTransparency.Texture != nullptr)
-                    params.transparencyAndComposition =
-                        ffxGetResourceDX11(&_context, bufferTransparency.Texture, (wchar_t*) L"FSR2_Transparency",
-                                           FFX_RESOURCE_STATE_COMPUTE_READ);
-                else
-                    params.transparencyAndComposition = ffxGetResourceDX11(
-                        &_context, paramReactiveMask, (wchar_t*) L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
-            }
+                params.transparencyAndComposition = ffxGetResourceDX11(
+                    &_context, paramReactiveMask, (wchar_t*) L"FSR2_Transparency", FFX_RESOURCE_STATE_COMPUTE_READ);
 
             if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f && Bias->IsInit() &&
                 Bias->CreateBufferResource(Device, paramReactiveMask) && Bias->CanRender())
@@ -694,8 +527,6 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
         params.preExposure = 1.0f;
-
-    LogParams(&params);
 
     LOG_DEBUG("Dispatch!!");
     auto result = ffxFsr2ContextDispatch(&_context, &params);
@@ -799,6 +630,8 @@ bool FSR2FeatureDx11::Evaluate(ID3D11DeviceContext* InContext, NVSDK_NGX_Paramet
         if (restoreUAVs[i] != nullptr)
             InContext->CSSetUnorderedAccessViews(i, 1, &restoreUAVs[i], 0);
     }
+
+    DeviceContext->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, restoreRTVs, restoreDSV);
 
     _frameCount++;
 
