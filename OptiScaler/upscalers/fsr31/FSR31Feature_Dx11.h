@@ -81,14 +81,10 @@ class FSR31FeatureDx11 : public FSR31Feature, public IFeature_Dx11
 
     D3D11_TEXTURE2D_RESOURCE_C bufferColor = {};
     D3D11_TEXTURE2D_RESOURCE_C bufferDepth = {};
-    D3D11_TEXTURE2D_RESOURCE_C bufferExposure = {};
-    D3D11_TEXTURE2D_RESOURCE_C bufferTransparency = {};
-    D3D11_TEXTURE2D_RESOURCE_C bufferReactive = {};
     D3D11_TEXTURE2D_RESOURCE_C bufferVelocity = {};
 
     bool CopyTexture(ID3D11Resource* InResource, D3D11_TEXTURE2D_RESOURCE_C* OutTextureDesc, UINT bindFlags,
                      bool InCopy);
-
     void ReleaseResources();
 
   protected:
