@@ -780,25 +780,25 @@ bool FSR31FeatureDx11::InitFSR3(const NVSDK_NGX_Parameter* InParameters)
 #endif
 
     if (DepthInverted())
-        _contextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_DEPTH_INVERTED;
+        _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_DEPTH_INVERTED;
 
     if (AutoExposure())
-        _contextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_AUTO_EXPOSURE;
+        _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_AUTO_EXPOSURE;
 
     if (IsHdr())
-        _contextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_HIGH_DYNAMIC_RANGE;
+        _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_HIGH_DYNAMIC_RANGE;
 
     if (JitteredMV())
-        _contextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
+        _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
 
     if (!LowResMV())
-        _contextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
+        _upscalerContextDesc.flags |= Fsr31::FFX_FSR3_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
 
     if (Config::Instance()->FsrNonLinearPQ.value_or_default() ||
         Config::Instance()->FsrNonLinearSRGB.value_or_default())
     {
-        _contextDesc.flags |= FFX_UPSCALE_ENABLE_NON_LINEAR_COLORSPACE;
-        LOG_INFO("contextDesc.initFlags (NonLinearColorSpace) {0:b}", _contextDesc.flags);
+        _upscalerContextDesc.flags |= FFX_UPSCALE_ENABLE_NON_LINEAR_COLORSPACE;
+        LOG_INFO("contextDesc.initFlags (NonLinearColorSpace) {0:b}", _upscalerContextDesc.flags);
     }
 
     if (Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV())
