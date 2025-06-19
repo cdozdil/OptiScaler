@@ -192,7 +192,7 @@ void DLSSFeature::ReadVersion()
 
     _version = GetVersionUsingNGXSnippet(possibleDlls);
 
-    if (isVersionOrBetter(_version, { 0, 0, 0 }))
+    if (_version > feature_version { 0, 0, 0 })
         LOG_INFO("DLSS v{0}.{1}.{2} loaded.", _version.major, _version.minor, _version.patch);
     else
         LOG_WARN("Failed to get version using NVSDK_NGX_GetSnippetVersion!");

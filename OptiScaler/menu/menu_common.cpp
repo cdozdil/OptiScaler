@@ -2250,7 +2250,7 @@ bool MenuCommon::RenderMenu()
                             if (State::Instance().currentFG != nullptr)
                                 fsrFG = reinterpret_cast<FSRFG_Dx12*>(State::Instance().currentFG);
 
-                            if (fsrFG != nullptr && isVersionOrBetter(FfxApiProxy::VersionDx12(), { 3, 1, 3 }))
+                            if (fsrFG != nullptr && FfxApiProxy::VersionDx12() >= feature_version { 3, 1, 3 })
                             {
                                 ImGui::Spacing();
                                 if (ImGui::TreeNode("Frame Pacing Tuning"))
@@ -2570,7 +2570,7 @@ bool MenuCommon::RenderMenu()
                             }
 
                             ImGui::Spacing();
-                            if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 1 }) &&
+                            if (currentFeature->Version() >= feature_version { 3, 1, 1 } &&
                                 ImGui::CollapsingHeader("Upscaler Settings"))
                             {
                                 ImGui::PushItemWidth(280.0f * Config::Instance()->MenuScale.value_or_default());
@@ -2583,28 +2583,25 @@ bool MenuCommon::RenderMenu()
                                                "Lower values are more stable with ghosting\n"
                                                "Higher values are more pixelly but less ghosting.");
 
-                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
+                                if (currentFeature->Version() >= feature_version { 3, 1, 4 })
                                 {
+                                    // Reactive Scale
                                     float reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
                                     if (ImGui::SliderFloat("Reactive Scale", &reactiveScale, 0.0f, 100.0f, "%.1f"))
                                         Config::Instance()->FsrReactiveScale = reactiveScale;
 
                                     ShowHelpMarker("Meant for development purpose to test if\n"
                                                    "writing a larger value to reactive mask, reduces ghosting.");
-                                }
 
-                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
-                                {
+                                    // Shading Scale
                                     float shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
                                     if (ImGui::SliderFloat("Shading Scale", &shadingScale, 0.0f, 100.0f, "%.1f"))
                                         Config::Instance()->FsrShadingScale = shadingScale;
 
                                     ShowHelpMarker("Increasing this scales fsr3.1 computed shading\n"
                                                    "change value at read to have higher reactiveness.");
-                                }
 
-                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
-                                {
+                                    // Accumulation Added Per Frame
                                     float accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
                                     if (ImGui::SliderFloat("Acc. Added Per Frame", &accAddPerFrame, 0.00f, 1.0f,
                                                            "%.2f"))
@@ -2617,10 +2614,8 @@ bool MenuCommon::RenderMenu()
                                         "drawing the ghosting object (IE no mv) to reactive mask \n"
                                         "with value close to 1.0f can decrease temporal ghosting.\n"
                                         "Decreasing this could result in more thin feature pixels flickering.");
-                                }
 
-                                if (isVersionOrBetter(currentFeature->Version(), { 3, 1, 4 }))
-                                {
+                                    // Min Disocclusion Accumulation
                                     float minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
                                     if (ImGui::SliderFloat("Min. Disocclusion Acc.", &minDisOccAcc, -1.0f, 1.0f,
                                                            "%.2f"))
@@ -2842,10 +2837,9 @@ bool MenuCommon::RenderMenu()
 
                         // xess or dlss version >= 2.5.1
                         constexpr feature_version requiredDlssVersion = { 2, 5, 1 };
-                        rcasEnabled =
-                            (currentBackend == "xess" ||
-                             (currentBackend == "dlss" &&
-                              isVersionOrBetter(State::Instance().currentFeature->Version(), requiredDlssVersion)));
+                        rcasEnabled = (currentBackend == "xess" ||
+                                       (currentBackend == "dlss" &&
+                                        State::Instance().currentFeature->Version() >= requiredDlssVersion));
 
                         if (bool rcas = Config::Instance()->RcasEnabled.value_or(rcasEnabled);
                             ImGui::Checkbox("Enable RCAS", &rcas))
@@ -3330,12 +3324,16 @@ bool MenuCommon::RenderMenu()
                         auto accessToReactiveMask = State::Instance().currentFeature->AccessToReactiveMask();
                         ImGui::BeginDisabled(!accessToReactiveMask);
 
-                        bool rm = Config::Instance()->DisableReactiveMask.value_or(
-                            !accessToReactiveMask || currentBackend == "dlss" ||
-                            (currentBackend == "xess" && !isVersionOrBetter(currentFeature->Version(), { 2, 0, 1 })));
-                        if (ImGui::Checkbox("Disable Reactive Mask", &rm))
+                        bool canUseReactiveMask =
+                            accessToReactiveMask && currentBackend != "dlss" &&
+                            (currentBackend != "xess" || currentFeature->Version() >= feature_version { 2, 0, 1 });
+
+                        bool disableReactiveMask =
+                            Config::Instance()->DisableReactiveMask.value_or(!canUseReactiveMask);
+
+                        if (ImGui::Checkbox("Disable Reactive Mask", &disableReactiveMask))
                         {
-                            Config::Instance()->DisableReactiveMask = rm;
+                            Config::Instance()->DisableReactiveMask = disableReactiveMask;
 
                             if (currentBackend == "xess")
                             {

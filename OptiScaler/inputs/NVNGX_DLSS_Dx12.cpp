@@ -1253,7 +1253,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(ID3D12GraphicsCom
         auto* feature = deviceContext->feature.get();
 
         // FSR 3.1 supports upscaleSize that doesn't need reinit to change output resolution
-        if (!(feature->Name().starts_with("FSR") && isVersionOrBetter(feature->Version(), { 3, 1, 0 })) &&
+        if (!(feature->Name().starts_with("FSR") && feature->Version() >= feature_version { 3, 1, 0 }) &&
             feature->UpdateOutputResolution(InParameters))
             State::Instance().changeBackend[handleId] = true;
     }

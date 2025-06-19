@@ -99,7 +99,7 @@ bool DLSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         return false;
     }
 
-    bool rcasEnabled = isVersionOrBetter(Version(), { 2, 5, 1 });
+    bool rcasEnabled = Version() >= feature_version { 2, 5, 1 };
 
     if (Config::Instance()->RcasEnabled.value_or(rcasEnabled) &&
         (RCAS == nullptr || RCAS.get() == nullptr || !RCAS->IsInit()))

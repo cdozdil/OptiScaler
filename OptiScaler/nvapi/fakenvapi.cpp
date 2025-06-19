@@ -46,7 +46,7 @@ void fakenvapi::reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool 
         // and it will call SetFrameGenFrameType for us
         auto static ffxApiVersion = FfxApiProxy::VersionDx12();
         constexpr feature_version requiredVersion = { 3, 1, 1 };
-        if (isVersionOrBetter(ffxApiVersion, requiredVersion) && updateModeAndContext())
+        if (ffxApiVersion >= requiredVersion && updateModeAndContext())
         {
             if (_lowLatencyContext != nullptr && _lowLatencyMode == Mode::AntiLag2)
             {

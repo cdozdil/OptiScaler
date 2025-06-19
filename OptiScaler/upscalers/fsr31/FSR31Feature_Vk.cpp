@@ -512,7 +512,7 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
         params.preExposure = 1.0f;
 
-    if (isVersionOrBetter(Version(), { 3, 1, 1 }) && _velocity != Config::Instance()->FsrVelocity.value_or_default())
+    if (Version() >= feature_version { 3, 1, 1 } && _velocity != Config::Instance()->FsrVelocity.value_or_default())
     {
         _velocity = Config::Instance()->FsrVelocity.value_or_default();
         ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
@@ -525,60 +525,59 @@ bool FSR31FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
             LOG_WARN("Velocity configure result: {}", (UINT) result);
     }
 
-    if (isVersionOrBetter(Version(), { 3, 1, 4 }) &&
-        _reactiveScale != Config::Instance()->FsrReactiveScale.value_or_default())
+    if (Version() >= feature_version { 3, 1, 4 })
     {
-        _reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
-        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
-        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
-        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FREACTIVENESSSCALE;
-        m_upscalerKeyValueConfig.ptr = &_reactiveScale;
-        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
+        if (_reactiveScale != Config::Instance()->FsrReactiveScale.value_or_default())
+        {
+            _reactiveScale = Config::Instance()->FsrReactiveScale.value_or_default();
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
+            m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+            m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FREACTIVENESSSCALE;
+            m_upscalerKeyValueConfig.ptr = &_reactiveScale;
+            auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
 
-        if (result != FFX_API_RETURN_OK)
-            LOG_WARN("Reactive Scale configure result: {}", (UINT) result);
-    }
+            if (result != FFX_API_RETURN_OK)
+                LOG_WARN("Reactive Scale configure result: {}", (UINT) result);
+        }
 
-    if (isVersionOrBetter(Version(), { 3, 1, 4 }) &&
-        _shadingScale != Config::Instance()->FsrShadingScale.value_or_default())
-    {
-        _shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
-        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
-        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
-        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FSHADINGCHANGESCALE;
-        m_upscalerKeyValueConfig.ptr = &_shadingScale;
-        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
+        if (_shadingScale != Config::Instance()->FsrShadingScale.value_or_default())
+        {
+            _shadingScale = Config::Instance()->FsrShadingScale.value_or_default();
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
+            m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+            m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FSHADINGCHANGESCALE;
+            m_upscalerKeyValueConfig.ptr = &_shadingScale;
+            auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
 
-        if (result != FFX_API_RETURN_OK)
-            LOG_WARN("Shading Scale configure result: {}", (UINT) result);
-    }
+            if (result != FFX_API_RETURN_OK)
+                LOG_WARN("Shading Scale configure result: {}", (UINT) result);
+        }
 
-    if (isVersionOrBetter(Version(), { 3, 1, 4 }) &&
-        _accAddPerFrame != Config::Instance()->FsrAccAddPerFrame.value_or_default())
-    {
-        _accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
-        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
-        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
-        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FACCUMULATIONADDEDPERFRAME;
-        m_upscalerKeyValueConfig.ptr = &_accAddPerFrame;
-        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
+        if (_accAddPerFrame != Config::Instance()->FsrAccAddPerFrame.value_or_default())
+        {
+            _accAddPerFrame = Config::Instance()->FsrAccAddPerFrame.value_or_default();
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
+            m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+            m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FACCUMULATIONADDEDPERFRAME;
+            m_upscalerKeyValueConfig.ptr = &_accAddPerFrame;
+            auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
 
-        if (result != FFX_API_RETURN_OK)
-            LOG_WARN("Acc. Add Per Frame configure result: {}", (UINT) result);
-    }
+            if (result != FFX_API_RETURN_OK)
+                LOG_WARN("Acc. Add Per Frame configure result: {}", (UINT) result);
+        }
 
-    if (isVersionOrBetter(Version(), { 3, 1, 4 }) &&
-        _minDisOccAcc != Config::Instance()->FsrMinDisOccAcc.value_or_default())
-    {
-        _minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
-        ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
-        m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
-        m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FMINDISOCCLUSIONACCUMULATION;
-        m_upscalerKeyValueConfig.ptr = &_minDisOccAcc;
-        auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
+        if (_minDisOccAcc != Config::Instance()->FsrMinDisOccAcc.value_or_default())
+        {
+            _minDisOccAcc = Config::Instance()->FsrMinDisOccAcc.value_or_default();
+            ffxConfigureDescUpscaleKeyValue m_upscalerKeyValueConfig {};
+            m_upscalerKeyValueConfig.header.type = FFX_API_CONFIGURE_DESC_TYPE_UPSCALE_KEYVALUE;
+            m_upscalerKeyValueConfig.key = FFX_API_CONFIGURE_UPSCALE_KEY_FMINDISOCCLUSIONACCUMULATION;
+            m_upscalerKeyValueConfig.ptr = &_minDisOccAcc;
+            auto result = FfxApiProxy::D3D12_Configure()(&_context, &m_upscalerKeyValueConfig.header);
 
-        if (result != FFX_API_RETURN_OK)
-            LOG_WARN("Minimum Disocclusion Acc. configure result: {}", (UINT) result);
+            if (result != FFX_API_RETURN_OK)
+                LOG_WARN("Minimum Disocclusion Acc. configure result: {}", (UINT) result);
+        }
     }
 
     if (InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width) == NVSDK_NGX_Result_Success &&

@@ -241,12 +241,13 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
     else
         LOG_DEBUG("AutoExposure enabled!");
 
+    bool supportsFloatResponsivePixelMask = Version() >= feature_version { 2, 0, 1 };
     ID3D12Resource* paramReactiveMask = nullptr;
 
-    if (isVersionOrBetter(Version(), { 2, 0, 1 }) &&
+    if (supportsFloatResponsivePixelMask &&
         InParameters->Get("FSR.reactive", &paramReactiveMask) == NVSDK_NGX_Result_Success)
     {
-        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })))
+        if (!Config::Instance()->DisableReactiveMask.value_or(!supportsFloatResponsivePixelMask))
             params.pResponsivePixelMaskTexture = paramReactiveMask;
     }
     else
@@ -255,8 +256,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
             NVSDK_NGX_Result_Success)
             InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**) &paramReactiveMask);
 
-        if (!Config::Instance()->DisableReactiveMask.value_or(!isVersionOrBetter(Version(), { 2, 0, 1 })) &&
-            paramReactiveMask)
+        if (!Config::Instance()->DisableReactiveMask.value_or(!supportsFloatResponsivePixelMask) && paramReactiveMask)
         {
             LOG_DEBUG("Input Bias mask exist..");
             Config::Instance()->DisableReactiveMask = false;
