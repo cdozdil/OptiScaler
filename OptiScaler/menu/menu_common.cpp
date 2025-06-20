@@ -2276,26 +2276,22 @@ bool MenuCommon::RenderMenu()
                     fgDesc[2] = "Missing the dlssg_to_fsr3_amd_is_better.dll file";
                 }
 
-                auto disabledCount = std::ranges::count(disabledMask, 1);
                 constexpr auto fgOptionsCount = sizeof(fgOptions) / sizeof(char*);
 
                 if (!Config::Instance()->FGType.has_value())
                     Config::Instance()->FGType =
                         Config::Instance()->FGType.value_or_default(); // need to have a value before combo
 
-                if (disabledCount < fgOptionsCount - 1) // maybe always show it anyway?
+                ImGui::SeparatorText("Frame Generation");
+
+                PopulateCombo("FG Type", reinterpret_cast<CustomOptional<uint32_t>*>(&Config::Instance()->FGType),
+                              fgOptions, fgDesc.data(), fgOptionsCount, disabledMask.data(), false);
+
+                if (State::Instance().showRestartWarning)
                 {
-                    ImGui::SeparatorText("Frame Generation");
-
-                    PopulateCombo("FG Type", reinterpret_cast<CustomOptional<uint32_t>*>(&Config::Instance()->FGType),
-                                  fgOptions, fgDesc.data(), fgOptionsCount, disabledMask.data(), false);
-
-                    if (State::Instance().showRestartWarning)
-                    {
-                        ImGui::Spacing();
-                        ImGui::TextColored(ImVec4(1.f, 0.f, 0.0f, 1.f), "Save INI and restart to apply the changes");
-                        ImGui::Spacing();
-                    }
+                    ImGui::Spacing();
+                    ImGui::TextColored(ImVec4(1.f, 0.f, 0.0f, 1.f), "Save INI and restart to apply the changes");
+                    ImGui::Spacing();
                 }
 
                 State::Instance().showRestartWarning =
