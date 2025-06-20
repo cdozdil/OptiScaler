@@ -98,12 +98,13 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
         LOG_INFO("Init Flag SharpenEnabled: {}", _initFlags.SharpenEnabled);
     }
 
-    if (InParameters->Get(NVSDK_NGX_Parameter_Width, &width) == NVSDK_NGX_Result_Success &&
-        InParameters->Get(NVSDK_NGX_Parameter_Height, &height) == NVSDK_NGX_Result_Success &&
-        InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
-        InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success &&
-        InParameters->Get(NVSDK_NGX_Parameter_PerfQualityValue, &pqValue) == NVSDK_NGX_Result_Success)
+    if (InParameters->Get(NVSDK_NGX_Parameter_OutWidth, &outWidth) == NVSDK_NGX_Result_Success &&
+        InParameters->Get(NVSDK_NGX_Parameter_OutHeight, &outHeight) == NVSDK_NGX_Result_Success)
     {
+        InParameters->Get(NVSDK_NGX_Parameter_Width, &width);
+        InParameters->Get(NVSDK_NGX_Parameter_Height, &height);
+        InParameters->Get(NVSDK_NGX_Parameter_PerfQualityValue, &pqValue);
+
         GetDynamicOutputResolution(InParameters, &outWidth, &outHeight);
 
         // Thanks to Crytek added these checks
