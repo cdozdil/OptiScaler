@@ -99,6 +99,9 @@ static const QuirkEntry quirkTable[] = {
     // Silent Hill f
     QUIRK_ENTRY_UE(shf, GameQuirk::AlwaysCaptureFSRFGSwapchain),
 
+    // Tainted Grail - Fall of Avalon
+    QUIRK_ENTRY("fall of avalon.exe", GameQuirk::ForceAutoExposure),
+
     // Path of Exile 2
     QUIRK_ENTRY("pathofexile.exe", GameQuirk::LoadD3D12Manually, GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("pathofexile_x64.exe", GameQuirk::LoadD3D12Manually, GameQuirk::DisableDxgiSpoofing),
