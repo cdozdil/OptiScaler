@@ -19,7 +19,7 @@
 </div>
 
 <div align="center">
-  <a href="https://buymeacoffee.com/nitec"><img src="https://img.shields.io/badge/Buy_me_a_Coffee-orange?style=for-the-badge&logo=buymeacoffee&logoColor=white" /></a>
+  <a href="https://buymeacoffee.com/nitec"><img src="https://img.shields.io/badge/Buy_me_a_Coffee-3F5FDF?style=for-the-badge&logo=buymeacoffee" /></a>
   <a href="https://github.com/sponsors/cdozdil?frequency=one-time"><img src="https://img.shields.io/github/sponsors/cdozdil?style=for-the-badge&logo=githubsponsors&label=SPONSOR%20ON%20GITHUB" /></a>
   
 
