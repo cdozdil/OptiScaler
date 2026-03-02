@@ -18,17 +18,11 @@
   <a href="https://github.com/optiscaler/OptiScaler/stargazers"><img src="https://img.shields.io/github/stars/optiscaler/optiscaler?style=for-the-badge&logo=githubsponsors&logoColor=white&label=S.T.A.R.S." alt="Stars"></a>
 </div>
 
-<div align="center" style="margin-top:5px; display: flex; justify-content: center; font-size:14pt;">
-    <div style="border:1px solid darkgreen; border-radius: 10px; background-color:#97ca00; padding-top:8px; padding-bottom:3px; width:210px">
-        <a style="color:white" href="https://buymeacoffee.com/nitec" style="margin:0px; padding:0px">
-            <img src="images/bmc-full-logo.svg" style="background-color:#97ca00; height:26pt; margin:0px; padding:0px"" />
-        </a>
-    </div>
-    <div style="border:1px solid gray; margin-left: 10px; border-radius: 10px; background-color:#bbbbbb; padding-top:12px; padding-bottom:9px; width:220px">
-        <a style="color:#fcfcfc" href="https://github.com/sponsors/cdozdil?frequency=one-time">
-            ❤ Sponsor on GitHub
-        </a>
-    </div>
+<div align="center">
+  <a href="https://buymeacoffee.com/nitec"><img src="https://img.shields.io/badge/Buy_me_a_Coffee-orange?style=for-the-badge&logo=buymeacoffee&logoColor=white" /></a>
+  <a href="https://github.com/sponsors/cdozdil?frequency=one-time"><img src="https://img.shields.io/github/sponsors/cdozdil?style=for-the-badge&logo=githubsponsors&label=SPONSOR%20ON%20GITHUB" /></a>
+  
+
 </div>
 
 ## Table of Contents
