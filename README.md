@@ -17,10 +17,10 @@
   <a href="https://github.com/optiscaler/OptiScaler/releases/tag/nightly"><img src="https://img.shields.io/github/downloads/optiscaler/OptiScaler/nightly/total?style=for-the-badge&logo=gitextensions&logoColor=white&logoSize=auto&label=Nightly&color=purple" alt="Nightly DL"></a>
   <a href="https://github.com/optiscaler/OptiScaler/stargazers"><img src="https://img.shields.io/github/stars/optiscaler/optiscaler?style=for-the-badge&logo=githubsponsors&logoColor=white&label=S.T.A.R.S." alt="Stars"></a>
 </div>
-
+<br />
 <div align="center">
-  <a href="https://buymeacoffee.com/nitec"><img src="https://img.shields.io/badge/Buy_me_a_Coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" /></a>
-  <a href="https://github.com/sponsors/cdozdil?frequency=one-time"><img src="https://img.shields.io/github/sponsors/cdozdil?style=for-the-badge&logo=githubsponsors&label=SPONSOR%20ON%20GITHUB" /></a>
+  <a href="https://buymeacoffee.com/nitec"><img src="images/bmac.png" /></a>
+  <a href="https://github.com/sponsors/cdozdil?frequency=one-time"><img src="images/gh-sponsor.png" /></a>
   
 
 </div>
