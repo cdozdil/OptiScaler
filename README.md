@@ -20,7 +20,7 @@
 <br />
 <div align="center">
   <a href="https://buymeacoffee.com/nitec"><img src="images/bmac.png" /></a>
-  <a href="https://github.com/sponsors/cdozdil?frequency=one-time"><img src="images/gh-sponsor.png" /></a>
+  <a href="https://github.com/sponsors/cdozdil?frequency=one-time"><img src="images/gh-sponsor-red.png" /></a>
   
 
 </div>
